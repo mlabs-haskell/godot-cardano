@@ -19,5 +19,3 @@ Future: Integrate cardano-serialization-lib or cardano-transaction-lib or paima-
 ```
 nix build
 ```
-
-
