@@ -1,0 +1,7 @@
+libcsl_godot/target
+libcsl_godot/Cargo.lock
+
+*.so
+
+# Godot 4+ specific ignores
+*/.godot/
