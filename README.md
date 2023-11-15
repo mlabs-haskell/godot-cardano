@@ -5,7 +5,9 @@ Currently:
 - look into building Godot C++ modules
 
 
-Future: Integrate cardano-serialization-lib or cardano-transaction-lib or paima-engine. Support Windows.
+Future: 
+- integrate cardano-serialization-lib or cardano-transaction-lib or paima-engine 
+- support Windows
 
 
 ## How?
@@ -19,3 +21,5 @@ Future: Integrate cardano-serialization-lib or cardano-transaction-lib or paima-
 ```
 nix build
 ```
+
+This will build the `godot-crypto` GDExtension and link it from `./result/`.
