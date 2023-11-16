@@ -1,0 +1,13 @@
+[package]
+name = "csl_test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cardano-serialization-lib = "11.5.0"
+
+[lib]
+name = "csl"
+crate-type = ["staticlib"]

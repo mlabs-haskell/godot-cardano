@@ -4,8 +4,11 @@ libname = "godot-crypto"
 
 env = SConscript("godot-cpp/SConstruct")
 
-env.Append(CPPPATH=["src/"])
+env.Append(CPPPATH=["src/", "libcsl/"])
 sources = Glob("src/*.cpp")
+
+env.Append(LIBS=["csl"])
+env.Append(LIBPATH=['.'])
 
 if env["platform"] == "macos":
     platlibname = "{}.{}.{}".format(libname, env["platform"], env["target"])
