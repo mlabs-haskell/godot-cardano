@@ -1,10 +1,81 @@
 extends Node2D
 
+var utxos = []
+var address = null
+var total_lovelace = 0
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	$Player.set_address("addr1x8nz307k3sr60gu0e47cmajssy4fmld7u493a4xztjrll0aj764lvrxdayh2ux30fl0ktuh27csgmpevdu89jlxppvrswgxsta")
-
+	pass
+	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	pass
+	if address != null:
+		$WalletDetails.text = "Using wallet " + address
+		var num_utxos = utxos.size()
+		if num_utxos > 0:
+			$WalletDetails.text += "\n\nFound " + str(num_utxos) + " UTxOs with " + str(total_lovelace) + " lovelace"
+			
+	else:
+		$WalletDetails.text = "No wallet set"
+		
+func _on_utxo_request_request_completed(result, response_code, headers, body):
+	if response_code == 404:
+		utxos = []
+		return
+		
+	utxos = JSON.parse_string(body.get_string_from_utf8()).filter(func (utxo): return utxo.amount.size() == 1)
+	total_lovelace = utxos.reduce(utxo_lovelace, 0)
+	
+func _on_submit_request_request_completed(result, response_code, headers, body):
+	print(response_code, body.get_string_from_utf8())
+
+func _on_set_wallet_button_pressed():
+	$Wallet.set_from_mnemonic($SetWalletForm/MnemonicPhrase/Input.text)
+	address = $Wallet.get_address_bech32();
+	print("Getting utxos for " + address)
+	$UTXORequest.request(
+		"https://cardano-preview.blockfrost.io/api/v0/addresses/" + address + "/utxos",
+		["project_id: previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ"]
+	)
+
+func utxo_lovelace(acc, utxo):
+	return acc + utxo.amount.reduce(
+		func(acc, asset): 
+			return acc + (int(asset.quantity) if asset.unit == "lovelace" else 0
+		),
+		0
+	)
+
+func _on_send_ada_button_pressed():
+	var address = $SendAdaForm/Recipient/Input.text
+	var amount = int($SendAdaForm/Amount/Input.text)
+	
+	if amount > total_lovelace:
+		print("Error: not enough lovelace in wallet")
+		return
+	
+	var new_utxos = utxos.map(
+		func (utxo):
+			return {
+				"input": {
+					"transaction_id": utxo.tx_hash,
+					"index": utxo.tx_index
+				},
+				"output": {
+					"address": utxo.address,
+					"amount": {
+						"coin": str(utxo_lovelace(0, utxo))
+					}
+				}
+			}
+	)
+	var transaction_bytes = $Wallet.send_lovelace(address, amount, JSON.stringify(new_utxos))
+	$SubmitRequest.request_raw(
+		"https://cardano-preview.blockfrost.io/api/v0/tx/submit",
+		["project_id: previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ",
+		 "content-type: application/cbor"
+		],
+		HTTPClient.METHOD_POST,
+		transaction_bytes
+	)
