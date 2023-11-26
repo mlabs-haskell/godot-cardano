@@ -87,8 +87,8 @@ impl Wallet {
         match result {
             Err(msg) => godot_print!("{}", msg),
             Ok(_) => {
-                ke.entropy.pop(); // discard checksum, TODO: verify
-                self.master_private_key = Some(Bip32PrivateKey::from_bip39_entropy(&ke.entropy, &[]));
+                // discard checksum, TODO: verify
+                self.master_private_key = Some(Bip32PrivateKey::from_bip39_entropy(&(ke.entropy[0..32]), &[]));
             }
         }
     }
