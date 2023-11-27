@@ -60,7 +60,7 @@ func _on_send_ada_button_pressed():
 			return {
 				"input": {
 					"transaction_id": utxo.tx_hash,
-					"index": utxo.tx_index
+					"index": str(utxo.tx_index)
 				},
 				"output": {
 					"address": utxo.address,
@@ -70,7 +70,7 @@ func _on_send_ada_button_pressed():
 				}
 			}
 	)
-	var transaction_bytes = $Wallet.send_lovelace(address, amount, JSON.stringify(new_utxos))
+	var transaction_bytes = $Wallet.send_lovelace(address, amount, JSON.stringify(new_utxos));
 	$SubmitRequest.request_raw(
 		"https://cardano-preview.blockfrost.io/api/v0/tx/submit",
 		["project_id: previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ",
