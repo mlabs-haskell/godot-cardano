@@ -3,19 +3,25 @@ extends Node2D
 var utxos = []
 var address = null
 var total_lovelace = 0
-
+var cardano: Cardano
+	
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	pass
+	var provider: Provider = await BlockfrostProvider.new(
+		BlockfrostProvider.Network.PREVIEW,
+		"previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ"
+	)
+	add_child(provider)
+	cardano = Cardano.new(provider)
+	cardano.set_wallet($Wallet)
 	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	if address != null:
-		$WalletDetails.text = "Using wallet " + address
+		$WalletDetails.text = "Using wallet %s" % address
 		var num_utxos = utxos.size()
 		if num_utxos > 0:
-			$WalletDetails.text += "\n\nFound " + str(num_utxos) + " UTxOs with " + str(total_lovelace) + " lovelace"
-			
+			$WalletDetails.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), str(total_lovelace)]		
 	else:
 		$WalletDetails.text = "No wallet set"
 		
@@ -57,20 +63,15 @@ func _on_send_ada_button_pressed():
 	
 	var new_utxos = utxos.map(
 		func (utxo):
-			return {
-				"input": {
-					"transaction_id": utxo.tx_hash,
-					"index": utxo.tx_index
-				},
-				"output": {
-					"address": utxo.address,
-					"amount": {
-						"coin": str(utxo_lovelace(0, utxo))
-					}
-				}
-			}
+			return Utxo.create(
+				utxo.tx_hash,
+				utxo.tx_index, 
+				utxo.address,
+				utxo_lovelace(0, utxo),
+				{}
+			)
 	)
-	var transaction_bytes = $Wallet.send_lovelace(address, amount, JSON.stringify(new_utxos))
+	var transaction_bytes: PackedByteArray = cardano.send_lovelace(address, amount, new_utxos)
 	$SubmitRequest.request_raw(
 		"https://cardano-preview.blockfrost.io/api/v0/tx/submit",
 		["project_id: previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ",
