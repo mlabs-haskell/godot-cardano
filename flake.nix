@@ -16,7 +16,7 @@
         src = inputs.godot-cpp;
         buildInputs = [ scons ];
         # TODO: use multiple outputs
-        outputs = [ "lib" ];
+        outputs = [ "out" ];
         buildPhase = ''
           scons TARGET=linux64
         '';
@@ -44,7 +44,7 @@
         packages = {
           godot_4 = pkgs.godot_4;
           godot-cpp = pkgs.callPackage godot-cpp { };
-          default = self.packages.godot-crypto;
+          default = self'.packages.godot-crypto;
           godot-crypto = pkgs.callPackage gdExtension {
             src = ./gdextension;
             name = "godot-crypto";
