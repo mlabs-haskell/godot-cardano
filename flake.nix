@@ -5,6 +5,7 @@
     # TODO: use up-to-date nixpkgs and godot and godot-cpp, fix build problems
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    naersk.url = "github:nix-community/naersk/master";
     godot-cpp.url = "github:godotengine/godot-cpp/godot-4.0.2-stable";
     godot-cpp.flake = false;
   };
@@ -25,9 +26,11 @@
           cp bin/* $out/lib
         '';
       };
-      gdExtension = { name, src, stdenv, scons }: stdenv.mkDerivation {
-        inherit name src;
-        buildInputs = [ scons ];
+      godot-crypto = { stdenv, scons, libcsl }: stdenv.mkDerivation {
+        src = ./gdextension;
+        name = "godot-crypto";
+        LIBPATH = "${libcsl}/lib";
+        buildInputs = [ scons libcsl ];
         preConfigure = ''
           # TODO: use pre-built godot-cpp
           cp -r ${inputs.godot-cpp} godot-cpp
@@ -40,17 +43,20 @@
       };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
-      perSystem = { self', pkgs, ... }: {
-        packages = {
-          godot_4 = pkgs.godot_4;
-          godot-cpp = pkgs.callPackage godot-cpp { };
-          default = self'.packages.godot-crypto;
-          godot-crypto = pkgs.callPackage gdExtension {
-            src = ./gdextension;
-            name = "godot-crypto";
+      perSystem = { self', pkgs, ... }:
+        let naersk-lib = pkgs.callPackage inputs.naersk { }; in
+        {
+          packages = {
+            godot_4 = pkgs.godot_4;
+            godot-cpp = pkgs.callPackage godot-cpp { };
+            libcsl = naersk-lib.buildPackage {
+              src = ./gdextension/libcsl;
+              copyLibs = true;
+            };
+            default = self'.packages.godot-crypto;
+            godot-crypto = pkgs.callPackage godot-crypto { inherit (self'.packages) libcsl; };
           };
         };
-      };
       systems = [ "x86_64-linux" ];
     };
 }
