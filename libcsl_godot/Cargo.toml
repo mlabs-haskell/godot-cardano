@@ -11,3 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
 cardano-serialization-lib = "11.5.0"
+bip32 = "0.5.1"

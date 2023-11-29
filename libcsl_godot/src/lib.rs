@@ -13,6 +13,8 @@ use cardano_serialization_lib::{
     TransactionWitnessSet,
 };
 
+use bip32::{Mnemonic, Language};
+
 use godot::prelude::*;
 
 struct MyExtension;
@@ -52,13 +54,13 @@ impl Utxo {
 #[derive(GodotClass)]
 #[class(init, base=RefCounted)]
 struct ProtocolParameters {
-    #[var(get)] coins_per_utxo_byte: u64,
-    #[var(get)] pool_deposit: u64,
-    #[var(get)] key_deposit: u64,
-    #[var(get)] max_value_size: u32,
-    #[var(get)] max_tx_size: u32,
-    #[var(get)] linear_fee_constant: u64,
-    #[var(get)] linear_fee_coefficient: u64,
+    coins_per_utxo_byte: u64,
+    pool_deposit: u64,
+    key_deposit: u64,
+    max_value_size: u32,
+    max_tx_size: u32,
+    linear_fee_constant: u64,
+    linear_fee_coefficient: u64,
 }
 
 #[godot_api]
@@ -93,38 +95,6 @@ struct Wallet {
     master_private_key: Option<Bip32PrivateKey>,
 }
 
-struct KeyEntropy {
-    leftover: u8,
-    entropy: Vec<u8>
-}
-
-impl KeyEntropy {
-    fn push(&mut self, bits: u16) -> &mut Self {
-        let lower: u8 = (bits << 5) as u8;
-        let upper: u8 = (bits >> 3) as u8;
-        match self.entropy.pop() {
-            None => {
-                self.entropy.push(upper);
-                self.entropy.push(lower);
-                self.leftover = 3;
-            }
-            Some(prev) => {
-                self.entropy.push((upper >> self.leftover) | prev);
-                if self.leftover > 0 {
-                    self.entropy.push((upper << (8 - self.leftover)) | (lower >> self.leftover));
-                    if self.leftover > 4 {
-                        self.entropy.push(lower << (8 - self.leftover));
-                    }
-                } else {
-                    self.entropy.push(lower);
-                }
-                self.leftover = (self.leftover + 11) % 8;
-            }
-        }
-        self
-    }
-}
-
 fn harden(index: u32) -> u32 {
     return index | 0x80000000;
 }
@@ -133,25 +103,21 @@ fn harden(index: u32) -> u32 {
 impl Wallet {
     #[func]
     fn set_from_mnemonic(&mut self, mnemonic: String) {
-        let words = String::from_utf8_lossy(include_bytes!("bip39/english.txt"));
-        let word_list: Vec<&str> = words.lines().collect();
-        let mnemonic_lowercase = mnemonic.to_lowercase();
-        let mut mnemonic_list = mnemonic_lowercase.split_whitespace();
-        let mut ke = KeyEntropy { leftover: 0, entropy: Vec::new() };
-        let result = mnemonic_list.try_fold(
-            &mut ke,
-            |key_entropy, word| {
-                match word_list.iter().position(|&x| x == word) {
-                    None => Err(format!("Invalid word in mneomnic phrase {}", word)),
-                    Some(ix) => Ok(key_entropy.push(ix.try_into().unwrap()))
-                }
-            }
+        let result = Mnemonic::new(
+            mnemonic
+                .to_lowercase()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" "),
+            Language::English
         );
         match result {
-            Err(msg) => godot_print!("{}", msg),
-            Ok(_) => {
-                // discard checksum, TODO: verify
-                self.master_private_key = Some(Bip32PrivateKey::from_bip39_entropy(&(ke.entropy[0..32]), &[]));
+            Err(msg) => {
+                godot_print!("{}", msg);
+                self.master_private_key = None;
+            }
+            Ok(mnemonic) => {
+                self.master_private_key = Some(Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), &[]));
             }
         }
     }
@@ -245,7 +211,7 @@ impl Cardano {
                 .derive(0)
                 .to_raw_key();
         let address = Address::from_bech32(&addr_bech32).expect("Could not decode address bech32");
-        let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new(); // TransactionUnspentOutputs::from_json(&utxos).expect("Could not parse UTxO JSON");
+        let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         gutxos.iter_shared().for_each(|gutxo| {
             let utxo = gutxo.bind();
             utxos.add(
