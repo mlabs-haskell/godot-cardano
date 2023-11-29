@@ -1,8 +1,8 @@
 extends Node2D
 
-var utxos = []
+var utxos: Array[Utxo] = []
 var address = null
-var total_lovelace = 0
+var total_lovelace = BigInt.zero()
 var cardano: Cardano
 	
 # Called when the node enters the scene tree for the first time.
@@ -21,7 +21,7 @@ func _process(delta):
 		$WalletDetails.text = "Using wallet %s" % address
 		var num_utxos = utxos.size()
 		if num_utxos > 0:
-			$WalletDetails.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), str(total_lovelace)]		
+			$WalletDetails.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]		
 	else:
 		$WalletDetails.text = "No wallet set"
 		
@@ -30,8 +30,19 @@ func _on_utxo_request_request_completed(result, response_code, headers, body):
 		utxos = []
 		return
 		
-	utxos = JSON.parse_string(body.get_string_from_utf8()).filter(func (utxo): return utxo.amount.size() == 1)
-	total_lovelace = utxos.reduce(utxo_lovelace, 0)
+	utxos.assign(
+		JSON.parse_string(body.get_string_from_utf8()).filter(func (utxo): return utxo.amount.size() == 1).map(
+			func (utxo) -> Utxo:
+				return Utxo.create(
+					utxo.tx_hash,
+					int(utxo.tx_index), 
+					utxo.address,
+					utxo_lovelace(utxo),
+					{}
+				)
+	))
+	
+	total_lovelace = utxos.reduce(func (acc, utxo): return acc.add(utxo.get_coin()), BigInt.zero())
 	
 func _on_submit_request_request_completed(result, response_code, headers, body):
 	print(response_code, body.get_string_from_utf8())
@@ -45,33 +56,24 @@ func _on_set_wallet_button_pressed():
 		["project_id: previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ"]
 	)
 
-func utxo_lovelace(acc, utxo):
-	return acc + utxo.amount.reduce(
+func utxo_lovelace(utxo: Dictionary) -> BigInt:
+	return utxo.amount.reduce(
 		func(acc, asset): 
-			return acc + (int(asset.quantity) if asset.unit == "lovelace" else 0
+			return acc.add(BigInt.from_str(asset.quantity) if asset.unit == "lovelace" else BigInt.zero()
 		),
-		0
+		BigInt.zero()
 	)
 
 func _on_send_ada_button_pressed():
 	var address = $SendAdaForm/Recipient/Input.text
-	var amount = int($SendAdaForm/Amount/Input.text)
+	var amount = BigInt.from_str($SendAdaForm/Amount/Input.text)
 	
-	if amount > total_lovelace:
+	if amount.gt(total_lovelace):
 		print("Error: not enough lovelace in wallet")
 		return
-	
-	var new_utxos = utxos.map(
-		func (utxo):
-			return Utxo.create(
-				utxo.tx_hash,
-				utxo.tx_index, 
-				utxo.address,
-				utxo_lovelace(0, utxo),
-				{}
-			)
-	)
-	var transaction_bytes: PackedByteArray = cardano.send_lovelace(address, amount, new_utxos)
+		
+	var transaction_bytes: PackedByteArray = cardano.send_lovelace(address, amount, utxos)
+
 	$SubmitRequest.request_raw(
 		"https://cardano-preview.blockfrost.io/api/v0/tx/submit",
 		["project_id: previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ",

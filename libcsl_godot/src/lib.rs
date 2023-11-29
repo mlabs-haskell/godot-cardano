@@ -12,6 +12,7 @@ use cardano_serialization_lib::{
     TransactionOutput,
     TransactionWitnessSet,
 };
+use cardano_serialization_lib::utils as CSL;
 
 use bip32::{Mnemonic, Language};
 
@@ -19,13 +20,83 @@ use godot::prelude::*;
 
 struct MyExtension;
 
-#[derive(GodotClass)]
+#[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[class(init, base=RefCounted)]
+struct BigInt {
+    #[init(default = CSL::BigInt::from_str("0").unwrap())]
+    #[doc(hidden)]
+    b: CSL::BigInt
+}
+
+#[godot_api] 
+impl BigInt {
+    #[func]
+    fn from_str(text: String) -> Gd<BigInt> {
+        let b = CSL::BigInt::from_str(&text).expect("Could not parse BigInt");
+        return Gd::from_object(Self { b });
+    }
+
+    #[func]
+    fn to_str(&self) -> String {
+        return self.b.to_str();
+    }
+
+    #[func]
+    fn to_string(&self) -> String {
+        return self.to_str();
+    }
+
+    #[func]
+    fn from_int(n: i64) -> Gd<BigInt> {
+        let b = CSL::BigInt::from_str(&n.to_string()).unwrap();
+        return Gd::from_object(Self { b });
+    }
+
+    #[func]
+    fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
+        let b = self.b.add(&other.bind().deref().b);
+        return Gd::from_object(Self { b });
+    }
+
+    #[func]
+    fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
+        let b = self.b.mul(&other.bind().deref().b);
+        return Gd::from_object(Self { b });
+    }
+
+    #[func]
+    fn zero() -> Gd<BigInt> {
+        return Self::from_str("0".to_string());
+    }
+
+    #[func]
+    fn one() -> Gd<BigInt> {
+        return Self::from_str("1".to_string());
+    }
+
+    #[func]
+    fn eq(&self, other: Gd<BigInt>) -> bool {
+        return self.b == other.bind().b;
+    }
+
+    #[func]
+    fn gt(&self, other: Gd<BigInt>) -> bool {
+        return self > &other.bind();
+    }
+
+    #[func]
+    fn lt(&self, other: Gd<BigInt>) -> bool {
+        return self < &other.bind();
+    }
+}
+
+#[derive(GodotClass, Debug)]
 #[class(init, base=RefCounted)]
 struct Utxo {
     #[var(get)] tx_hash: GString,
     #[var(get)] output_index: u32,
     #[var(get)] address: GString,
-    #[var(get)] coin: u32,
+    #[var(get)] coin: Gd<BigInt>,
     #[var(get)] assets: Dictionary
 }
 
@@ -36,18 +107,18 @@ impl Utxo {
         tx_hash: GString,
         output_index: u32,
         address: GString,
-        coin: u32,
+        coin: Gd<BigInt>,
         assets: Dictionary
     ) -> Gd<Utxo> {
-        let mut new_utxo = Utxo::new_gd();
-        let mut bound = new_utxo.bind_mut();
-        bound.tx_hash = tx_hash;
-        bound.output_index = output_index;
-        bound.address = address;
-        bound.coin = coin;
-        bound.assets = assets;
-        drop(bound);
-        return new_utxo;
+        return Gd::from_object(
+            Self {
+                tx_hash,
+                output_index,
+                address,
+                coin,
+                assets
+            }
+        );
     }
 }
 
@@ -75,17 +146,17 @@ impl ProtocolParameters {
         linear_fee_constant: u64,
         linear_fee_coefficient: u64,
     ) -> Gd<ProtocolParameters> {
-        let mut new_params = ProtocolParameters::new_gd();
-        let mut bound = new_params.bind_mut();
-        bound.coins_per_utxo_byte = coins_per_utxo_byte;
-        bound.pool_deposit = pool_deposit;
-        bound.key_deposit = key_deposit;
-        bound.max_value_size = max_value_size;
-        bound.max_tx_size = max_tx_size;
-        bound.linear_fee_constant = linear_fee_constant;
-        bound.linear_fee_coefficient = linear_fee_coefficient;
-        drop(bound);
-        return new_params;
+        return Gd::from_object(
+            Self {
+                coins_per_utxo_byte,
+                pool_deposit,
+                key_deposit,
+                max_value_size,
+                max_tx_size,
+                linear_fee_constant,
+                linear_fee_coefficient,
+            }
+        );
     }
 }
 
@@ -195,7 +266,7 @@ impl Cardano {
     }
 
     #[func]
-    fn send_lovelace(&mut self, addr_bech32: String, amount: u64, gutxos: Array<Gd<Utxo>>) -> PackedByteArray {
+    fn send_lovelace(&mut self, addr_bech32: String, amount: Gd<BigInt>, gutxos: Array<Gd<Utxo>>) -> PackedByteArray {
         let bound_wallet = self.wallet.as_ref().unwrap().bind();
         let wallet: &Wallet = bound_wallet.deref();
 
@@ -222,14 +293,14 @@ impl Cardano {
                     ),
                     &TransactionOutput::new(
                         &Address::from_bech32(&utxo.address.to_string()).expect("Could not decode address bech32"), 
-                        &Value::new(&to_bignum(utxo.coin.into()))
+                        &Value::new(&to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()))
                     )
                 )
-            )
+            );
         });
         let output_builder = TransactionOutputBuilder::new();
         let amount_builder = output_builder.with_address(&address).next().expect("Failed to build transaction output");
-        let output = amount_builder.with_coin(&amount.try_into().unwrap()).build().expect("Failed to build amount output");
+        let output = amount_builder.with_coin(&amount.bind().b.as_u64().expect("Output lovelace exceeds maximum")).build().expect("Failed to build amount output");
         let mut tx_builder = TransactionBuilder::new(&tx_builder_config);
         tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::RandomImprove).expect("Could not add inputs");
         tx_builder.add_output(&output).expect("Could not add output");
@@ -245,7 +316,7 @@ impl Cardano {
         let signed_tx = Transaction::new(&tx_body, &witnesses, None);
 
         let bytes_vec = signed_tx.to_bytes();
-        let bytes: &[u8] = bytes_vec.as_slice().try_into().unwrap();
+        let bytes: &[u8] = bytes_vec.as_slice().into();
         return PackedByteArray::from(bytes);
     }
 }
