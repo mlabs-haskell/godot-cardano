@@ -352,7 +352,7 @@ checksum = "8e4afd9ad95555081e109fe1d21f2a30c691b5f0919c67dfa690a2e1eb6bd51c"
 [[package]]
 name = "godot"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "godot-core",
  "godot-macros",
@@ -361,7 +361,7 @@ dependencies = [
 [[package]]
 name = "godot-bindings"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "godot4-prebuilt",
 ]
@@ -369,7 +369,7 @@ dependencies = [
 [[package]]
 name = "godot-codegen"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "godot-bindings",
  "godot-fmt",
@@ -383,7 +383,7 @@ dependencies = [
 [[package]]
 name = "godot-core"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "glam",
  "godot-bindings",
@@ -394,7 +394,7 @@ dependencies = [
 [[package]]
 name = "godot-ffi"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "gensym",
  "godot-bindings",
@@ -405,7 +405,7 @@ dependencies = [
 [[package]]
 name = "godot-fmt"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "proc-macro2",
 ]
@@ -413,7 +413,7 @@ dependencies = [
 [[package]]
 name = "godot-macros"
 version = "0.1.0"
-source = "git+https://github.com/godot-rust/gdext?branch=master#e9177f2274904b024686b0e9493475cf80728990"
+source = "git+https://github.com/godot-rust/gdext?branch=master#77e3b958e53e59f19b4d6ef23a83f01eb6304123"
 dependencies = [
  "godot-bindings",
  "proc-macro2",
@@ -424,7 +424,7 @@ dependencies = [
 [[package]]
 name = "godot4-prebuilt"
 version = "0.0.0"
-source = "git+https://github.com/godot-rust/godot4-prebuilt?branch=4.1.1#fca6897dbfb1a2d9387f81491acd77f6f091b8c4"
+source = "git+https://github.com/godot-rust/godot4-prebuilt?branch=4.2#9e60296be502e294dde3f245971f2868ce553677"
 
 [[package]]
 name = "group"
