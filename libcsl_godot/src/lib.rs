@@ -1,12 +1,25 @@
 use std::ops::Deref;
 
-use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, StakeCredential};
-use cardano_serialization_lib::crypto::{Bip32PrivateKey, TransactionHash, Vkeywitness, Vkeywitnesses};
+use cardano_serialization_lib::address::{
+    Address,
+    BaseAddress,
+    NetworkInfo,
+    StakeCredential
+};
+use cardano_serialization_lib::crypto::{
+    Bip32PrivateKey,
+    ScriptHash,
+    TransactionHash,
+    Vkeywitness,
+    Vkeywitnesses
+};
 use cardano_serialization_lib::utils::*;
 use cardano_serialization_lib::output_builder::*;
 use cardano_serialization_lib::tx_builder::*;
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::{
+    AssetName,
+    MultiAsset,
     Transaction,
     TransactionInput,
     TransactionOutput,
@@ -287,7 +300,6 @@ impl GTransaction {
 #[derive(GodotClass)]
 #[class(init, base=Node, rename=_Cardano)]
 struct Cardano {
-    // csl types
     tx_builder_config: Option<TransactionBuilderConfig>,
 }
 
@@ -307,8 +319,8 @@ impl Cardano {
                     .max_tx_size(params.max_tx_size)
                     .fee_algo(
                         &LinearFee::new(
-                            &to_bignum(params.linear_fee_constant),
-                            &to_bignum(params.linear_fee_coefficient)
+                            &to_bignum(params.linear_fee_coefficient),
+                            &to_bignum(params.linear_fee_constant)
                         )
                     )
                     .build().expect("Failed to build transaction builder config")
@@ -330,6 +342,14 @@ impl Cardano {
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         gutxos.iter_shared().for_each(|gutxo| {
             let utxo = gutxo.bind();
+            let mut assets: MultiAsset = MultiAsset::new();
+            utxo.assets.iter_shared().typed().for_each(|(unit, amount): (GString, Gd<BigInt>)| {
+                assets.set_asset(
+                    &ScriptHash::from_hex(&unit.to_string().get(0..56).expect("Could not extract policy ID")).expect("Could not decode policy ID"),
+                    &AssetName::new(hex::decode(unit.to_string().get(56..).expect("Could not extract asset name")).unwrap().into()).expect("Could not decode asset name"),
+                    BigNum::from_str(&amount.bind().to_str()).unwrap()
+                );
+            });
             utxos.add(
                 &TransactionUnspentOutput::new(
                     &TransactionInput::new(
@@ -338,7 +358,10 @@ impl Cardano {
                     ),
                     &TransactionOutput::new(
                         &Address::from_bech32(&utxo.address.to_string()).expect("Could not decode address bech32"), 
-                        &Value::new(&to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()))
+                        &Value::new_with_assets(
+                            &to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()),
+                            &assets
+                        )
                     )
                 )
             );
@@ -347,7 +370,7 @@ impl Cardano {
         let amount_builder = output_builder.with_address(&recipient).next().expect("Failed to build transaction output");
         let output = amount_builder.with_coin(&amount.bind().b.as_u64().expect("Output lovelace exceeds maximum")).build().expect("Failed to build amount output");
         let mut tx_builder = TransactionBuilder::new(&tx_builder_config);
-        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::RandomImprove).expect("Could not add inputs");
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset).expect("Could not add inputs");
         tx_builder.add_output(&output).expect("Could not add output");
         tx_builder.add_change_if_needed(&change_address).expect("Could not set change address");
         let tx_body = tx_builder.build().expect("Could not build transaction");

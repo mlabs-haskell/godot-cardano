@@ -27,8 +27,10 @@ func send_lovelace_to(recipient: String, amount: BigInt):
 		return
 		
 	var transaction: Transaction = send_lovelace(recipient, change_address, amount, utxos)
+	transaction.add_signature(wallet.sign_transaction(transaction))
 	print(transaction.bytes().hex_encode())
 	provider.submit_transaction(transaction.bytes())
 
 func set_wallet_from_mnemonic(phrase: String):
 	self.wallet = Wallet.MnemonicWallet.new(phrase, self.provider)
+	add_child(self.wallet)

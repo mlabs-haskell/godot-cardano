@@ -93,6 +93,7 @@ func blockfrost_request(request: Request) -> Variant:
 	
 	# TODO: handle error responses properly
 	if result[1] != 200:
+		print("Blockfrost request failed: ", result[3].get_string_from_utf8())
 		return null
 		
 	return JSON.parse_string(result[3].get_string_from_utf8())
@@ -111,14 +112,13 @@ func get_protocol_parameters() -> ProtocolParameters:
 	self.got_protocol_parameters.emit(params)
 	return params
 
-func utxo_lovelace(utxo: Dictionary) -> BigInt:
-	return utxo.amount.reduce(
-		func(acc, asset): 
-			return acc.add(BigInt.from_str(asset.quantity) if asset.unit == "lovelace" else BigInt.zero()
-		),
-		BigInt.zero()
+func utxo_assets(utxo: Dictionary) -> Dictionary:
+	var assets: Dictionary = {}
+	utxo.amount.map(
+		func(asset): assets[asset.unit] = BigInt.from_str(asset.quantity)
 	)
-		
+	return assets
+
 func get_utxos_at_address(address: String) -> Array[Utxo]:
 	var utxos_json: Array = await blockfrost_request(UtxosAtAddressRequest.new(address))
 	var utxos: Array[Utxo]
@@ -126,12 +126,15 @@ func get_utxos_at_address(address: String) -> Array[Utxo]:
 	utxos.assign(
 		utxos_json.map(
 			func (utxo) -> Utxo:
+				var assets: Dictionary = utxo_assets(utxo)
+				var coin: BigInt = assets['lovelace']
+				assets.erase('lovelace')
 				return Utxo.create(
 					utxo.tx_hash,
 					int(utxo.tx_index), 
 					utxo.address,
-					utxo_lovelace(utxo),
-					{} # TODO
+					coin,
+					assets
 				))
 	)
 	
