@@ -5,17 +5,13 @@
 [node name="main" type="Node2D"]
 script = ExtResource("1_6enfc")
 
-[node name="Wallet" type="Wallet" parent="."]
-
-[node name="UTXORequest" type="HTTPRequest" parent="."]
-
-[node name="SubmitRequest" type="HTTPRequest" parent="."]
-
 [node name="WalletDetails" type="RichTextLabel" parent="."]
 offset_left = 52.0
 offset_top = 367.0
 offset_right = 1128.0
 offset_bottom = 480.0
+focus_mode = 2
+selection_enabled = true
 
 [node name="SetWalletForm" type="Node2D" parent="."]
 
@@ -81,7 +77,5 @@ offset_top = 535.0
 offset_right = 380.0
 offset_bottom = 569.0
 
-[connection signal="request_completed" from="UTXORequest" to="." method="_on_utxo_request_request_completed"]
-[connection signal="request_completed" from="SubmitRequest" to="." method="_on_submit_request_request_completed"]
 [connection signal="pressed" from="SetWalletForm/SetButton" to="." method="_on_set_wallet_button_pressed"]
 [connection signal="pressed" from="SendAdaForm/SendAdaButton" to="." method="_on_send_ada_button_pressed"]

@@ -9,6 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+godot = { git = "https://github.com/godot-rust/gdext", rev = "2670cc30d350d1adb7b1efb63624e4efaa701c6e" }
 cardano-serialization-lib = "11.5.0"
 bip32 = "0.5.1"
+
