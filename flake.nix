@@ -34,16 +34,26 @@
           name = "csl_demo";
           src = ./csl_demo;
           buildPhase = ''
+            # link gdextension
             ln -s ${if debug then self'.packages.libcsl_godot-debug else self'.packages.libcsl_godot}/lib/libcsl_godot.so bin/libcsl_godot.linux.template_${if debug then "debug" else "release"}.x86_64.so
+
+            # link export template
             export HOME=$(mktemp -d)
-            mkdir out
-            ${self'.packages.godot}/bin/godot4 --headless --export-${if debug then "debug" else "release"} Linux/X11 ./project.godot out
-            # TODO: above command fails but exits with code 0. need to check output exists
+            TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.2.stable"
+            mkdir -p $TEMPLATE_DIR
+            ln -s ${self'.packages."godot-export-template${if debug then "-debug" else ""}"}/bin/godot.linuxbsd.template_${if debug then "debug" else "release"}.x86_64 $TEMPLATE_DIR/linux_${if debug then "debug" else "release"}.x86_64
+
+            # build
+            mkdir -p out
+            ${self'.packages.godot}/bin/godot4 --headless --export-${if debug then "debug" else "release"} "Linux/X11" out/csl_demo
           '';
           installPhase = ''
-            mkdir -p $out
-            touch $out/TODO
+            [ ! -f out/csl_demo ] && echo "out/csl_demo not built, failing..." && false
+            mkdir -p $out/bin
+            cp out/* $out/bin/
           '';
+          dontFixup = true;
+          dontStrip = true;
         };
       in
       {
