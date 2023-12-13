@@ -33,11 +33,18 @@ At the momment, the demo runs on the *preview* testnet and was tested on
 
 ### Setup
 
-First, clone the repository and enter the top directory:
+First, clone the repository and enter the top directory.
 
 ```bash
 $ git clone https://github.com/mlabs-haskell/godot-cardano.git
 $ cd godot-cardano
+```
+
+Inside the `csl_demo` folder, create a "preview_token.txt" file with your Blockfrost preview token.
+
+
+```bash
+$ echo "<YOUR TOKEN>" > csl_demo/preview_token.txt
 ```
 
 Then, execute the `build.sh` script. This will compile the Rust library located in `libcsl_godot` and

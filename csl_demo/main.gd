@@ -3,9 +3,14 @@ extends Node2D
 var cardano: Cardano
 
 func _ready():
+	var token : String = FileAccess\
+		.open("res://preview_token.txt", FileAccess.READ)\
+		.get_as_text(true)\
+		.replace("\n", "")
+	print(token.c_escape())
 	var provider: Provider = await BlockfrostProvider.new(
 		Provider.Network.NETWORK_PREVIEW,
-		"previewCBfdRYkHbWOga1ah6TXgHODuhCBi8SQJ"
+		token
 	)
 	cardano = Cardano.new(provider)
 	add_child(cardano)
