@@ -1,0 +1,15 @@
+[package]
+name = "csl_godot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+godot = { git = "https://github.com/godot-rust/gdext", rev = "7dee976484db8fc756a2442a9edebcaf48f2b677" }
+cardano-serialization-lib = "11.5.0"
+bip32 = "0.5.1"
+hex = "0.4.0"

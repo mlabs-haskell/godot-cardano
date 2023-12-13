@@ -1,0 +1,6 @@
+libcsl_godot/target
+
+*.so
+
+# Godot 4+ specific ignores
+*/.godot/
