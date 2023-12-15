@@ -97,7 +97,7 @@ For instance, here we use [Cardanoscan (Preview)](https://preview.cardanoscan.io
 
 Check our milestones [here](https://milestones.projectcatalyst.io/projects/1000114)! This README is concerned mostly with running the demo we are delivering as part of milestone 1.
 
-You may also read our [Proof Of Achievement / Research report](LINK HERE) written for the milestone as well. This document discusses our work and rationale for the technical decisions we have made.
+You may also read our [Proof Of Achievement / Research report](./docs/M1_PoA-Research-Report.pdf) written for the milestone as well. This document discusses our work and rationale for the technical decisions we have made.
 
 ## Development
 
