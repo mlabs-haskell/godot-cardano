@@ -1,4 +1,5 @@
 libcsl_godot/target
+csl_demo/preview_token.txt
 
 *.so
 
