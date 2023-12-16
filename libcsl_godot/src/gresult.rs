@@ -3,16 +3,14 @@
 //! classes implemented in Rust to preserve type information about their methods'
 //! returned types as well as the different errors they might produce; all while still
 //! allowing GDScript access this information too.
-//!
-//! The challenge is that gdext's macros don't support generic types, so we
-//! can't easily do the task at hand without a lot of repetition.
 
+use godot::obj::dom::UserDomain;
 use godot::prelude::*;
 
 /// Class used for communicating results to GDScript.
 /// The class has no `init`, so it cannot be created from GDScript.
 /// This is fine, our users should not need to create `GResult`s.
-#[derive(GodotClass)]
+#[derive(GodotClass, Debug)]
 #[class(base=RefCounted)]
 pub struct GResult {
     #[doc(hidden)]
@@ -29,6 +27,7 @@ impl GResult {
     pub fn is_err(&self) -> bool {
         self.result.is_err()
     }
+
     /// A user should call `get` on a `GResult` and match on the resulting
     /// dictionary to get the value they want.
     #[func]
@@ -43,26 +42,25 @@ impl GResult {
 /// Trait used for assuring that all types consistently use their own
 /// pre-defined set of error codes.
 pub trait FailsWith {
-    type E: ToGodot + FromGodot;
+    type E: ToGodot;
 
-    /// Return a failure
-    fn failure(e: &Self::E) -> GResult {
-        GResult {
-            result: Result::Err(e.to_variant()),
-        }
+    /// Create a failed `GResult` from a previous `Result`.
+    fn to_gresult<T>(result: Result<T, Self::E>) -> Gd<GResult>
+    where
+        T: ToGodot,
+    {
+        Gd::from_object(GResult {
+            result: result
+                .map(|val| val.to_variant())
+                .map_err(|err| err.to_variant()),
+        })
     }
 
-    /// Get the `Result` inside. This is safe.
-    fn unwrap(r: GResult) -> Result<Variant, Self::E> {
-        match r.result {
-            Ok(v) => Result::Ok(v),
-            Err(e) => Result::Err(Self::E::from_variant(&e)),
-        }
-    }
-}
-
-pub fn success<V: ToGodot>(v: V) -> GResult {
-    GResult {
-        result: Result::Ok(v.to_variant()),
+    /// Like `to_gresult`, but wraps the returned class in a `Gd<C>`.
+    fn to_gresult_class<C>(result: Result<C, Self::E>) -> Gd<GResult>
+    where
+        C: GodotClass<Declarer = UserDomain>,
+    {
+        Self::to_gresult(result.map(|c| Gd::from_object(c)))
     }
 }

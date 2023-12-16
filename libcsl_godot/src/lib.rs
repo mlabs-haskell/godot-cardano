@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, StakeCredential};
 use cardano_serialization_lib::crypto::{
     Bip32PrivateKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
@@ -7,7 +5,6 @@ use cardano_serialization_lib::crypto::{
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::output_builder::*;
 use cardano_serialization_lib::tx_builder::*;
-use cardano_serialization_lib::utils as CSL;
 use cardano_serialization_lib::utils::*;
 use cardano_serialization_lib::{
     AssetName, MultiAsset, Transaction, TransactionInput, TransactionOutput, TransactionWitnessSet,
@@ -17,80 +14,12 @@ use bip32::{Language, Mnemonic};
 
 use godot::prelude::*;
 
+pub mod bigint;
 pub mod gresult;
-use gresult::{success, FailsWith, GResult};
+
+use bigint::BigInt;
 
 struct MyExtension;
-
-#[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[class(init, base=RefCounted)]
-struct BigInt {
-    #[init(default = CSL::BigInt::from_str("0").unwrap())]
-    #[doc(hidden)]
-    b: CSL::BigInt,
-}
-
-#[godot_api]
-impl BigInt {
-    #[func]
-    fn from_str(text: String) -> Gd<BigInt> {
-        let b = CSL::BigInt::from_str(&text).expect("Could not parse BigInt");
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn to_str(&self) -> String {
-        return self.b.to_str();
-    }
-
-    #[func]
-    fn to_string(&self) -> String {
-        return self.to_str();
-    }
-
-    #[func]
-    fn from_int(n: i64) -> Gd<BigInt> {
-        let b = CSL::BigInt::from_str(&n.to_string()).unwrap();
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
-        let b = self.b.add(&other.bind().deref().b);
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
-        let b = self.b.mul(&other.bind().deref().b);
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn zero() -> Gd<BigInt> {
-        return Self::from_str("0".to_string());
-    }
-
-    #[func]
-    fn one() -> Gd<BigInt> {
-        return Self::from_str("1".to_string());
-    }
-
-    #[func]
-    fn eq(&self, other: Gd<BigInt>) -> bool {
-        return self.b == other.bind().b;
-    }
-
-    #[func]
-    fn gt(&self, other: Gd<BigInt>) -> bool {
-        return self > &other.bind();
-    }
-
-    #[func]
-    fn lt(&self, other: Gd<BigInt>) -> bool {
-        return self < &other.bind();
-    }
-}
 
 #[derive(GodotClass, Debug)]
 #[class(init, base=RefCounted)]
