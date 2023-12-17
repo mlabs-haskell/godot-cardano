@@ -103,7 +103,7 @@ You may also read our [Proof Of Achievement / Research report](./docs/M1_PoA-Res
 
 ### Setup
 
-[Install Nix](https://nixos.org/download.html), [enable flakes](https://nixos.wiki/wiki/Flakes#Installing_flakes), and [set up MLabs binary cache](https://github.com/mlabs-haskell/ci-example#set-up-binary-cache).
+[Install Nix](https://nixos.org/download.html) and [enable flakes](https://nixos.wiki/wiki/Flakes#Installing_flakes).
 
 ### Build
 
