@@ -6,9 +6,10 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = inputs@{ self, fenix, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     perSystem = { self', pkgs, ... }:
       let
+        pkgsWin = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.mingwW64;
         make_godot-export-template = { debug ? false }:
           (self'.packages.godot.override (_: {
             withTarget = "template_${if debug then "debug" else "release"}";
@@ -21,7 +22,7 @@
               cp bin/* $out/bin/
             '';
           };
-        make_libcsl_godot = { debug ? false }: pkgs.rustPlatform.buildRustPackage {
+        make_libcsl_godot = { debug ? false, windows ? false }: (if windows then pkgsWin else pkgs).rustPlatform.buildRustPackage {
           name = "libcsl_godot";
           src = ./libcsl_godot;
           buildType = if debug then "debug" else "release";
@@ -35,7 +36,7 @@
           src = ./csl_demo;
           buildPhase = ''
             # link gdextension
-            ln -s ${if debug then self'.packages.libcsl_godot-debug else self'.packages.libcsl_godot}/lib/libcsl_godot.so bin/libcsl_godot.linux.template_${if debug then "debug" else "release"}.x86_64.so
+            ln -s ${self'.packages."libcsl_godot${if debug then "-debug" else ""}"}/lib/libcsl_godot.so bin/libcsl_godot.linux.template_${if debug then "debug" else "release"}.x86_64.so
 
             # link export template
             export HOME=$(mktemp -d)
@@ -61,7 +62,9 @@
           default = libcsl_godot;
           godot = pkgs.godot_4;
           libcsl_godot = make_libcsl_godot { };
+          libcsl_godot-win = make_libcsl_godot { windows = true; };
           libcsl_godot-debug = make_libcsl_godot { debug = true; };
+          libcsl_godot-win-debug = make_libcsl_godot { windows = true; debug = true; };
           godot-export-template = make_godot-export-template { };
           godot-export-template-debug = make_godot-export-template { debug = true; };
           csl_demo = make_csl_demo { };
