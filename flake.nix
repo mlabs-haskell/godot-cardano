@@ -60,6 +60,7 @@
         packages = rec {
           default = libcsl_godot;
           godot = pkgs.godot_4;
+          godot-bin = pkgs.callPackage (import ./godot-bin.nix) { };
           libcsl_godot = make_libcsl_godot { };
           libcsl_godot-debug = make_libcsl_godot { debug = true; };
           godot-export-template = make_godot-export-template { };
