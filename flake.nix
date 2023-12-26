@@ -5,10 +5,15 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     gut = { url = "github:bitwes/gut/v9.2.0"; flake = false; };
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
-    perSystem = { self', pkgs, ... }:
+    imports = [
+      inputs.pre-commit-hooks.flakeModule
+    ];
+    perSystem = { self', pkgs, config, ... }:
       let
         pkgsCrossWin = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.mingwW64;
         make_godot-export-templates-bin = { version ? "4.2.1" }: pkgs.stdenv.mkDerivation {
@@ -144,6 +149,8 @@
             (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
             (cd test && (${self'.packages.test.configurePhase}) && link-addon)
 
+            ${config.pre-commit.installationScript}
+
             set +e
           '';
         };
@@ -177,11 +184,25 @@
           demo-debug = make_demo { debug = true; };
           demo-windows = make_demo { windows = true; };
           demo-windows-debug = make_demo { windows = true; debug = true; };
+          pre_commit_checks = config.pre-commit.settings.run;
           test = run_gut_test { };
         };
         devShells = {
           default = devShell;
           cross-windows = devShellCrossWin;
+        };
+        pre-commit.settings = {
+          settings = {
+            rust.cargoManifestPath = "libcsl_godot/Cargo.toml";
+          };
+
+          hooks = {
+            rustfmt.enable = true;
+            nixpkgs-fmt.enable = true;
+            # FIXME: Clippy can be run offline, but dependencies need to be
+            # locally available by then.
+            # clippy.enable = true;
+          };
         };
       };
     systems = [ "x86_64-linux" ];
