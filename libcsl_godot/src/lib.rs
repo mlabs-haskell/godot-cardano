@@ -2,6 +2,7 @@ use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, Stak
 use cardano_serialization_lib::crypto::{
     Bip32PrivateKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
 };
+use cardano_serialization_lib::error::JsError;
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::output_builder::*;
 use cardano_serialization_lib::tx_builder::*;
@@ -12,12 +13,16 @@ use cardano_serialization_lib::{
 
 use bip32::{Language, Mnemonic};
 
+use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 
 pub mod bigint;
 pub mod gresult;
 
 use bigint::BigInt;
+use gresult::FailsWith;
+
+use crate::gresult::GResult;
 
 struct MyExtension;
 
@@ -105,6 +110,27 @@ struct PrivateKeyAccount {
     master_private_key: Option<Bip32PrivateKey>,
 }
 
+#[derive(Debug)]
+pub enum PrivateKeyAccountError {
+    PrivateKeyNotSet,
+    Bech32Error(JsError),
+}
+
+impl GodotConvert for PrivateKeyAccountError {
+    type Via = GString;
+}
+
+// TODO: Improve error strings
+impl ToGodot for PrivateKeyAccountError {
+    fn to_godot(&self) -> Self::Via {
+        GString::from(format!("{:?}", self))
+    }
+}
+
+impl FailsWith for PrivateKeyAccount {
+    type E = PrivateKeyAccountError;
+}
+
 #[godot_api]
 impl PrivateKeyAccount {
     #[func]
@@ -135,67 +161,82 @@ impl PrivateKeyAccount {
         }
     }
 
-    fn get_account_root(&self) -> Bip32PrivateKey {
-        let priv_key = self
-            .master_private_key
+    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
+    fn get_account_root(&self) -> Result<Bip32PrivateKey, PrivateKeyAccountError> {
+        self.master_private_key
             .as_ref()
-            .expect("Private key not set");
-        return priv_key
-            .derive(harden(1852))
-            .derive(harden(1815))
-            .derive(harden(self.account_index));
+            .map(|k| {
+                k.derive(harden(1852))
+                    .derive(harden(1815))
+                    .derive(harden(self.account_index))
+            })
+            .ok_or(PrivateKeyAccountError::PrivateKeyNotSet)
     }
 
-    fn get_address(&self) -> Address {
-        let account_root = self.get_account_root();
-        let spend = account_root.derive(0).derive(0).to_public();
-        let stake = account_root.derive(2).derive(0).to_public();
-        let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
-        let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
-        let address = BaseAddress::new(
-            NetworkInfo::testnet_preview().network_id(),
-            &spend_cred,
-            &stake_cred,
-        )
-        .to_address();
-        return address;
+    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
+    fn get_address(&self) -> Result<Address, PrivateKeyAccountError> {
+        self.get_account_root().map(|account_root| {
+            let spend = account_root.derive(0).derive(0).to_public();
+            let stake = account_root.derive(2).derive(0).to_public();
+            let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
+            let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
+            BaseAddress::new(
+                NetworkInfo::testnet_preview().network_id(),
+                &spend_cred,
+                &stake_cred,
+            )
+            .to_address()
+        })
+    }
+
+    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
+    /// It may also fail due to a conversion error to Bech32.
+    // FIXME: We should be using a prefix that depends on the network we are connecting to.
+    fn get_address_bech32_(&self) -> Result<String, PrivateKeyAccountError> {
+        let addr = self.get_address()?;
+        addr.to_bech32(None)
+            .map_err(|e| PrivateKeyAccountError::Bech32Error(e))
     }
 
     #[func]
-    fn get_address_bech32(&self) -> String {
-        return self.get_address().to_bech32(None).unwrap();
+    fn get_address_bech32(&self) -> Gd<GResult> {
+        Self::to_gresult(self.get_address_bech32_())
     }
 
-    #[func]
-    fn sign_transaction(&self, tx: Gd<GTransaction>) -> Gd<GSignature> {
-        let account_root = self.get_account_root();
+    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
+    fn sign_transaction_(&self, tx: &Transaction) -> Result<GSignature, PrivateKeyAccountError> {
+        let account_root = self.get_account_root()?;
         let spend_key = account_root.derive(0).derive(0).to_raw_key();
-        let tx_hash = hash_transaction(&tx.bind().transaction.as_ref().unwrap().body());
+        let tx_hash = hash_transaction(&tx.body());
+        Result::Ok(GSignature {
+            signature: make_vkey_witness(&tx_hash, &spend_key),
+        })
+    }
 
-        return Gd::from_object(GSignature {
-            signature: Some(make_vkey_witness(&tx_hash, &spend_key)),
-        });
+    #[func]
+    fn sign_transaction(&self, tx: Gd<GTransaction>) -> Gd<GResult> {
+        Self::to_gresult_class(self.sign_transaction_(&tx.bind().transaction))
     }
 }
 
 // TODO: qualify all CSL types and skip renaming
 #[derive(GodotClass)]
-#[class(init, base=RefCounted, rename=Signature)]
+#[class(base=RefCounted, rename=Signature)]
 struct GSignature {
-    signature: Option<Vkeywitness>,
+    signature: Vkeywitness,
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted, rename=Transaction)]
+#[class(base=RefCounted, rename=Transaction)]
 struct GTransaction {
-    transaction: Option<Transaction>,
+    transaction: Transaction,
 }
 
 #[godot_api]
 impl GTransaction {
     #[func]
     fn bytes(&self) -> PackedByteArray {
-        let bytes_vec = self.transaction.clone().unwrap().to_bytes();
+        let bytes_vec = self.transaction.clone().to_bytes();
         let bytes: &[u8] = bytes_vec.as_slice().into();
         return PackedByteArray::from(bytes);
     }
@@ -204,16 +245,15 @@ impl GTransaction {
     fn add_signature(&mut self, signature: Gd<GSignature>) {
         // NOTE: destroys? transaction and replaces with a new one. might be better to add
         // signatures to the witness set before the transaction is actually built
-        let transaction = self.transaction.as_ref().unwrap();
-        let mut witness_set = transaction.witness_set();
+        let mut witness_set = self.transaction.witness_set();
         let mut vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
-        vkey_witnesses.add(signature.bind().signature.as_ref().unwrap());
+        vkey_witnesses.add(&signature.bind().signature);
         witness_set.set_vkeys(&vkey_witnesses);
-        self.transaction = Some(Transaction::new(
-            &transaction.body(),
+        self.transaction = Transaction::new(
+            &self.transaction.body(),
             &witness_set,
-            transaction.auxiliary_data(),
-        ))
+            self.transaction.auxiliary_data(),
+        )
     }
 }
 
@@ -343,7 +383,7 @@ impl Cardano {
         witnesses.set_vkeys(&vkey_witnesses);
 
         return Gd::from_object(GTransaction {
-            transaction: Some(Transaction::new(&tx_body, &witnesses, None)),
+            transaction: Transaction::new(&tx_body, &witnesses, None),
         });
     }
 }
