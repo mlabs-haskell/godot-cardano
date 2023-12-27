@@ -102,17 +102,17 @@ fn harden(index: u32) -> u32 {
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(base=RefCounted)]
 struct PrivateKeyAccount {
     #[var]
     account_index: u32,
 
-    master_private_key: Option<Bip32PrivateKey>,
+    master_private_key: Bip32PrivateKey,
 }
 
 #[derive(Debug)]
 pub enum PrivateKeyAccountError {
-    PrivateKeyNotSet,
+    BadPhrase(bip32::Error),
     Bech32Error(JsError),
 }
 
@@ -133,67 +133,54 @@ impl FailsWith for PrivateKeyAccount {
 
 #[godot_api]
 impl PrivateKeyAccount {
-    #[func]
-    fn from_mnemonic(phrase: String) -> Option<Gd<PrivateKeyAccount>> {
-        let result = Mnemonic::new(
+    fn from_mnemonic_(phrase: String) -> Result<PrivateKeyAccount, PrivateKeyAccountError> {
+        let mnemonic = Mnemonic::new(
             phrase
                 .to_lowercase()
                 .split_whitespace()
                 .collect::<Vec<_>>()
                 .join(" "),
             Language::English,
-        );
-        match result {
-            Err(msg) => {
-                godot_print!("{}", msg);
-                return None;
-            }
-            Ok(mnemonic) => {
-                // TODO: find out if the wrapped key will be freed by Gd
-                return Some(Gd::from_object(Self {
-                    master_private_key: Some(Bip32PrivateKey::from_bip39_entropy(
-                        mnemonic.entropy(),
-                        &[],
-                    )),
-                    account_index: 0,
-                }));
-            }
-        }
-    }
+        )
+        .map_err(|e| PrivateKeyAccountError::BadPhrase(e))?;
 
-    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
-    fn get_account_root(&self) -> Result<Bip32PrivateKey, PrivateKeyAccountError> {
-        self.master_private_key
-            .as_ref()
-            .map(|k| {
-                k.derive(harden(1852))
-                    .derive(harden(1815))
-                    .derive(harden(self.account_index))
-            })
-            .ok_or(PrivateKeyAccountError::PrivateKeyNotSet)
-    }
-
-    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
-    fn get_address(&self) -> Result<Address, PrivateKeyAccountError> {
-        self.get_account_root().map(|account_root| {
-            let spend = account_root.derive(0).derive(0).to_public();
-            let stake = account_root.derive(2).derive(0).to_public();
-            let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
-            let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
-            BaseAddress::new(
-                NetworkInfo::testnet_preview().network_id(),
-                &spend_cred,
-                &stake_cred,
-            )
-            .to_address()
+        Ok(Self {
+            master_private_key: Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), &[]),
+            account_index: 0,
         })
     }
 
-    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
-    /// It may also fail due to a conversion error to Bech32.
+    #[func]
+    fn from_mnemonic(phrase: String) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_mnemonic_(phrase))
+    }
+
+    fn get_account_root(&self) -> Bip32PrivateKey {
+        self.master_private_key
+            .derive(harden(1852))
+            .derive(harden(1815))
+            .derive(harden(self.account_index))
+    }
+
+    fn get_address(&self) -> Address {
+        let account_root = self.get_account_root();
+        let spend = account_root.derive(0).derive(0).to_public();
+        let stake = account_root.derive(2).derive(0).to_public();
+        let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
+        let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
+
+        BaseAddress::new(
+            NetworkInfo::testnet_preview().network_id(),
+            &spend_cred,
+            &stake_cred,
+        )
+        .to_address()
+    }
+
+    /// It may fail due to a conversion error to Bech32.
     // FIXME: We should be using a prefix that depends on the network we are connecting to.
     fn get_address_bech32_(&self) -> Result<String, PrivateKeyAccountError> {
-        let addr = self.get_address()?;
+        let addr = self.get_address();
         addr.to_bech32(None)
             .map_err(|e| PrivateKeyAccountError::Bech32Error(e))
     }
@@ -203,19 +190,15 @@ impl PrivateKeyAccount {
         Self::to_gresult(self.get_address_bech32_())
     }
 
-    /// It may fail with `PrivateKeyNotSet` if the key was not set before use.
-    fn sign_transaction_(&self, tx: &Transaction) -> Result<GSignature, PrivateKeyAccountError> {
-        let account_root = self.get_account_root()?;
+    #[func]
+    fn sign_transaction(&self, gtx: Gd<GTransaction>) -> Gd<GSignature> {
+        let tx = &gtx.bind().transaction;
+        let account_root = self.get_account_root();
         let spend_key = account_root.derive(0).derive(0).to_raw_key();
         let tx_hash = hash_transaction(&tx.body());
-        Result::Ok(GSignature {
+        Gd::from_object(GSignature {
             signature: make_vkey_witness(&tx_hash, &spend_key),
         })
-    }
-
-    #[func]
-    fn sign_transaction(&self, tx: Gd<GTransaction>) -> Gd<GResult> {
-        Self::to_gresult_class(self.sign_transaction_(&tx.bind().transaction))
     }
 }
 
@@ -258,34 +241,60 @@ impl GTransaction {
 }
 
 #[derive(GodotClass)]
-#[class(init, base=Node, rename=_Cardano)]
+#[class(base=Node, rename=_Cardano)]
 struct Cardano {
-    tx_builder_config: Option<TransactionBuilderConfig>,
+    tx_builder_config: TransactionBuilderConfig,
+}
+
+#[derive(Debug)]
+pub enum CardanoError {
+    InitError(JsError),
+}
+
+impl GodotConvert for CardanoError {
+    type Via = GString;
+}
+
+// TODO: Improve error strings
+impl ToGodot for CardanoError {
+    fn to_godot(&self) -> Self::Via {
+        GString::from(format!("{:?}", self))
+    }
+}
+
+impl FailsWith for Cardano {
+    type E = CardanoError;
 }
 
 #[godot_api]
 impl Cardano {
-    #[func]
-    fn set_protocol_parameters(&mut self, parameters: Gd<ProtocolParameters>) {
-        let params = parameters.bind();
-        godot_print!("Setting parameters");
-        self.tx_builder_config = Some(
-            TransactionBuilderConfigBuilder::new()
-                .coins_per_utxo_byte(&to_bignum(params.coins_per_utxo_byte))
-                .pool_deposit(&to_bignum(params.pool_deposit))
-                .key_deposit(&to_bignum(params.key_deposit))
-                .max_value_size(params.max_value_size)
-                .max_tx_size(params.max_tx_size)
-                .fee_algo(&LinearFee::new(
-                    &to_bignum(params.linear_fee_coefficient),
-                    &to_bignum(params.linear_fee_constant),
-                ))
-                .build()
-                .expect("Failed to build transaction builder config"),
-        );
+    /// It may fail with an InitError if there is a problem with the
+    /// ProtocolParameters passed
+    fn create_(params: &ProtocolParameters) -> Result<Cardano, CardanoError> {
+        let tx_builder_config = TransactionBuilderConfigBuilder::new()
+            .coins_per_utxo_byte(&to_bignum(params.coins_per_utxo_byte))
+            .pool_deposit(&to_bignum(params.pool_deposit))
+            .key_deposit(&to_bignum(params.key_deposit))
+            .max_value_size(params.max_value_size)
+            .max_tx_size(params.max_tx_size)
+            .fee_algo(&LinearFee::new(
+                &to_bignum(params.linear_fee_coefficient),
+                &to_bignum(params.linear_fee_constant),
+            ))
+            .build()
+            .map_err(|e| CardanoError::InitError(e))?;
+
+        Ok(Cardano { tx_builder_config })
     }
 
     #[func]
+    fn create(params: Gd<ProtocolParameters>) -> Gd<GResult> {
+        Self::to_gresult_class(Self::create_(&params.bind()))
+    }
+
+    #[func]
+    /// FIXME: This function should take validated parameters of the
+    /// appropriate type instead of Strings.
     fn send_lovelace(
         &mut self,
         recipient_bech32: String,
@@ -293,8 +302,6 @@ impl Cardano {
         amount: Gd<BigInt>,
         gutxos: Array<Gd<Utxo>>,
     ) -> Gd<GTransaction> {
-        let tx_builder_config = self.tx_builder_config.as_ref().unwrap();
-
         let recipient =
             Address::from_bech32(&recipient_bech32).expect("Could not decode address bech32");
         let change_address =
@@ -366,7 +373,7 @@ impl Cardano {
             )
             .build()
             .expect("Failed to build amount output");
-        let mut tx_builder = TransactionBuilder::new(&tx_builder_config);
+        let mut tx_builder = TransactionBuilder::new(&self.tx_builder_config);
         tx_builder
             .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)
             .expect("Could not add inputs");
