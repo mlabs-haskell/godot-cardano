@@ -102,11 +102,10 @@ fn harden(index: u32) -> u32 {
 }
 
 #[derive(GodotClass)]
-#[class(base=RefCounted)]
+#[class(base=RefCounted, rename=_PrivateKeyAccount)]
 struct PrivateKeyAccount {
     #[var]
     account_index: u32,
-
     master_private_key: Bip32PrivateKey,
 }
 
@@ -117,13 +116,16 @@ pub enum PrivateKeyAccountError {
 }
 
 impl GodotConvert for PrivateKeyAccountError {
-    type Via = GString;
+    type Via = i64;
 }
 
-// TODO: Improve error strings
 impl ToGodot for PrivateKeyAccountError {
     fn to_godot(&self) -> Self::Via {
-        GString::from(format!("{:?}", self))
+        use PrivateKeyAccountError::*;
+        match self {
+            BadPhrase(_) => 1,
+            Bech32Error(_) => 2,
+        }
     }
 }
 
@@ -133,7 +135,7 @@ impl FailsWith for PrivateKeyAccount {
 
 #[godot_api]
 impl PrivateKeyAccount {
-    fn from_mnemonic_(phrase: String) -> Result<PrivateKeyAccount, PrivateKeyAccountError> {
+    fn from_mnemonic(phrase: String) -> Result<PrivateKeyAccount, PrivateKeyAccountError> {
         let mnemonic = Mnemonic::new(
             phrase
                 .to_lowercase()
@@ -151,8 +153,8 @@ impl PrivateKeyAccount {
     }
 
     #[func]
-    fn from_mnemonic(phrase: String) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_mnemonic_(phrase))
+    fn _from_mnemonic(phrase: String) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_mnemonic(phrase))
     }
 
     fn get_account_root(&self) -> Bip32PrivateKey {
@@ -179,15 +181,15 @@ impl PrivateKeyAccount {
 
     /// It may fail due to a conversion error to Bech32.
     // FIXME: We should be using a prefix that depends on the network we are connecting to.
-    fn get_address_bech32_(&self) -> Result<String, PrivateKeyAccountError> {
+    fn get_address_bech32(&self) -> Result<String, PrivateKeyAccountError> {
         let addr = self.get_address();
         addr.to_bech32(None)
             .map_err(|e| PrivateKeyAccountError::Bech32Error(e))
     }
 
     #[func]
-    fn get_address_bech32(&self) -> Gd<GResult> {
-        Self::to_gresult(self.get_address_bech32_())
+    fn _get_address_bech32(&self) -> Gd<GResult> {
+        Self::to_gresult(self.get_address_bech32())
     }
 
     #[func]
@@ -241,36 +243,37 @@ impl GTransaction {
 }
 
 #[derive(GodotClass)]
-#[class(base=Node, rename=_Cardano)]
-struct Cardano {
+#[class(base=Node, rename=_TxBuilder)]
+struct TxBuilder {
     tx_builder_config: TransactionBuilderConfig,
 }
 
 #[derive(Debug)]
-pub enum CardanoError {
-    InitError(JsError),
+pub enum TxBuilderError {
+    BadProtocolParameters(JsError),
 }
 
-impl GodotConvert for CardanoError {
-    type Via = GString;
+impl GodotConvert for TxBuilderError {
+    type Via = i64;
 }
 
-// TODO: Improve error strings
-impl ToGodot for CardanoError {
+impl ToGodot for TxBuilderError {
     fn to_godot(&self) -> Self::Via {
-        GString::from(format!("{:?}", self))
+        use TxBuilderError::*;
+        match self {
+            BadProtocolParameters(_) => 0,
+        }
     }
 }
 
-impl FailsWith for Cardano {
-    type E = CardanoError;
+impl FailsWith for TxBuilder {
+    type E = TxBuilderError;
 }
 
 #[godot_api]
-impl Cardano {
-    /// It may fail with an InitError if there is a problem with the
-    /// ProtocolParameters passed
-    fn create_(params: &ProtocolParameters) -> Result<Cardano, CardanoError> {
+impl TxBuilder {
+    /// It may fail with a BadProtocolParameters.
+    fn create(params: &ProtocolParameters) -> Result<TxBuilder, TxBuilderError> {
         let tx_builder_config = TransactionBuilderConfigBuilder::new()
             .coins_per_utxo_byte(&to_bignum(params.coins_per_utxo_byte))
             .pool_deposit(&to_bignum(params.pool_deposit))
@@ -282,14 +285,14 @@ impl Cardano {
                 &to_bignum(params.linear_fee_constant),
             ))
             .build()
-            .map_err(|e| CardanoError::InitError(e))?;
+            .map_err(|e| TxBuilderError::BadProtocolParameters(e))?;
 
-        Ok(Cardano { tx_builder_config })
+        Ok(TxBuilder { tx_builder_config })
     }
 
     #[func]
-    fn create(params: Gd<ProtocolParameters>) -> Gd<GResult> {
-        Self::to_gresult_class(Self::create_(&params.bind()))
+    fn _create(params: Gd<ProtocolParameters>) -> Gd<GResult> {
+        Self::to_gresult_class(Self::create(&params.bind()))
     }
 
     #[func]

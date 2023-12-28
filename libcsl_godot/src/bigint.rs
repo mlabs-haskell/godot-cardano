@@ -21,13 +21,17 @@ pub enum BigIntError {
 }
 
 impl GodotConvert for BigIntError {
-    type Via = GString;
+    type Via = i64;
 }
 
 // TODO: Improve error strings
 impl ToGodot for BigIntError {
     fn to_godot(&self) -> Self::Via {
-        GString::from(format!("{:?}", self))
+        use BigIntError::*;
+        match self {
+            CouldNotParseBigInt(_) => 1,
+            CouldNotConvertFromInt(_) => 2,
+        }
     }
 }
 
