@@ -5,16 +5,20 @@
 //! allowing GDScript access this information too.
 
 use godot::obj::dom::UserDomain;
+use godot::prelude::meta::GodotConvert;
 use godot::prelude::*;
+use std::fmt::Debug;
 
 /// Class used for communicating results to GDScript.
 /// The class has no `init`, so it cannot be created from GDScript.
 /// This is fine, our users should not need to create `GResult`s.
 #[derive(GodotClass, Debug)]
-#[class(base=RefCounted)]
+#[class(base=RefCounted, rename=Result_)]
 pub struct GResult {
     #[doc(hidden)]
-    result: Result<Variant, Variant>,
+    result: Result<Variant, GString>,
+    #[doc(hidden)]
+    tag: i64,
 }
 
 #[godot_api]
@@ -27,33 +31,40 @@ impl GResult {
     pub fn is_err(&self) -> bool {
         self.result.is_err()
     }
-
-    /// A user should call `get` on a `GResult` and match on the resulting
-    /// dictionary to get the value they want.
     #[func]
-    pub fn get(&self) -> Dictionary {
-        match &self.result {
-            Ok(val) => Dictionary::from([(&"value", val)]),
-            Err(err) => Dictionary::from([(&"error", err)]),
-        }
+    pub fn tag(&self) -> i64 {
+        self.tag
+    }
+    #[func]
+    pub fn unsafe_value(&self) -> Variant {
+        self.result.clone().unwrap()
+    }
+    #[func]
+    pub fn unsafe_error(&self) -> GString {
+        self.result.clone().unwrap_err()
     }
 }
 
-/// Trait used for assuring that all types consistently use their own
-/// pre-defined set of error codes.
+/// Trait used for assuring that all classes consistently use their own
+/// set of error codes.
 pub trait FailsWith {
-    type E: ToGodot;
+    type E: ToGodot + Debug + GodotConvert<Via = i64>; // the error type
 
     /// Create a failed `GResult` from a previous `Result`.
     fn to_gresult<T>(result: Result<T, Self::E>) -> Gd<GResult>
     where
         T: ToGodot,
     {
-        Gd::from_object(GResult {
-            result: result
-                .map(|val| val.to_variant())
-                .map_err(|err| err.to_variant()),
-        })
+        match result {
+            Ok(val) => Gd::from_object(GResult {
+                result: Ok(val.to_variant()),
+                tag: 0, // zero represents success
+            }),
+            Err(err) => Gd::from_object(GResult {
+                result: Err(format!("{:?}", err).to_godot()),
+                tag: err.to_godot(),
+            }),
+        }
     }
 
     /// Like `to_gresult`, but wraps the returned class in a `Gd<C>`.
