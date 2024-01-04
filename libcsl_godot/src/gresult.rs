@@ -13,7 +13,7 @@ use std::fmt::Debug;
 /// The class has no `init`, so it cannot be created from GDScript.
 /// This is fine, our users should not need to create `GResult`s.
 #[derive(GodotClass, Debug)]
-#[class(base=RefCounted, rename=Result_)]
+#[class(base=RefCounted, rename=_Result)]
 pub struct GResult {
     #[doc(hidden)]
     result: Result<Variant, GString>,
@@ -43,6 +43,9 @@ impl GResult {
     pub fn unsafe_error(&self) -> GString {
         self.result.clone().unwrap_err()
     }
+
+    // #[func]
+    // pub fn map(&mut self, Callable)
 }
 
 /// Trait used for assuring that all classes consistently use their own

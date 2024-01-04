@@ -7,7 +7,7 @@ use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 
 #[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[class(init, base=RefCounted)]
+#[class(init, base=RefCounted, rename=_BigInt)]
 pub struct BigInt {
     #[init(default = CSL::BigInt::from_str("0").unwrap())]
     #[doc(hidden)]
@@ -24,7 +24,6 @@ impl GodotConvert for BigIntError {
     type Via = i64;
 }
 
-// TODO: Improve error strings
 impl ToGodot for BigIntError {
     fn to_godot(&self) -> Self::Via {
         use BigIntError::*;
@@ -41,7 +40,7 @@ impl FailsWith for BigInt {
 
 #[godot_api]
 impl BigInt {
-    pub fn from_str_(text: String) -> Result<BigInt, BigIntError> {
+    pub fn from_str(text: String) -> Result<BigInt, BigIntError> {
         CSL::BigInt::from_str(&text).map_or_else(
             |e| Result::Err(BigIntError::CouldNotParseBigInt(e)),
             |b| Result::Ok(Self { b }),
@@ -49,8 +48,8 @@ impl BigInt {
     }
 
     #[func]
-    pub fn from_str(text: String) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_str_(text))
+    pub fn _from_str(text: String) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_str(text))
     }
 
     #[func]
@@ -63,7 +62,7 @@ impl BigInt {
         return self.to_str();
     }
 
-    pub fn from_int_(n: i64) -> Result<BigInt, BigIntError> {
+    pub fn from_int(n: i64) -> Result<BigInt, BigIntError> {
         CSL::BigInt::from_str(&n.to_string()).map_or_else(
             |e| Result::Err(BigIntError::CouldNotConvertFromInt(e)),
             |b| Result::Ok(Self { b }),
@@ -71,8 +70,8 @@ impl BigInt {
     }
 
     #[func]
-    pub fn from_int(n: i64) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_int_(n))
+    pub fn _from_int(n: i64) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_int(n))
     }
 
     #[func]
@@ -88,13 +87,17 @@ impl BigInt {
     }
 
     #[func]
-    fn zero() -> Gd<GResult> {
-        return Self::from_str("0".to_string());
+    fn zero() -> Gd<BigInt> {
+        Gd::from_object(Self {
+            b: CSL::BigInt::from_str("0").expect("unexpected error in zero() method"),
+        })
     }
 
     #[func]
-    fn one() -> Gd<GResult> {
-        return Self::from_str("1".to_string());
+    fn one() -> Gd<BigInt> {
+        Gd::from_object(Self {
+            b: CSL::BigInt::from_str("1").expect("unexpected error in one() method"),
+        })
     }
 
     #[func]
