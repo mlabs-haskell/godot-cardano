@@ -27,7 +27,7 @@ use crate::gresult::GResult;
 struct MyExtension;
 
 #[derive(GodotClass, Debug)]
-#[class(init, base=RefCounted)]
+#[class(init, base=RefCounted, rename=_Utxo)]
 struct Utxo {
     #[var(get)]
     tx_hash: GString,
@@ -192,15 +192,18 @@ impl PrivateKeyAccount {
         Self::to_gresult(self.get_address_bech32())
     }
 
-    #[func]
-    fn sign_transaction(&self, gtx: Gd<GTransaction>) -> Gd<GSignature> {
-        let tx = &gtx.bind().transaction;
+    fn sign_transaction(&self, gtx: &GTransaction) -> GSignature {
         let account_root = self.get_account_root();
         let spend_key = account_root.derive(0).derive(0).to_raw_key();
-        let tx_hash = hash_transaction(&tx.body());
-        Gd::from_object(GSignature {
+        let tx_hash = hash_transaction(&gtx.transaction.body());
+        GSignature {
             signature: make_vkey_witness(&tx_hash, &spend_key),
-        })
+        }
+    }
+
+    #[func]
+    fn _sign_transaction(&self, gtx: Gd<GTransaction>) -> Gd<GSignature> {
+        Gd::from_object(self.sign_transaction(&gtx.bind()))
     }
 }
 
@@ -212,7 +215,7 @@ struct GSignature {
 }
 
 #[derive(GodotClass)]
-#[class(base=RefCounted, rename=Transaction)]
+#[class(base=RefCounted, rename=_Transaction)]
 struct GTransaction {
     transaction: Transaction,
 }
