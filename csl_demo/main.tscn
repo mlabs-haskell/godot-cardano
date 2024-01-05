@@ -5,7 +5,20 @@
 [node name="main" type="Node2D"]
 script = ExtResource("1_6enfc")
 
+[node name="WalletTimers" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 1024.0
+offset_right = 1025.0
+offset_bottom = 23.0
+grow_horizontal = 0
+size_flags_horizontal = 8
+size_flags_vertical = 0
+
 [node name="WalletDetails" type="RichTextLabel" parent="."]
+unique_name_in_owner = true
 offset_left = 52.0
 offset_top = 367.0
 offset_right = 1128.0
@@ -17,7 +30,8 @@ selection_enabled = true
 
 [node name="MnemonicPhrase" type="Node2D" parent="SetWalletForm"]
 
-[node name="Input" type="TextEdit" parent="SetWalletForm/MnemonicPhrase"]
+[node name="PhraseInput" type="TextEdit" parent="SetWalletForm/MnemonicPhrase"]
+unique_name_in_owner = true
 offset_left = 49.0
 offset_top = 33.0
 offset_right = 819.0
@@ -40,10 +54,12 @@ text = "Set wallet"
 [node name="SendAdaForm" type="Node2D" parent="."]
 
 [node name="SendAdaButton" type="Button" parent="SendAdaForm"]
+unique_name_in_owner = true
 offset_left = 47.0
 offset_top = 579.0
 offset_right = 247.0
 offset_bottom = 621.0
+disabled = true
 text = "Send ADA
 "
 
@@ -56,7 +72,8 @@ offset_right = 166.0
 offset_bottom = 527.0
 text = "Recipient:"
 
-[node name="Input" type="LineEdit" parent="SendAdaForm/Recipient"]
+[node name="AddressInput" type="LineEdit" parent="SendAdaForm/Recipient"]
+unique_name_in_owner = true
 offset_left = 149.0
 offset_top = 496.0
 offset_right = 790.0
@@ -71,7 +88,8 @@ offset_right = 136.0
 offset_bottom = 560.0
 text = "Amount:"
 
-[node name="Input" type="LineEdit" parent="SendAdaForm/Amount"]
+[node name="AmountInput" type="LineEdit" parent="SendAdaForm/Amount"]
+unique_name_in_owner = true
 offset_left = 150.0
 offset_top = 535.0
 offset_right = 380.0
