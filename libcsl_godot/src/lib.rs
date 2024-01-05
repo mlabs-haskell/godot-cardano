@@ -312,35 +312,35 @@ impl TxBuilder {
             Address::from_bech32(&recipient_bech32).expect("Could not decode address bech32");
         let change_address =
             Address::from_bech32(&change_address_bech32).expect("Could not decode address bech32");
+
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
-        gutxos.iter_shared().for_each(|gutxo| {
+
+        for gutxo in gutxos.iter_shared() {
             let utxo = gutxo.bind();
             let mut assets: MultiAsset = MultiAsset::new();
-            utxo.assets
-                .iter_shared()
-                .typed()
-                .for_each(|(unit, amount): (GString, Gd<BigInt>)| {
-                    assets.set_asset(
-                        &ScriptHash::from_hex(
-                            &unit
-                                .to_string()
-                                .get(0..56)
-                                .expect("Could not extract policy ID"),
+            for (unit, amount) in utxo.assets.iter_shared().typed::<GString, Gd<BigInt>>() {
+                assets.set_asset(
+                    &ScriptHash::from_hex(
+                        &unit
+                            .to_string()
+                            .get(0..56)
+                            .expect("Could not extract policy ID"),
+                    )
+                    .expect("Could not decode policy ID"),
+                    &AssetName::new(
+                        hex::decode(
+                            unit.to_string()
+                                .get(56..)
+                                .expect("Could not extract asset name"),
                         )
-                        .expect("Could not decode policy ID"),
-                        &AssetName::new(
-                            hex::decode(
-                                unit.to_string()
-                                    .get(56..)
-                                    .expect("Could not extract asset name"),
-                            )
-                            .unwrap()
-                            .into(),
-                        )
-                        .expect("Could not decode asset name"),
-                        BigNum::from_str(&amount.bind().to_str()).unwrap(),
-                    );
-                });
+                        .unwrap()
+                        .into(),
+                    )
+                    .expect("Could not decode asset name"),
+                    BigNum::from_str(&amount.bind().to_str()).unwrap(),
+                );
+            }
+
             utxos.add(&TransactionUnspentOutput::new(
                 &TransactionInput::new(
                     &TransactionHash::from_hex(&utxo.tx_hash.to_string())
@@ -363,7 +363,7 @@ impl TxBuilder {
                     ),
                 ),
             ));
-        });
+        }
         let output_builder = TransactionOutputBuilder::new();
         let amount_builder = output_builder
             .with_address(&recipient)
