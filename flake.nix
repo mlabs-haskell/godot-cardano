@@ -10,7 +10,20 @@
     perSystem = { self', pkgs, ... }:
       let
         pkgsWin = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.mingwW64;
-        make_godot-export-template = { debug ? false }:
+        make_godot-export-templates-bin = { version ? "4.2.1" }: pkgs.stdenv.mkDerivation {
+          name = "godot-export-templates-bin";
+          inherit version;
+          src = pkgs.fetchurl {
+            url = "https://github.com/godotengine/godot/releases/download/${version}-stable/Godot_v${version}-stable_export_templates.tpz";
+            sha256 = "sha256-xfFA61eEY6L6FAfzXjfBeqNKS4R7nTDinDhHuV5t2gc=";
+          };
+          dontUnpack = true;
+          installPhase = ''
+            ${pkgs.p7zip}/bin/7z x $src
+            mv templates $out
+          '';
+        };
+        make_godot-export-template = { debug ? false, windows ? false }:
           (self'.packages.godot.override (_: {
             withTarget = "template_${if debug then "debug" else "release"}";
           })
@@ -68,6 +81,7 @@
           libcsl_godot-win-debug = make_libcsl_godot { windows = true; debug = true; };
           godot-export-template = make_godot-export-template { };
           godot-export-template-debug = make_godot-export-template { debug = true; };
+          godot-export-templates-bin = make_godot-export-templates-bin { };
           csl_demo = make_csl_demo { };
           csl_demo-debug = make_csl_demo { debug = true; };
         };
