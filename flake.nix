@@ -85,6 +85,22 @@
           csl_demo = make_csl_demo { };
           csl_demo-debug = make_csl_demo { debug = true; };
         };
+        devShells = {
+          default = pkgs.mkShell {
+            buildInputs = [
+              self'.packages.godot
+              pkgs.cargo
+              pkgs.rustc
+            ];
+          };
+          windows = pkgs.mkShell {
+            buildInputs = [
+              self'.packages.godot
+              pkgsWin.rustPlatform.rust.cargo
+              pkgsWin.rustPlatform.rust.rustc
+            ];
+          };
+        };
       };
     systems = [ "x86_64-linux" ];
   };
