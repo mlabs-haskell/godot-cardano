@@ -42,7 +42,15 @@ jobs:
 
       - uses: montudor/action-zip@v1
         with:
+          args: zip -qq -r release/csl_demo-linux-debug.zip release-prep/csl_demo-debug
+
+      - uses: montudor/action-zip@v1
+        with:
           args: zip -qq -r release/csl_demo-win.zip release-prep/csl_demo-win
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r release/csl_demo-win-debug.zip release-prep/csl_demo-win-debug
 
       - uses: rickstaa/action-create-tag@v1
         with:
