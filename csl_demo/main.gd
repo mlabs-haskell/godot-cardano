@@ -4,7 +4,7 @@ var cardano: Cardano
 
 func _ready():
 	var token : String = FileAccess\
-		.open("res://preview_token.txt", FileAccess.READ)\
+		.open("./preview_token.txt", FileAccess.READ)\
 		.get_as_text(true)\
 		.replace("\n", "")
 	print(token.c_escape())
