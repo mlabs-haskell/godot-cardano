@@ -22,15 +22,17 @@ jobs:
           skipPush: true
 
       - name: Build/Download
-        run: nix build .#libcsl_godot .#libcsl_godot-win .#csl_demo .#csl_demo-win
+        run: nix build .#libcsl_godot .#libcsl_godot-debug .#libcsl_godot-win .#libcsl_godot-win-debug .#csl_demo .#csl_demo-win
 
       - name: Prepare release
         run: |
           mkdir release release-prep
-          cp result/lib/libcsl_godot.so release/
-          cp result-1/bin/csl_godot.dll release/
-          cp -r result-2/bin release-prep/csl_demo
-          cp -r result-3/bin release-prep/csl_demo-win
+          cp result/lib/libcsl_godot.so release/libcsl_godot.linux.template_release.x86_64.so
+          cp result-1/lib/libcsl_godot.so release/libcsl_godot.linux.template_debug.x86_64.so
+          cp result-2/bin/csl_godot.dll release/libcsl_godot.windows.template_release.x86_64.dll
+          cp result-4/bin/csl_godot.dll release/libcsl_godot.windows.template_debug.x86_64.dll
+          cp -r result-4/bin release-prep/csl_demo
+          cp -r result-5/bin release-prep/csl_demo-win
 
       - uses: montudor/action-zip@v1
         with:
