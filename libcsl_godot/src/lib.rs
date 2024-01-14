@@ -1,4 +1,7 @@
 use std::ops::Deref;
+use std::io::Cursor;
+
+use cbor_event::{de::Deserializer, se::{Serializer}, Len, Type};
 
 use cardano_serialization_lib::address::{
     Address,
@@ -16,6 +19,7 @@ use cardano_serialization_lib::crypto::{
 use cardano_serialization_lib::utils::*;
 use cardano_serialization_lib::output_builder::*;
 use cardano_serialization_lib::tx_builder::*;
+use cardano_serialization_lib::tx_builder::mint_builder::*;
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::{
     AssetName,
@@ -25,6 +29,11 @@ use cardano_serialization_lib::{
     TransactionOutput,
     TransactionWitnessSet,
 };
+use cardano_serialization_lib::tx_builder::tx_inputs_builder::{
+    PlutusScriptSource,
+    TxInputsBuilder
+};
+use cardano_serialization_lib::plutus::{PlutusData, PlutusScript};
 use cardano_serialization_lib::utils as CSL;
 
 use bip32::{Mnemonic, Language};
@@ -101,7 +110,230 @@ impl BigInt {
     fn lt(&self, other: Gd<BigInt>) -> bool {
         return self < &other.bind();
     }
+
+    #[func]
+    fn from_bytes(bytes: PackedByteArray) -> Gd<BigInt> {
+       return Gd::from_object(BigInt {
+           b: CSL::BigInt::from_bytes(bytes.to_vec()).unwrap()
+       });
+    }
+
+    #[func]
+    fn to_bytes(&self) -> PackedByteArray {
+        let vec = self.b.to_bytes();
+        let bytes: &[u8] = vec.as_slice().into();
+        return PackedByteArray::from(bytes);
+    }
 }
+
+#[derive(GodotClass)]
+#[class(base=Object)]
+struct Constr {
+    #[var(get)]
+    constructor: Gd<BigInt>,
+    #[var(get)]
+    fields: Array<Variant>
+}
+
+#[godot_api]
+impl Constr {
+    #[func]
+    fn create(constructor: Gd<BigInt>, fields: Array<Variant>) -> Gd<Constr> {
+        return Gd::from_object(
+            Self {
+                constructor,
+                fields
+            }
+        )
+    }
+}
+
+#[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[class(init, base=RefCounted)]
+struct Cbor {
+}
+
+#[godot_api] 
+impl Cbor {
+    fn decode_array(raw: &mut Deserializer<Cursor<Vec<u8>>>) -> Array<Variant> {
+        let mut array: Array<Variant> = Array::new();
+        let result = raw.array_with(|item| {
+            array.push(Self::decode_variant(item));
+            return Ok(());
+        });
+        match result {
+            Ok(_) => (),
+            Err(err) => godot_print!("got error: {}", err)
+        }
+        array
+    }
+
+    fn decode_variant(raw: &mut Deserializer<Cursor<Vec<u8>>>) -> Variant {
+        return match raw.cbor_type() {
+            Err(err) => { 
+                godot_print!("error: {}", err);
+                Variant::nil()
+            },
+            Ok(Type::UnsignedInteger) => {
+                BigInt::from_str(
+                    raw.unsigned_integer()
+                       .unwrap()
+                       .to_string()
+                ).to_variant()
+            },
+            Ok(Type::NegativeInteger) => {
+                BigInt::from_int(raw.negative_integer().unwrap()).to_variant()
+            },
+            Ok(Type::Bytes) => {
+                let bound = raw.bytes().unwrap();
+                let bytes: &[u8] = bound.as_slice().into();
+                PackedByteArray::from(bytes).to_variant()
+            },
+            Ok(Type::Text) => {
+                raw.text().unwrap().to_variant()
+            },
+            Ok(Type::Array) => {
+                Self::decode_array(raw).to_variant()
+            },
+            Ok(Type::Map) => {
+                let mut dict: Dictionary = Dictionary::new();
+                let result = raw.map_with(|item| {
+                    let key = Self::decode_variant(item);
+                    let value = Self::decode_variant(item);
+                    dict.insert(key, value);
+                    return Ok(());
+                });
+                match result {
+                    Ok(_) => (),
+                    Err(err) => godot_print!("got error: {}", err)
+                }
+                dict.to_variant()
+            },
+            Ok(Type::Tag) => {
+                let tag: i64 = raw.tag().unwrap().try_into().unwrap();
+                if tag >= 121 && tag <= 127 {
+                    Constr::create(
+                        BigInt::from_int(tag - 121),
+                        Self::decode_array(raw)
+                    ).to_variant()
+                } else if tag >= 1280 && tag <= 1400 {
+                    Constr::create(
+                        BigInt::from_int(tag - 1280 + 7),
+                        Self::decode_array(raw)
+                    ).to_variant()
+                } else if tag == 102 {
+                    match raw.array() {
+                        Ok(Len::Len(2)) => {
+                            Constr::create(
+                                BigInt::from_str(raw.unsigned_integer().unwrap().to_string()),
+                                Self::decode_array(raw)
+                            ).to_variant()
+                        },
+                        _ => {
+                            godot_print!("invalid constr data");
+                            Variant::nil()
+                        }
+                    }
+                } else if tag == 2 || tag == 3 {
+                    match raw.bytes() {
+                        Ok(bytes) => {
+                            // TODO: find a nicer way
+                            let mut serializer = Serializer::new_vec();
+                            serializer.write_tag(tag.try_into().unwrap());
+                            serializer.write_bytes(bytes);
+                            let bound = serializer.finalize();
+                            Gd::from_object(BigInt {
+                                b: CSL::BigInt::from_bytes(bound).unwrap()
+                            }).to_variant()
+                        },
+                        _ => {
+                            godot_print!("invalid bigint data");
+                            Variant::nil()
+                        }
+                    }
+                } else {
+                    Variant::nil()
+                }
+            },
+            Ok(_) => {
+                godot_print!("Got item");
+                Variant::nil()
+            },
+        };
+    }
+
+    #[func]
+    fn to_variant(bytes: PackedByteArray) -> Variant {
+        let vec = bytes.to_vec();
+        let mut raw = Deserializer::from(Cursor::new(vec));
+        return Self::decode_variant(&mut raw);
+    }
+
+    fn encode_variant(variant: Variant, serializer: &mut Serializer<Vec<u8>>) {
+        match variant.get_type() {
+            VariantType::Array => {
+                let array: Array<Variant> = variant.to();
+                serializer.write_array(Len::Len(array.len().try_into().unwrap()));
+                for item in array.iter_shared() {
+                    Self::encode_variant(item, serializer)
+                }
+            },
+            VariantType::Dictionary => {
+                let dict: Dictionary = variant.to();
+                serializer.write_map(Len::Len(dict.len().try_into().unwrap()));
+                for (key, value) in dict.iter_shared() {
+                    Self::encode_variant(key, serializer);
+                    Self::encode_variant(value, serializer);
+                }
+            },
+            VariantType::PackedByteArray => {
+                let bytes: PackedByteArray = variant.to();
+                let vec = bytes.to_vec();
+                serializer.write_bytes(vec).unwrap();
+            },
+            VariantType::Object => {
+                let class: String = variant.call("get_class", &[]).to();
+                match class.as_str() {
+                    "Constr" => {
+                        let gd_constr: Gd<Constr> = variant.to();
+                        let constr = gd_constr.bind();
+                        let constructor_int: u64 = constr.constructor.bind().b.as_u64().unwrap().into();
+
+                        if constructor_int <= 7 {
+                            serializer.write_tag(121 + constructor_int);
+                        } else if constructor_int <= 127 {
+                            serializer.write_tag(1280 + constructor_int);
+                        } else {
+                            serializer.write_array(Len::Len(2));
+                            serializer.write_unsigned_integer(constructor_int);
+                            Self::encode_variant(constr.fields.to_variant(), serializer);
+                        }
+                        Self::encode_variant(constr.fields.to_variant(), serializer);
+                    },
+                    "BigInt" => {
+                        let gd_bigint: Gd<BigInt> = variant.to();
+                        let b = &gd_bigint.bind();
+                        serializer.write_raw_bytes(&b.b.to_bytes());
+                    },
+                    _ => () // todo: handle unknown objects
+                }
+            }
+            _ => godot_error!("Don't know how to encode type"),
+        };
+    }
+
+    #[func]
+    fn from_variant(variant: Variant) -> PackedByteArray {
+        let mut serializer = Serializer::new_vec();
+        Self::encode_variant(variant, &mut serializer);
+        let bound = serializer.finalize();
+        let bytes: &[u8] = bound.as_slice().into();
+        return PackedByteArray::from(bytes);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Cardano types
 
 #[derive(GodotClass, Debug)]
 #[class(init, base=RefCounted)]
@@ -177,6 +409,18 @@ fn harden(index: u32) -> u32 {
     return index | 0x80000000;
 }
 
+fn multiasset_from_dictionary(dict: &Dictionary) -> MultiAsset {
+    let mut assets: MultiAsset = MultiAsset::new();
+    dict.iter_shared().typed().for_each(|(unit, amount): (GString, Gd<BigInt>)| {
+        assets.set_asset(
+            &ScriptHash::from_hex(&unit.to_string().get(0..56).expect("Could not extract policy ID")).expect("Could not decode policy ID"),
+            &AssetName::new(hex::decode(unit.to_string().get(56..).expect("Could not extract asset name")).unwrap().into()).expect("Could not decode asset name"),
+            BigNum::from_str(&amount.bind().to_str()).unwrap()
+        );
+    });
+    return assets;
+}
+
 #[derive(GodotClass)]
 #[class(init, base=RefCounted)]
 struct PrivateKeyAccount {
@@ -222,7 +466,8 @@ impl PrivateKeyAccount {
             .derive(harden(self.account_index));
     }
 
-    fn get_address(&self) -> Address {
+    #[func]
+    fn get_address(&self) -> Gd<GAddress> {
         let account_root = self.get_account_root();
         let spend = account_root.derive(0).derive(0).to_public();
         let stake = account_root.derive(2).derive(0).to_public();
@@ -234,12 +479,12 @@ impl PrivateKeyAccount {
                 &spend_cred,
                 &stake_cred
             ).to_address();
-        return address;
+        return Gd::from_object(GAddress { address: Some(address) });
     }
 
     #[func]
     fn get_address_bech32(&self) -> String {
-        return self.get_address().to_bech32(None).unwrap();
+        return self.get_address().bind().address.as_ref().unwrap().to_bech32(None).unwrap();
     }
 
     #[func]
@@ -298,6 +543,228 @@ impl GTransaction {
 }
 
 #[derive(GodotClass)]
+#[class(init, base=Node, rename=Address)]
+struct GAddress {
+    address: Option<Address>
+}
+
+#[godot_api]
+impl GAddress {
+    #[func]
+    fn from_bech32(address: String) -> Gd<GAddress> {
+        return Gd::from_object(
+            Self {
+                address: Some(Address::from_bech32(&address).expect("Could not parse address bech32"))
+            }
+        )
+    }
+
+    #[func]
+    fn to_bech32(&self) -> String {
+        return self.address.as_ref().unwrap().to_bech32(None).unwrap();
+    }
+}
+
+#[derive(GodotClass)]
+#[class(init, base=Node, rename=TxBuilder)]
+struct GTxBuilder {
+    tx_builder: Option<TransactionBuilder>,
+    inputs_builder: Option<TxInputsBuilder>
+}
+
+#[derive(Debug)]
+enum Datum {
+    NoDatum,
+    Hash(PackedByteArray),
+    Inline(PackedByteArray),
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=Datum)]
+struct GDatum {
+    datum: Datum
+}
+
+#[godot_api]
+impl GDatum {
+    #[func]
+    fn none() -> Gd<GDatum> {
+        return Gd::from_object(GDatum { datum: Datum::NoDatum })
+    }
+
+    #[func]
+    fn hash(bytes: PackedByteArray) -> Gd<GDatum> {
+        return Gd::from_object(GDatum { datum: Datum::Hash(bytes) })
+    }
+
+    #[func]
+    fn inline(bytes: PackedByteArray) -> Gd<GDatum> {
+        return Gd::from_object(GDatum { datum: Datum::Inline(bytes) })
+    }
+}
+
+//#[derive(GodotClass)]
+//#[class(base=Node, rename=TxBuilder)]
+//struct GPlutusScript {
+//    script: PlutusScript
+//}
+//
+//impl GPlutusScript {
+//}
+
+#[godot_api]
+impl GTxBuilder {
+    #[func]
+    fn create(cardano: Gd<Cardano>) -> Gd<GTxBuilder> {
+        let builder = TransactionBuilder::new(&cardano.bind().tx_builder_config.as_ref().unwrap());
+        Gd::from_object(
+            Self {
+                tx_builder: Some(builder),
+                inputs_builder: Some(TxInputsBuilder::new())
+            }
+        )
+    }
+
+    #[func]
+    fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) {
+        let inputs_builder = self.inputs_builder.as_mut().unwrap();
+        gutxos.iter_shared().for_each(|gutxo| {
+            let utxo = gutxo.bind();
+            inputs_builder
+                .add_key_input(
+                    &BaseAddress::from_address(
+                        &Address::from_bech32(&utxo.address.to_string()).unwrap()
+                    ).unwrap().stake_cred().to_keyhash().unwrap(),
+                    &TransactionInput::new(
+                        &TransactionHash::from_hex(&utxo.tx_hash.to_string()).expect("Could not decode transaction hash"),
+                        utxo.output_index
+                    ),
+                    &Value::new_with_assets(
+                        &to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()),
+                        &multiasset_from_dictionary(&utxo.assets)
+                    )
+                );
+        });
+    }
+
+    #[func]
+    fn pay_to_address(
+        &mut self,
+        address: Gd<GAddress>,
+        coin: Gd<BigInt>,
+        assets: Dictionary
+    ) {
+        self.pay_to_address_with_datum(
+            address,
+            coin,
+            assets,
+            Gd::from_object(GDatum { datum: Datum::NoDatum }));
+    }
+
+    #[func]
+    fn pay_to_address_with_datum(
+        &mut self,
+        address: Gd<GAddress>,
+        coin: Gd<BigInt>,
+        assets: Dictionary,
+        datum: Gd<GDatum>
+    ) {
+        let output_builder = 
+            match &datum.bind().deref().datum {
+                Datum::NoDatum => TransactionOutputBuilder::new(),
+                Datum::Inline(bytes) => {
+                    TransactionOutputBuilder::new()
+                        .with_plutus_data(
+                            &PlutusData::from_bytes(bytes.to_vec()).unwrap()
+                        )
+                },
+                Datum::Hash(bytes) =>
+                    // TODO:
+                    TransactionOutputBuilder::new(),
+            };
+
+        let amount_builder =
+            output_builder
+                .with_address(&address.bind().address.as_ref().unwrap())
+                .next()
+                .expect("Failed to build transaction output");
+        let output =
+            amount_builder
+                .with_coin_and_asset(
+                    &coin
+                        .bind()
+                        .b
+                        .as_u64()
+                        .expect("Output lovelace exceeds maximum"),
+                    &multiasset_from_dictionary(&assets)
+                )
+                .build()
+                .expect("Failed to build amount output");
+        self.tx_builder
+            .as_mut()
+            .unwrap()
+            .add_output(&output)
+            .expect("Could not add output");
+    }
+
+    //#[func]
+    //fn mint_assets(
+    //    script: Gd<GPlutusScript>,
+    //    tokens: Dictionary,
+    //    redeemer: Gd<GDatum>
+    //) {
+    //    //MintWitness::new_plutus_script(
+    //    //    &PlutusScriptSource::new(&script.bind().script),
+    //    //    &redeemer.
+    //    //);
+    //    //MintBuilder::new();
+    //    //Asset
+    //}
+
+    #[func]
+    fn complete(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+        change_address: Gd<GAddress>
+    ) -> Gd<GTransaction> {
+        let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
+        gutxos.iter_shared().for_each(|gutxo| {
+            let utxo = gutxo.bind();
+            utxos.add(
+                &TransactionUnspentOutput::new(
+                    &TransactionInput::new(
+                        &TransactionHash::from_hex(&utxo.tx_hash.to_string()).expect("Could not decode transaction hash"),
+                        utxo.output_index
+                    ),
+                    &TransactionOutput::new(
+                        &Address::from_bech32(&utxo.address.to_string()).expect("Could not decode address bech32"), 
+                        &Value::new_with_assets(
+                            &to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()),
+                            &multiasset_from_dictionary(&utxo.assets)
+                        )
+                    )
+                )
+            );
+        });
+        let tx_builder = self.tx_builder.as_mut().unwrap();
+        tx_builder.set_inputs(&self.inputs_builder.as_ref().unwrap());
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset).expect("Could not add inputs");
+        tx_builder.add_change_if_needed(&change_address.bind().address.as_ref().unwrap()).expect("Could not set change address");
+        let tx_body = tx_builder.build().expect("Could not build transaction");
+
+        let mut witnesses = TransactionWitnessSet::new();
+        let vkey_witnesses = Vkeywitnesses::new();
+        witnesses.set_vkeys(&vkey_witnesses);
+
+        return Gd::from_object(
+            GTransaction {
+                transaction: Some(Transaction::new(&tx_body, &witnesses, None))
+            }
+        )
+    }
+}
+
+#[derive(GodotClass)]
 #[class(init, base=Node, rename=_Cardano)]
 struct Cardano {
     tx_builder_config: Option<TransactionBuilderConfig>,
@@ -325,65 +792,6 @@ impl Cardano {
                     )
                     .build().expect("Failed to build transaction builder config")
             );
-    }
-
-    #[func]
-    fn send_lovelace(
-        &mut self,
-        recipient_bech32: String,
-        change_address_bech32: String,
-        amount: Gd<BigInt>,
-        gutxos: Array<Gd<Utxo>>
-    ) -> Gd<GTransaction> {
-        let tx_builder_config = self.tx_builder_config.as_ref().unwrap();
-
-        let recipient = Address::from_bech32(&recipient_bech32).expect("Could not decode address bech32");
-        let change_address = Address::from_bech32(&change_address_bech32).expect("Could not decode address bech32");
-        let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
-        gutxos.iter_shared().for_each(|gutxo| {
-            let utxo = gutxo.bind();
-            let mut assets: MultiAsset = MultiAsset::new();
-            utxo.assets.iter_shared().typed().for_each(|(unit, amount): (GString, Gd<BigInt>)| {
-                assets.set_asset(
-                    &ScriptHash::from_hex(&unit.to_string().get(0..56).expect("Could not extract policy ID")).expect("Could not decode policy ID"),
-                    &AssetName::new(hex::decode(unit.to_string().get(56..).expect("Could not extract asset name")).unwrap().into()).expect("Could not decode asset name"),
-                    BigNum::from_str(&amount.bind().to_str()).unwrap()
-                );
-            });
-            utxos.add(
-                &TransactionUnspentOutput::new(
-                    &TransactionInput::new(
-                        &TransactionHash::from_hex(&utxo.tx_hash.to_string()).expect("Could not decode transaction hash"),
-                        utxo.output_index
-                    ),
-                    &TransactionOutput::new(
-                        &Address::from_bech32(&utxo.address.to_string()).expect("Could not decode address bech32"), 
-                        &Value::new_with_assets(
-                            &to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()),
-                            &assets
-                        )
-                    )
-                )
-            );
-        });
-        let output_builder = TransactionOutputBuilder::new();
-        let amount_builder = output_builder.with_address(&recipient).next().expect("Failed to build transaction output");
-        let output = amount_builder.with_coin(&amount.bind().b.as_u64().expect("Output lovelace exceeds maximum")).build().expect("Failed to build amount output");
-        let mut tx_builder = TransactionBuilder::new(&tx_builder_config);
-        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset).expect("Could not add inputs");
-        tx_builder.add_output(&output).expect("Could not add output");
-        tx_builder.add_change_if_needed(&change_address).expect("Could not set change address");
-        let tx_body = tx_builder.build().expect("Could not build transaction");
-
-        let mut witnesses = TransactionWitnessSet::new();
-        let vkey_witnesses = Vkeywitnesses::new();
-        witnesses.set_vkeys(&vkey_witnesses);
-
-        return Gd::from_object(
-            GTransaction {
-                transaction: Some(Transaction::new(&tx_body, &witnesses, None))
-            }
-        )
     }
 }
 

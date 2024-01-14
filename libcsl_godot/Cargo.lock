@@ -205,6 +205,7 @@ version = "0.1.0"
 dependencies = [
  "bip32",
  "cardano-serialization-lib",
+ "cbor_event",
  "godot",
  "hex",
 ]

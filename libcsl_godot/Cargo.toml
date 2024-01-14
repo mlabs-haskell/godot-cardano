@@ -13,3 +13,4 @@ godot = { git = "https://github.com/godot-rust/gdext", rev = "7dee976484db8fc756
 cardano-serialization-lib = "11.5.0"
 bip32 = "0.5.1"
 hex = "0.4.0"
+cbor_event = "2.1.3"
