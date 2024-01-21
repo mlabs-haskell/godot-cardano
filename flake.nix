@@ -46,10 +46,14 @@
         };
         make_demo = { debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
           name = "demo";
-          src = ./.;
+          src = ./demo;
           buildPhase = ''
             SYSTEM="${if windows then "windows" else "linux"}"
             VARIANT="${if debug then "debug" else "release"}"
+
+            # copy addons directory
+            rm ./addons
+            cp -r ${./addons} ./addons --no-preserve=mode,ownership
 
             # link debug gdextension
             ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/gd-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
@@ -67,8 +71,6 @@
             mkdir -p $(dirname $TEMPLATE_DIR)
             ln -s $TEMPLATES_PACKAGE $TEMPLATE_DIR
 
-            ${pkgs.tree.outPath}/bin/tree -L 6
-
             # build
             mkdir -p out
             ${self'.packages.godot}/bin/godot4 \
@@ -76,7 +78,7 @@
               --export-$VARIANT \
               "${if windows then "Windows Desktop" else "Linux/X11"}" \
               ./out/demo${if windows then ".exe" else ""} \
-              ./demo/project.godot
+              ./project.godot
           '';
           installPhase = ''
             [ ! -f out/demo${if windows then ".exe" else ""} ] && echo "out/demo${if windows then ".exe" else ""} not built, failing..." && false
