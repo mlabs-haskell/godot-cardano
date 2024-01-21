@@ -1,6 +1,7 @@
+use bip32::secp256k1::sha2::Sha256;
 use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, StakeCredential};
 use cardano_serialization_lib::crypto::{
-    Bip32PrivateKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
+    Bip32PrivateKey, Bip32PublicKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
 };
 use cardano_serialization_lib::error::JsError;
 use cardano_serialization_lib::fees::LinearFee;
@@ -14,6 +15,7 @@ use cardano_serialization_lib::{
 use bip32::{Language, Mnemonic};
 
 use godot::builtin::meta::GodotConvert;
+use godot::engine::{Crypto, CryptoKey};
 use godot::prelude::*;
 
 pub mod bigint;
@@ -21,6 +23,7 @@ pub mod gresult;
 
 use bigint::BigInt;
 use gresult::FailsWith;
+use pbkdf2::pbkdf2_hmac;
 
 use crate::gresult::GResult;
 
@@ -101,27 +104,45 @@ fn harden(index: u32) -> u32 {
     return index | 0x80000000;
 }
 
+/// A single address key account is essentially a Cardano single-address
+/// wallet. The wallet can be imported by inputting a seed phrase together
+/// with a password (as explained in the BIP39 standard).
+///
+/// However, the wallet is serialised to disk as the specific account's
+/// private key. We are not interested in other possible accounts (since
+/// this is a single-address wallet after all). For safety, the private key
+/// is stored encrypted with PBKDF2_HMAC.
+///
+/// For convenience, the account public key is also stored. Considering that
+/// this is a single address wallet, not much privacy is lost by simply storing
+/// the public key, as it is equivalent to storing the only address that will
+/// be in use.
 #[derive(GodotClass)]
-#[class(base=RefCounted, rename=_PrivateKeyAccount)]
-struct PrivateKeyAccount {
+#[class(base=Resource, rename=_SingleAddressKeyAccount)]
+struct SingleAddressKeyAccount {
     #[var]
     account_index: u32,
-    master_private_key: Bip32PrivateKey,
+    #[var]
+    encrypted_account_private_key: PackedByteArray,
+    #[var]
+    account_public_key: PackedByteArray,
+    #[var]
+    salt: PackedByteArray,
 }
 
 #[derive(Debug)]
-pub enum PrivateKeyAccountError {
+pub enum SingleAddressKeyAccountError {
     BadPhrase(bip32::Error),
     Bech32Error(JsError),
 }
 
-impl GodotConvert for PrivateKeyAccountError {
+impl GodotConvert for SingleAddressKeyAccountError {
     type Via = i64;
 }
 
-impl ToGodot for PrivateKeyAccountError {
+impl ToGodot for SingleAddressKeyAccountError {
     fn to_godot(&self) -> Self::Via {
-        use PrivateKeyAccountError::*;
+        use SingleAddressKeyAccountError::*;
         match self {
             BadPhrase(_) => 1,
             Bech32Error(_) => 2,
@@ -129,13 +150,19 @@ impl ToGodot for PrivateKeyAccountError {
     }
 }
 
-impl FailsWith for PrivateKeyAccount {
-    type E = PrivateKeyAccountError;
+impl FailsWith for SingleAddressKeyAccount {
+    type E = SingleAddressKeyAccountError;
 }
 
 #[godot_api]
-impl PrivateKeyAccount {
-    fn from_mnemonic(phrase: String) -> Result<PrivateKeyAccount, PrivateKeyAccountError> {
+impl SingleAddressKeyAccount {
+    fn import(
+        phrase: String,
+        mnemonic_password: String,
+        account_password: String,
+    ) -> Result<SingleAddressKeyAccount, SingleAddressKeyAccountError> {
+        // we obtain the master private key with the mnemonic and the user
+        // password
         let mnemonic = Mnemonic::new(
             phrase
                 .to_lowercase()
@@ -144,17 +171,52 @@ impl PrivateKeyAccount {
                 .join(" "),
             Language::English,
         )
-        .map_err(|e| PrivateKeyAccountError::BadPhrase(e))?;
+        .map_err(|e| SingleAddressKeyAccountError::BadPhrase(e))?;
+
+        // we store the account private key, encrypted with a password using PBKDF2
+        let account_index: u32 = 0;
+
+        let master_private_key =
+            Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), mnemonic_password.as_bytes());
+
+        let account_private_key = master_private_key
+            .derive(harden(1852))
+            .derive(harden(1815))
+            .derive(harden(account_index));
+
+        let mut crypto = Crypto::new();
+        let salt: PackedByteArray = crypto.generate_random_bytes(16);
+
+        let mut encrypted_account_private_key: &mut [u8];
+
+        pbkdf2_hmac::<Sha256>(
+            account_password.as_bytes(),
+            salt.as_slice(),
+            750_000,
+            encrypted_account_private_key,
+        );
+        master_private_key
+            .derive(harden(1852))
+            .derive(harden(1815))
+            .derive(harden(account_index));
+
+        // we also store the account public key, unencrypted
+        let account_public_key =
+            PackedByteArray::from(account_private_key.to_public().as_bytes().as_slice());
 
         Ok(Self {
-            master_private_key: Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), &[]),
-            account_index: 0,
+            account_index,
+            encrypted_account_private_key: PackedByteArray::from(
+                encrypted_account_private_key.as_ref(),
+            ),
+            account_public_key,
+            salt,
         })
     }
 
     #[func]
-    fn _from_mnemonic(phrase: String) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_mnemonic(phrase))
+    fn _import(phrase: String, mnemonic_password: String, account_password: String) -> Gd<GResult> {
+        Self::to_gresult_class(Self::import(phrase, mnemonic_password, account_password))
     }
 
     fn get_account_root(&self) -> Bip32PrivateKey {
@@ -165,9 +227,10 @@ impl PrivateKeyAccount {
     }
 
     fn get_address(&self) -> Address {
-        let account_root = self.get_account_root();
-        let spend = account_root.derive(0).derive(0).to_public();
-        let stake = account_root.derive(2).derive(0).to_public();
+        let account: Bip32PublicKey =
+            Bip32PublicKey::from_bytes(self.account_public_key.as_slice());
+        let spend = account.derive(0).derive(0).to_public();
+        let stake = account.derive(2).derive(0).to_public();
         let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
         let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
 
@@ -181,10 +244,10 @@ impl PrivateKeyAccount {
 
     /// It may fail due to a conversion error to Bech32.
     // FIXME: We should be using a prefix that depends on the network we are connecting to.
-    fn get_address_bech32(&self) -> Result<String, PrivateKeyAccountError> {
+    fn get_address_bech32(&self) -> Result<String, SingleAddressKeyAccountError> {
         let addr = self.get_address();
         addr.to_bech32(None)
-            .map_err(|e| PrivateKeyAccountError::Bech32Error(e))
+            .map_err(|e| SingleAddressKeyAccountError::Bech32Error(e))
     }
 
     #[func]
