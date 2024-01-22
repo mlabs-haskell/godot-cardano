@@ -24,7 +24,6 @@ func update_wallet_display(utxos: Array[Utxo]) -> void:
 	else:
 		wallet_details.text = "No wallet set"
 
-			
 func _on_set_wallet_button_pressed() -> void:
 	var mnemonic_input: TextEdit = $SetWalletForm/MnemonicPhrase/Input
 	cardano.set_wallet_from_mnemonic(mnemonic_input.text)
@@ -39,10 +38,20 @@ func _on_send_ada_button_pressed() -> void:
 	
 	var tx: Tx = cardano.new_tx()
 	tx.pay_to_address(address, amount, {})
-	print(tx.complete()._transaction.bytes().hex_encode())
+	print((await tx.complete())._transaction.bytes().hex_encode())
 	tx.pay_to_address_with_datum(address, amount, {}, ExampleDatum.new())
-	#print(tx.complete()._transaction.bytes().hex_encode())
-	var tx_complete: TxComplete = tx.complete()
+	print((await tx.complete())._transaction.bytes().hex_encode())
+	tx.mint_assets(
+		PlutusScript.create("46010000222499".hex_decode()), 
+		{ "667788".hex_decode(): BigInt.one() },
+		VoidData.new()
+	)
+	tx.mint_assets(
+		PlutusScript.create("46010000222601".hex_decode()), 
+		{ "8899aa".hex_decode(): BigInt.one() },
+		VoidData.new()
+	)
+	var tx_complete: TxComplete = await tx.complete()
 	tx_complete.sign()
 	print(tx_complete._transaction.bytes().hex_encode())
-	# tx_complete.submit()
+	#tx_complete.submit()

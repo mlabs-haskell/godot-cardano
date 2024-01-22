@@ -12,4 +12,4 @@ func sign() -> void:
 	_transaction.add_signature(_cardano.wallet._sign_transaction(_transaction))
 
 func submit() -> void:
-	_cardano.provider._submit_transaction(_transaction.bytes())
+	_cardano.provider._submit_transaction(_transaction)

@@ -20,6 +20,7 @@ use cardano_serialization_lib::utils::*;
 use cardano_serialization_lib::output_builder::*;
 use cardano_serialization_lib::tx_builder::*;
 use cardano_serialization_lib::tx_builder::mint_builder::*;
+use cardano_serialization_lib::tx_builder_constants::TxBuilderConstants;
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::{
     AssetName,
@@ -33,12 +34,23 @@ use cardano_serialization_lib::tx_builder::tx_inputs_builder::{
     PlutusScriptSource,
     TxInputsBuilder
 };
-use cardano_serialization_lib::plutus::{PlutusData, PlutusScript};
+use cardano_serialization_lib::plutus::{
+    ExUnits,
+    PlutusData,
+    PlutusScript,
+    PlutusScripts,
+    Redeemer,
+    Redeemers,
+    RedeemerTag,
+    RedeemerTagKind
+};
 use cardano_serialization_lib::utils as CSL;
 
 use bip32::{Mnemonic, Language};
 
 use godot::prelude::*;
+
+use uplc::tx::eval_phase_two_raw;
 
 struct MyExtension;
 
@@ -239,8 +251,8 @@ impl Cbor {
                         Ok(bytes) => {
                             // TODO: find a nicer way
                             let mut serializer = Serializer::new_vec();
-                            serializer.write_tag(tag.try_into().unwrap());
-                            serializer.write_bytes(bytes);
+                            serializer.write_tag(tag.try_into().unwrap()).unwrap();
+                            serializer.write_bytes(bytes).unwrap();
                             let bound = serializer.finalize();
                             Gd::from_object(BigInt {
                                 b: CSL::BigInt::from_bytes(bound).unwrap()
@@ -273,14 +285,14 @@ impl Cbor {
         match variant.get_type() {
             VariantType::Array => {
                 let array: Array<Variant> = variant.to();
-                serializer.write_array(Len::Len(array.len().try_into().unwrap()));
+                serializer.write_array(Len::Len(array.len().try_into().unwrap())).unwrap();
                 for item in array.iter_shared() {
                     Self::encode_variant(item, serializer)
                 }
             },
             VariantType::Dictionary => {
                 let dict: Dictionary = variant.to();
-                serializer.write_map(Len::Len(dict.len().try_into().unwrap()));
+                serializer.write_map(Len::Len(dict.len().try_into().unwrap())).unwrap();
                 for (key, value) in dict.iter_shared() {
                     Self::encode_variant(key, serializer);
                     Self::encode_variant(value, serializer);
@@ -300,12 +312,12 @@ impl Cbor {
                         let constructor_int: u64 = constr.constructor.bind().b.as_u64().unwrap().into();
 
                         if constructor_int <= 7 {
-                            serializer.write_tag(121 + constructor_int);
+                            serializer.write_tag(121 + constructor_int).unwrap();
                         } else if constructor_int <= 127 {
-                            serializer.write_tag(1280 + constructor_int);
+                            serializer.write_tag(1280 + constructor_int).unwrap();
                         } else {
-                            serializer.write_array(Len::Len(2));
-                            serializer.write_unsigned_integer(constructor_int);
+                            serializer.write_array(Len::Len(2)).unwrap();
+                            serializer.write_unsigned_integer(constructor_int).unwrap();
                             Self::encode_variant(constr.fields.to_variant(), serializer);
                         }
                         Self::encode_variant(constr.fields.to_variant(), serializer);
@@ -313,7 +325,7 @@ impl Cbor {
                     "BigInt" => {
                         let gd_bigint: Gd<BigInt> = variant.to();
                         let b = &gd_bigint.bind();
-                        serializer.write_raw_bytes(&b.b.to_bytes());
+                        serializer.write_raw_bytes(&b.b.to_bytes()).unwrap();
                     },
                     _ => () // todo: handle unknown objects
                 }
@@ -365,6 +377,22 @@ impl Utxo {
             }
         );
     }
+
+    fn to_transaction_unspent_output(&self) -> TransactionUnspentOutput {
+        TransactionUnspentOutput::new(
+            &TransactionInput::new(
+                &TransactionHash::from_hex(&self.tx_hash.to_string()).expect("Could not decode transaction hash"),
+                self.output_index
+            ),
+            &TransactionOutput::new(
+                &Address::from_bech32(&self.address.to_string()).expect("Could not decode address bech32"), 
+                &Value::new_with_assets(
+                    &to_bignum(self.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()),
+                    &multiasset_from_dictionary(&self.assets)
+                )
+            )
+        )
+    }
 }
 
 #[derive(GodotClass)]
@@ -377,6 +405,8 @@ struct ProtocolParameters {
     max_tx_size: u32,
     linear_fee_constant: u64,
     linear_fee_coefficient: u64,
+    max_cpu_units: u64,
+    max_mem_units: u64,
 }
 
 #[godot_api]
@@ -390,6 +420,8 @@ impl ProtocolParameters {
         max_tx_size: u32,
         linear_fee_constant: u64,
         linear_fee_coefficient: u64,
+        max_cpu_units: u64,
+        max_mem_units: u64,
     ) -> Gd<ProtocolParameters> {
         return Gd::from_object(
             Self {
@@ -400,6 +432,8 @@ impl ProtocolParameters {
                 max_tx_size,
                 linear_fee_constant,
                 linear_fee_coefficient,
+                max_cpu_units,
+                max_mem_units
             }
         );
     }
@@ -491,11 +525,11 @@ impl PrivateKeyAccount {
     fn sign_transaction(&self, tx: Gd<GTransaction>) -> Gd<GSignature> {
         let account_root = self.get_account_root();
         let spend_key = account_root.derive(0).derive(0).to_raw_key();
-        let tx_hash = hash_transaction(&tx.bind().transaction.as_ref().unwrap().body());
+        let tx_hash = hash_transaction(&tx.bind().transaction.body());
 
         return Gd::from_object(
             GSignature {
-                signature: Some(make_vkey_witness(&tx_hash, &spend_key))
+                signature: make_vkey_witness(&tx_hash, &spend_key)
             }
         )
     }
@@ -503,22 +537,25 @@ impl PrivateKeyAccount {
 
 // TODO: qualify all CSL types and skip renaming
 #[derive(GodotClass)]
-#[class(init, base=RefCounted, rename=Signature)]
+#[class(base=RefCounted, rename=Signature)]
 struct GSignature {
-    signature: Option<Vkeywitness>
+    signature: Vkeywitness
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted, rename=Transaction)]
+#[class(base=RefCounted, rename=Transaction)]
 struct GTransaction {
-    transaction: Option<Transaction>
+    transaction: Transaction,
+
+    max_ex_units: (u64, u64),
+    slot_config: (u64, u64, u32),
 }
 
 #[godot_api]
 impl GTransaction {
     #[func]
     fn bytes(&self) -> PackedByteArray {
-        let bytes_vec = self.transaction.clone().unwrap().to_bytes();
+        let bytes_vec = self.transaction.to_bytes();
         let bytes: &[u8] = bytes_vec.as_slice().into();
         return PackedByteArray::from(bytes);
     }
@@ -527,18 +564,83 @@ impl GTransaction {
     fn add_signature(&mut self, signature: Gd<GSignature>) {
         // NOTE: destroys? transaction and replaces with a new one. might be better to add
         // signatures to the witness set before the transaction is actually built
-        let transaction = self.transaction.as_ref().unwrap();
+        let transaction = &self.transaction;
         let mut witness_set = transaction.witness_set();
         let mut vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
-        vkey_witnesses.add(signature.bind().signature.as_ref().unwrap());
+        vkey_witnesses.add(&signature.bind().signature);
         witness_set.set_vkeys(&vkey_witnesses);
-        self.transaction = Some(
+        self.transaction =
             Transaction::new(
                 &transaction.body(),
                 &witness_set,
                 transaction.auxiliary_data()
             )
-        )
+    }
+
+    #[func]
+    fn evaluate(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+    ) -> Array<Gd<GRedeemer>> {
+        let mut utxos: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        gutxos.iter_shared().for_each(|gutxo| {
+            let utxo = gutxo.bind().to_transaction_unspent_output();
+            utxos.push((utxo.input().to_bytes(), utxo.output().to_bytes()))
+        });
+
+        let eval_result = eval_phase_two_raw(
+            &self.transaction.to_bytes(),
+            &utxos,
+            &TxBuilderConstants::plutus_default_cost_models().to_bytes(),
+            self.max_ex_units,
+            self.slot_config,
+            false,
+            |_| {}
+        );
+
+        match eval_result {
+            Ok(redeemers) => {
+                let mut actual_redeemers: Array<Gd<GRedeemer>> = Array::new();
+                redeemers.iter().for_each(|redeemer| {
+                    actual_redeemers.push(
+                        Gd::from_object(GRedeemer {
+                            redeemer: Redeemer::from_bytes(redeemer.to_vec()).unwrap()
+                        })
+                    )
+                });
+                actual_redeemers
+            },
+            Err(_err) => { 
+                Array::new()
+            }
+        }
+    }
+
+    #[func]
+    fn get_redeemer(
+        &mut self,
+        tag: u64,
+        index: u64
+    ) -> Option<Gd<GRedeemer>> {
+        match self.transaction.witness_set().redeemers() {
+            None => None,
+            Some(redeemers) => {
+                // TODO: check if indices are shared between redeemers? otherwise
+                // find another way to get the correct index/tag pair
+                let redeemer = redeemers.get(index.try_into().unwrap());
+                match (redeemer.tag().kind(), tag) {
+                    (RedeemerTagKind::Spend, 0) =>
+                        Some(Gd::from_object(GRedeemer { redeemer })),
+                    (RedeemerTagKind::Mint, 1) =>
+                        Some(Gd::from_object(GRedeemer { redeemer })),
+                    (RedeemerTagKind::Cert, 2) =>
+                        Some(Gd::from_object(GRedeemer { redeemer })),
+                    (RedeemerTagKind::Reward, 3) =>
+                        Some(Gd::from_object(GRedeemer { redeemer })),
+                    _ => None
+                }
+            }
+        }
     }
 }
 
@@ -563,13 +665,6 @@ impl GAddress {
     fn to_bech32(&self) -> String {
         return self.address.as_ref().unwrap().to_bech32(None).unwrap();
     }
-}
-
-#[derive(GodotClass)]
-#[class(init, base=Node, rename=TxBuilder)]
-struct GTxBuilder {
-    tx_builder: Option<TransactionBuilder>,
-    inputs_builder: Option<TxInputsBuilder>
 }
 
 #[derive(Debug)]
@@ -603,31 +698,105 @@ impl GDatum {
     }
 }
 
-//#[derive(GodotClass)]
-//#[class(base=Node, rename=TxBuilder)]
-//struct GPlutusScript {
-//    script: PlutusScript
-//}
-//
-//impl GPlutusScript {
-//}
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=Redeemer)]
+struct GRedeemer {
+    redeemer: Redeemer
+}
+
+#[godot_api]
+impl GRedeemer {
+    #[func]
+    fn create(
+        tag: u64,
+        index: u64,
+        data: PackedByteArray,
+        ex_units_mem: u64,
+        ex_units_steps: u64,
+    ) -> Gd<GRedeemer> {
+        let redeemer_tag: RedeemerTag =
+            match tag {
+                0 => RedeemerTag::new_spend(),
+                1 => RedeemerTag::new_mint(),
+                2 => RedeemerTag::new_cert(),
+                3 => RedeemerTag::new_reward(),
+                _ => RedeemerTag::new_mint()
+            };
+        return Gd::from_object(GRedeemer {
+            redeemer: Redeemer::new(
+                &redeemer_tag,
+                &BigNum::from(index),
+                &PlutusData::from_bytes(data.to_vec()).unwrap(),
+                &ExUnits::new(
+                    &BigNum::from(ex_units_mem),
+                    &BigNum::from(ex_units_steps)
+                )
+            )
+        });
+    }
+
+    #[func]
+    fn get_data(&self) -> PackedByteArray {
+        let vec = self.redeemer.data().to_bytes();
+        let bytes: &[u8] = vec.as_slice().into();
+        PackedByteArray::from(bytes)
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=PlutusScript)]
+struct GPlutusScript {
+    script: PlutusScript
+}
+
+#[godot_api]
+impl GPlutusScript {
+    #[func]
+    fn create(script: PackedByteArray) -> Gd<GPlutusScript> {
+        return Gd::from_object(GPlutusScript { script: PlutusScript::new_v2(script.to_vec()) })
+    }
+}
+
+#[derive(GodotClass)]
+#[class(base=Node, rename=TxBuilder)]
+struct GTxBuilder {
+    tx_builder: TransactionBuilder,
+    inputs_builder: TxInputsBuilder,
+    mint_builder: MintBuilder,
+    plutus_scripts: PlutusScripts,
+    redeemers: Redeemers,
+    max_ex_units: (u64, u64),
+    slot_config: (u64, u64, u32),
+
+    spend_redeemer_index: BigNum,
+    mint_redeemer_index: BigNum
+}
 
 #[godot_api]
 impl GTxBuilder {
     #[func]
-    fn create(cardano: Gd<Cardano>) -> Gd<GTxBuilder> {
-        let builder = TransactionBuilder::new(&cardano.bind().tx_builder_config.as_ref().unwrap());
+    fn create(gcardano: Gd<Cardano>) -> Gd<GTxBuilder> {
+        let cardano = gcardano.bind();
+        let builder = TransactionBuilder::new(&cardano.tx_builder_config.clone().unwrap());
         Gd::from_object(
             Self {
-                tx_builder: Some(builder),
-                inputs_builder: Some(TxInputsBuilder::new())
+                tx_builder: builder,
+                inputs_builder: TxInputsBuilder::new(),
+                mint_builder: MintBuilder::new(),
+                plutus_scripts: PlutusScripts::new(),
+                redeemers: Redeemers::new(),
+                max_ex_units: cardano.max_ex_units,
+                slot_config: cardano.slot_config,
+
+                spend_redeemer_index: BigNum::zero(),
+                mint_redeemer_index: BigNum::zero(),
             }
         )
     }
 
     #[func]
     fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) {
-        let inputs_builder = self.inputs_builder.as_mut().unwrap();
+        let inputs_builder = &mut self.inputs_builder;
         gutxos.iter_shared().for_each(|gutxo| {
             let utxo = gutxo.bind();
             inputs_builder
@@ -701,66 +870,84 @@ impl GTxBuilder {
                 .build()
                 .expect("Failed to build amount output");
         self.tx_builder
-            .as_mut()
-            .unwrap()
             .add_output(&output)
             .expect("Could not add output");
     }
 
-    //#[func]
-    //fn mint_assets(
-    //    script: Gd<GPlutusScript>,
-    //    tokens: Dictionary,
-    //    redeemer: Gd<GDatum>
-    //) {
-    //    //MintWitness::new_plutus_script(
-    //    //    &PlutusScriptSource::new(&script.bind().script),
-    //    //    &redeemer.
-    //    //);
-    //    //MintBuilder::new();
-    //    //Asset
-    //}
+    #[func]
+    fn mint_assets(
+        &mut self,
+        script: Gd<GPlutusScript>,
+        tokens: Dictionary,
+        redeemer: PackedByteArray
+    ) {
+        let bound = script.bind();
+        let script = &bound.deref().script;
+        let redeemer =
+            &Redeemer::new(
+                &RedeemerTag::new_mint(),
+                &self.mint_redeemer_index,
+                &PlutusData::from_bytes(redeemer.to_vec()).unwrap(),
+                &ExUnits::new(&BigNum::zero(), &BigNum::zero())
+            );
+        tokens.iter_shared().typed().for_each(|(asset_name, amount): (PackedByteArray, Gd<BigInt>)| {
+            self.mint_builder.add_asset(
+                &MintWitness::new_plutus_script(
+                    &PlutusScriptSource::new(script),
+                    redeemer
+                ), 
+                &AssetName::new(asset_name.to_vec()).unwrap(),
+                &Int::new(&BigNum::from_str(&amount.bind().b.to_str()).unwrap())
+            )
+        });
+        self.mint_redeemer_index = self.mint_redeemer_index.checked_add(&BigNum::one()).unwrap();
+        self.plutus_scripts.add(script);
+        self.redeemers.add(redeemer);
+    }
 
     #[func]
-    fn complete(
+    fn balance_and_assemble(
         &mut self,
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<GAddress>
     ) -> Gd<GTransaction> {
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         gutxos.iter_shared().for_each(|gutxo| {
-            let utxo = gutxo.bind();
-            utxos.add(
-                &TransactionUnspentOutput::new(
-                    &TransactionInput::new(
-                        &TransactionHash::from_hex(&utxo.tx_hash.to_string()).expect("Could not decode transaction hash"),
-                        utxo.output_index
-                    ),
-                    &TransactionOutput::new(
-                        &Address::from_bech32(&utxo.address.to_string()).expect("Could not decode address bech32"), 
-                        &Value::new_with_assets(
-                            &to_bignum(utxo.coin.bind().b.as_u64().expect("UTxO Lovelace exceeds maximum").into()),
-                            &multiasset_from_dictionary(&utxo.assets)
-                        )
-                    )
-                )
-            );
+            utxos.add(&gutxo.bind().to_transaction_unspent_output());
         });
-        let tx_builder = self.tx_builder.as_mut().unwrap();
-        tx_builder.set_inputs(&self.inputs_builder.as_ref().unwrap());
+        let mut tx_builder = self.tx_builder.clone();
+        tx_builder.set_inputs(&self.inputs_builder);
         tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset).expect("Could not add inputs");
         tx_builder.add_change_if_needed(&change_address.bind().address.as_ref().unwrap()).expect("Could not set change address");
+        tx_builder.set_mint_builder(&self.mint_builder);
         let tx_body = tx_builder.build().expect("Could not build transaction");
 
         let mut witnesses = TransactionWitnessSet::new();
         let vkey_witnesses = Vkeywitnesses::new();
         witnesses.set_vkeys(&vkey_witnesses);
-
+        witnesses.set_plutus_scripts(&self.plutus_scripts);
+        witnesses.set_redeemers(&self.redeemers);
         return Gd::from_object(
             GTransaction {
-                transaction: Some(Transaction::new(&tx_body, &witnesses, None))
+                transaction: Transaction::new(&tx_body, &witnesses, None),
+                max_ex_units: self.max_ex_units,
+                slot_config: self.slot_config
             }
         )
+    }
+
+    #[func]
+    fn complete(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+        change_address: Gd<GAddress>,
+        gredeemers: Array<Gd<GRedeemer>>
+    ) -> Gd<GTransaction> {
+        self.redeemers = Redeemers::new();
+        for redeemer in gredeemers.iter_shared() {
+            self.redeemers.add(&redeemer.bind().redeemer)
+        };
+        return self.balance_and_assemble(gutxos, change_address);
     }
 }
 
@@ -768,6 +955,8 @@ impl GTxBuilder {
 #[class(init, base=Node, rename=_Cardano)]
 struct Cardano {
     tx_builder_config: Option<TransactionBuilderConfig>,
+    max_ex_units: (u64, u64),
+    slot_config: (u64, u64, u32)
 }
 
 #[godot_api]
@@ -792,6 +981,12 @@ impl Cardano {
                     )
                     .build().expect("Failed to build transaction builder config")
             );
+        self.max_ex_units = (params.max_cpu_units, params.max_mem_units);
+    }
+
+    #[func]
+    fn set_slot_config(&mut self, start_time: u64, start_slot: u64, slot_length: u32) {
+        self.slot_config = (start_time, start_slot, slot_length);
     }
 }
 

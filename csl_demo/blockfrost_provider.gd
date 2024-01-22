@@ -45,6 +45,13 @@ class ProtocolParametersRequest extends Request:
 	
 	func _url() -> String:
 		return "epochs/%s/parameters" % _epoch
+		
+class EraSummariesRequest extends Request:
+	func _init() -> void:
+		pass
+	
+	func _url() -> String:
+		return "network/eras"
 
 class UtxosAtAddressRequest extends Request:
 	var _address: String
@@ -73,6 +80,24 @@ class SubmitTransactionRequest extends Request:
 	func _body() -> PackedByteArray:
 		return _tx_cbor
 
+class EvaluateTransactionRequest extends Request:
+	var _tx_cbor: PackedByteArray
+	
+	func _init(tx_cbor: PackedByteArray) -> void:
+		self._tx_cbor = tx_cbor
+	
+	func _url() -> String:
+		return "utils/txs/evaluate"
+	
+	func _method() -> HTTPClient.Method:
+		return HTTPClient.METHOD_POST
+		
+	func _headers() -> Array[String]:
+		return ["content-type: application/cbor"]
+		
+	func _body() -> PackedByteArray:
+		return _tx_cbor.hex_encode().to_ascii_buffer()
+
 const network_endpoints: Dictionary = {
 	Network.MAINNET: "https://cardano-mainnet.blockfrost.io/api/v0",
 	Network.PREVIEW: "https://cardano-preview.blockfrost.io/api/v0",
@@ -96,10 +121,39 @@ func _get_protocol_parameters() -> ProtocolParameters:
 		int(str(params_json["max_val_size"])),
 		int(str(params_json["max_tx_size"])),
 		int(str(params_json["min_fee_b"])),
-		int(str(params_json["min_fee_a"]))
+		int(str(params_json["min_fee_a"])),
+		int(str(params_json["max_tx_ex_steps"])),
+		int(str(params_json["max_tx_ex_mem"])),
 	)
 	self.got_protocol_parameters.emit(params)
 	return params
+
+func _get_era_summaries() -> Array[EraSummary]:
+	var summaries_json: Array = await blockfrost_request(EraSummariesRequest.new())
+	var summaries: Array[EraSummary] = []
+	summaries.assign(
+		summaries_json.map(
+			func (summary: Dictionary) -> EraSummary: 
+				return EraSummary.new(
+					EraTime.new(
+						summary["start"]["time"] as Variant as int,
+						summary["start"]["slot"] as Variant as int,
+						summary["start"]["epoch"] as Variant as int
+					),
+					EraTime.new(
+						summary["end"]["time"] as Variant as int,
+						summary["end"]["slot"] as Variant as int,
+						summary["end"]["epoch"] as Variant as int
+					),
+					EraParameters.new(
+						summary["parameters"]["epoch_length"] as Variant as int,
+						summary["parameters"]["slot_length"] as Variant as int,
+						summary["parameters"]["safe_zone"] as Variant as int,
+					)
+				))
+	)
+	got_era_summaries.emit(summaries)
+	return summaries
 
 func _get_utxos_at_address(address: String) -> Array[Utxo]:
 	var utxos_json: Array = await blockfrost_request(UtxosAtAddressRequest.new(address))
@@ -122,9 +176,29 @@ func _get_utxos_at_address(address: String) -> Array[Utxo]:
 	
 	return utxos
 	
-func _submit_transaction(tx_cbor: PackedByteArray) -> void:
-	blockfrost_request(SubmitTransactionRequest.new(tx_cbor))
+func _submit_transaction(tx: Transaction) -> void:
+	blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
 
+func _evaluate_transaction(tx: Transaction, utxos: Array[Utxo]) -> Array[Redeemer]:
+	var response: Dictionary = await blockfrost_request(EvaluateTransactionRequest.new(tx.bytes()))
+	var result: Dictionary = response["result"]["EvaluationResult"]
+	var tagMap := {
+		"spend": 0,
+		"mint": 1,
+		"cert": 2,
+		"reward": 3
+	}
+	var redeemers: Array[Redeemer] = []
+	for key: String in result:
+		var split := key.split(":")
+		var tag: int = tagMap[split[0]]
+		var index := split[1].to_int()
+		var data := tx.get_redeemer(tag, index).get_data()
+		var ex_units_mem: int = result[key]["memory"]
+		var ex_units_steps: int = result[key]["steps"]
+		redeemers.append(Redeemer.create(tag, index, data, ex_units_mem, ex_units_steps))
+	return redeemers
+	
 func utxo_assets(utxo: Dictionary) -> Dictionary:
 	var assets: Dictionary = {}
 	var amount: Array = utxo.amount
@@ -160,3 +234,7 @@ func blockfrost_request(request: Request) -> Variant:
 		return null
 		
 	return JSON.parse_string(body.get_string_from_utf8())
+
+class WithNativeUplc extends BlockfrostProvider:
+	func _evaluate_transaction(tx: Transaction, utxos: Array[Utxo]) -> Array[Redeemer]:
+		return tx.evaluate(utxos)
