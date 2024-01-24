@@ -56,12 +56,12 @@
             cp -r ${./addons} ./addons --no-preserve=mode,ownership
 
             # link debug gdextension
-            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/gd-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
+            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
 
             # link gdextension
             GDEXTENSION_PACKAGE="${make_libcsl_godot { inherit debug windows; }}"
             GDEXTENSION="$GDEXTENSION_PACKAGE/${if windows then "bin/csl_godot.dll" else "lib/libcsl_godot.so"}"
-            GDEXTENSION_LINK_NAME="addons/@mlabs-haskell/gd-cardano/bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
+            GDEXTENSION_LINK_NAME="addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
             ln -sf $GDEXTENSION $GDEXTENSION_LINK_NAME
 
             # link export templates
