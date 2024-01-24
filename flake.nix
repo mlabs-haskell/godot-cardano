@@ -44,20 +44,24 @@
             allowBuiltinFetchGit = true;
           };
         };
-        make_csl_demo = { debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
-          name = "csl_demo";
-          src = ./csl_demo;
+        make_demo = { debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
+          name = "demo";
+          src = ./demo;
           buildPhase = ''
             SYSTEM="${if windows then "windows" else "linux"}"
             VARIANT="${if debug then "debug" else "release"}"
 
+            # copy addons directory
+            rm ./addons
+            cp -r ${./addons} ./addons --no-preserve=mode,ownership
+
             # link debug gdextension
-            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "bin/libcsl_godot.linux.template_debug.x86_64.so"
+            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
 
             # link gdextension
             GDEXTENSION_PACKAGE="${make_libcsl_godot { inherit debug windows; }}"
             GDEXTENSION="$GDEXTENSION_PACKAGE/${if windows then "bin/csl_godot.dll" else "lib/libcsl_godot.so"}"
-            GDEXTENSION_LINK_NAME="bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
+            GDEXTENSION_LINK_NAME="addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
             ln -sf $GDEXTENSION $GDEXTENSION_LINK_NAME
 
             # link export templates
@@ -73,10 +77,11 @@
               --headless \
               --export-$VARIANT \
               "${if windows then "Windows Desktop" else "Linux/X11"}" \
-              out/csl_demo${if windows then ".exe" else ""}
+              ./out/demo${if windows then ".exe" else ""} \
+              ./project.godot
           '';
           installPhase = ''
-            [ ! -f out/csl_demo${if windows then ".exe" else ""} ] && echo "out/csl_demo${if windows then ".exe" else ""} not built, failing..." && false
+            [ ! -f out/demo${if windows then ".exe" else ""} ] && echo "out/demo${if windows then ".exe" else ""} not built, failing..." && false
             mkdir -p $out/bin
             cp out/* $out/bin/
           '';
@@ -96,10 +101,10 @@
           godot-export-template = make_godot-export-template { };
           godot-export-template-debug = make_godot-export-template { debug = true; };
           godot-export-templates-bin = make_godot-export-templates-bin { };
-          csl_demo = make_csl_demo { };
-          csl_demo-win = make_csl_demo { windows = true; };
-          csl_demo-debug = make_csl_demo { debug = true; };
-          csl_demo-win-debug = make_csl_demo { windows = true; debug = true; };
+          demo = make_demo { };
+          demo-win = make_demo { windows = true; };
+          demo-debug = make_demo { debug = true; };
+          demo-win-debug = make_demo { windows = true; debug = true; };
         };
         devShells = {
           default = pkgs.mkShell {

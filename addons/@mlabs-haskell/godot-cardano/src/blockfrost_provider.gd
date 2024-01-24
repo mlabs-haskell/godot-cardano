@@ -22,7 +22,7 @@ class ProtocolParametersRequest extends Request:
 		self.epoch = epoch_
 	
 	func url() -> String:
-		return "epochs/%s/parameters" % (str(self.epoch) if self.epoch != 0 else "latest")
+		return "epochs/%s/parameters" % (self.epoch if self.epoch != 0 else "latest")
 
 class UtxosAtAddressRequest extends Request:
 	var address: String
