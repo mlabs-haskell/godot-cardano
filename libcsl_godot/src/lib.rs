@@ -10,25 +10,17 @@ use cardano_serialization_lib::address::{
     StakeCredential
 };
 use cardano_serialization_lib::crypto::{
-    Bip32PrivateKey,
-    ScriptHash,
-    TransactionHash,
-    Vkeywitness,
-    Vkeywitnesses
+    Bip32PrivateKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
 };
-use cardano_serialization_lib::utils::*;
+use cardano_serialization_lib::error::JsError;
+use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::output_builder::*;
 use cardano_serialization_lib::tx_builder::*;
 use cardano_serialization_lib::tx_builder::mint_builder::*;
 use cardano_serialization_lib::tx_builder_constants::TxBuilderConstants;
-use cardano_serialization_lib::fees::LinearFee;
+use cardano_serialization_lib::utils::*;
 use cardano_serialization_lib::{
-    AssetName,
-    MultiAsset,
-    Transaction,
-    TransactionInput,
-    TransactionOutput,
-    TransactionWitnessSet,
+    AssetName, MultiAsset, Transaction, TransactionInput, TransactionOutput, TransactionWitnessSet,
 };
 use cardano_serialization_lib::tx_builder::tx_inputs_builder::{
     PlutusScriptSource,
@@ -46,97 +38,22 @@ use cardano_serialization_lib::plutus::{
 };
 use cardano_serialization_lib::utils as CSL;
 
-use bip32::{Mnemonic, Language};
+use bip32::{Language, Mnemonic};
 
+use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 
 use uplc::tx::eval_phase_two_raw;
 
+pub mod bigint;
+pub mod gresult;
+
+use bigint::BigInt;
+use gresult::FailsWith;
+
+use crate::gresult::GResult;
+
 struct MyExtension;
-
-#[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[class(init, base=RefCounted)]
-struct BigInt {
-    #[init(default = CSL::BigInt::from_str("0").unwrap())]
-    #[doc(hidden)]
-    b: CSL::BigInt
-}
-
-#[godot_api] 
-impl BigInt {
-    #[func]
-    fn from_str(text: String) -> Gd<BigInt> {
-        let b = CSL::BigInt::from_str(&text).expect("Could not parse BigInt");
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn to_str(&self) -> String {
-        return self.b.to_str();
-    }
-
-    #[func]
-    fn to_string(&self) -> String {
-        return self.to_str();
-    }
-
-    #[func]
-    fn from_int(n: i64) -> Gd<BigInt> {
-        let b = CSL::BigInt::from_str(&n.to_string()).unwrap();
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
-        let b = self.b.add(&other.bind().deref().b);
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
-        let b = self.b.mul(&other.bind().deref().b);
-        return Gd::from_object(Self { b });
-    }
-
-    #[func]
-    fn zero() -> Gd<BigInt> {
-        return Self::from_str("0".to_string());
-    }
-
-    #[func]
-    fn one() -> Gd<BigInt> {
-        return Self::from_str("1".to_string());
-    }
-
-    #[func]
-    fn eq(&self, other: Gd<BigInt>) -> bool {
-        return self.b == other.bind().b;
-    }
-
-    #[func]
-    fn gt(&self, other: Gd<BigInt>) -> bool {
-        return self > &other.bind();
-    }
-
-    #[func]
-    fn lt(&self, other: Gd<BigInt>) -> bool {
-        return self < &other.bind();
-    }
-
-    #[func]
-    fn from_bytes(bytes: PackedByteArray) -> Gd<BigInt> {
-       return Gd::from_object(BigInt {
-           b: CSL::BigInt::from_bytes(bytes.to_vec()).unwrap()
-       });
-    }
-
-    #[func]
-    fn to_bytes(&self) -> PackedByteArray {
-        let vec = self.b.to_bytes();
-        let bytes: &[u8] = vec.as_slice().into();
-        return PackedByteArray::from(bytes);
-    }
-}
 
 #[derive(GodotClass)]
 #[class(base=Object)]
@@ -149,9 +66,18 @@ struct Constr {
 
 #[godot_api]
 impl Constr {
+    fn create(constructor: BigInt, fields: Array<Variant>) -> Gd<Constr> {
+        Gd::from_object(
+            Self {
+                constructor: Gd::from_object(constructor),
+                fields
+            }
+        )
+    }
+
     #[func]
-    fn create(constructor: Gd<BigInt>, fields: Array<Variant>) -> Gd<Constr> {
-        return Gd::from_object(
+    fn _create(constructor: Gd<BigInt>, fields: Array<Variant>) -> Gd<Constr> {
+        Gd::from_object(
             Self {
                 constructor,
                 fields
@@ -187,14 +113,18 @@ impl Cbor {
                 Variant::nil()
             },
             Ok(Type::UnsignedInteger) => {
-                BigInt::from_str(
-                    raw.unsigned_integer()
-                       .unwrap()
-                       .to_string()
+                Gd::from_object(
+                    BigInt::from_str(
+                        raw.unsigned_integer()
+                           .unwrap()
+                           .to_string()
+                    ).unwrap()
                 ).to_variant()
             },
             Ok(Type::NegativeInteger) => {
-                BigInt::from_int(raw.negative_integer().unwrap()).to_variant()
+                Gd::from_object(
+                    BigInt::from_int(raw.negative_integer().unwrap()).unwrap()
+                ).to_variant()
             },
             Ok(Type::Bytes) => {
                 let bound = raw.bytes().unwrap();
@@ -225,19 +155,19 @@ impl Cbor {
                 let tag: i64 = raw.tag().unwrap().try_into().unwrap();
                 if tag >= 121 && tag <= 127 {
                     Constr::create(
-                        BigInt::from_int(tag - 121),
+                        BigInt::from_int(tag - 121).unwrap(),
                         Self::decode_array(raw)
                     ).to_variant()
                 } else if tag >= 1280 && tag <= 1400 {
                     Constr::create(
-                        BigInt::from_int(tag - 1280 + 7),
+                        BigInt::from_int(tag - 1280 + 7).unwrap(),
                         Self::decode_array(raw)
                     ).to_variant()
                 } else if tag == 102 {
                     match raw.array() {
                         Ok(Len::Len(2)) => {
                             Constr::create(
-                                BigInt::from_str(raw.unsigned_integer().unwrap().to_string()),
+                                BigInt::from_str(raw.unsigned_integer().unwrap().to_string()).unwrap(),
                                 Self::decode_array(raw)
                             ).to_variant()
                         },
@@ -348,13 +278,18 @@ impl Cbor {
 /// Cardano types
 
 #[derive(GodotClass, Debug)]
-#[class(init, base=RefCounted)]
+#[class(init, base=RefCounted, rename=_Utxo)]
 struct Utxo {
-    #[var(get)] tx_hash: GString,
-    #[var(get)] output_index: u32,
-    #[var(get)] address: GString,
-    #[var(get)] coin: Gd<BigInt>,
-    #[var(get)] assets: Dictionary
+    #[var(get)]
+    tx_hash: GString,
+    #[var(get)]
+    output_index: u32,
+    #[var(get)]
+    address: GString,
+    #[var(get)]
+    coin: Gd<BigInt>,
+    #[var(get)]
+    assets: Dictionary,
 }
 
 #[godot_api]
@@ -365,17 +300,15 @@ impl Utxo {
         output_index: u32,
         address: GString,
         coin: Gd<BigInt>,
-        assets: Dictionary
+        assets: Dictionary,
     ) -> Gd<Utxo> {
-        return Gd::from_object(
-            Self {
-                tx_hash,
-                output_index,
-                address,
-                coin,
-                assets
-            }
-        );
+        return Gd::from_object(Self {
+            tx_hash,
+            output_index,
+            address,
+            coin,
+            assets,
+        });
     }
 
     fn to_transaction_unspent_output(&self) -> TransactionUnspentOutput {
@@ -423,19 +356,17 @@ impl ProtocolParameters {
         max_cpu_units: u64,
         max_mem_units: u64,
     ) -> Gd<ProtocolParameters> {
-        return Gd::from_object(
-            Self {
-                coins_per_utxo_byte,
-                pool_deposit,
-                key_deposit,
-                max_value_size,
-                max_tx_size,
-                linear_fee_constant,
-                linear_fee_coefficient,
-                max_cpu_units,
-                max_mem_units
-            }
-        );
+        return Gd::from_object(Self {
+            coins_per_utxo_byte,
+            pool_deposit,
+            key_deposit,
+            max_value_size,
+            max_tx_size,
+            linear_fee_constant,
+            linear_fee_coefficient,
+            max_cpu_units,
+            max_mem_units
+        });
     }
 }
 
@@ -456,82 +387,108 @@ fn multiasset_from_dictionary(dict: &Dictionary) -> MultiAsset {
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(base=RefCounted, rename=_PrivateKeyAccount)]
 struct PrivateKeyAccount {
-    #[var] account_index: u32,
+    #[var]
+    account_index: u32,
+    master_private_key: Bip32PrivateKey,
+}
 
-    master_private_key: Option<Bip32PrivateKey>,
+#[derive(Debug)]
+pub enum PrivateKeyAccountError {
+    BadPhrase(bip32::Error),
+    Bech32Error(JsError),
+}
+
+impl GodotConvert for PrivateKeyAccountError {
+    type Via = i64;
+}
+
+impl ToGodot for PrivateKeyAccountError {
+    fn to_godot(&self) -> Self::Via {
+        use PrivateKeyAccountError::*;
+        match self {
+            BadPhrase(_) => 1,
+            Bech32Error(_) => 2,
+        }
+    }
+}
+
+impl FailsWith for PrivateKeyAccount {
+    type E = PrivateKeyAccountError;
 }
 
 #[godot_api]
 impl PrivateKeyAccount {
-    #[func]
-    fn from_mnemonic(phrase: String) -> Option<Gd<PrivateKeyAccount>> {
-        let result = Mnemonic::new(
+    fn from_mnemonic(phrase: String) -> Result<PrivateKeyAccount, PrivateKeyAccountError> {
+        let mnemonic = Mnemonic::new(
             phrase
                 .to_lowercase()
                 .split_whitespace()
                 .collect::<Vec<_>>()
                 .join(" "),
-            Language::English
-        );
-        match result {
-            Err(msg) => {
-                godot_print!("{}", msg);
-                return None
-            }
-            Ok(mnemonic) => {
-                // TODO: find out if the wrapped key will be freed by Gd
-                return Some(Gd::from_object(
-                    Self {
-                        master_private_key: Some(Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), &[])),
-                        account_index: 0
-                    }
-                ))
-            }
-        }
-    }
+            Language::English,
+        )
+        .map_err(|e| PrivateKeyAccountError::BadPhrase(e))?;
 
-    fn get_account_root(&self) -> Bip32PrivateKey {
-        let priv_key = self.master_private_key.as_ref().expect("Private key not set");
-        return priv_key
-            .derive(harden(1852))
-            .derive(harden(1815))
-            .derive(harden(self.account_index));
+        Ok(Self {
+            master_private_key: Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), &[]),
+            account_index: 0,
+        })
     }
 
     #[func]
-    fn get_address(&self) -> Gd<GAddress> {
+    fn _from_mnemonic(phrase: String) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_mnemonic(phrase))
+    }
+
+    fn get_account_root(&self) -> Bip32PrivateKey {
+        self.master_private_key
+            .derive(harden(1852))
+            .derive(harden(1815))
+            .derive(harden(self.account_index))
+    }
+
+    fn get_address(&self) -> Address {
         let account_root = self.get_account_root();
         let spend = account_root.derive(0).derive(0).to_public();
         let stake = account_root.derive(2).derive(0).to_public();
         let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
         let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
-        let address =
-            BaseAddress::new(
-                NetworkInfo::testnet_preview().network_id(),
-                &spend_cred,
-                &stake_cred
-            ).to_address();
-        return Gd::from_object(GAddress { address: Some(address) });
+
+        BaseAddress::new(
+            NetworkInfo::testnet_preview().network_id(),
+            &spend_cred,
+            &stake_cred,
+        )
+        .to_address()
+    }
+
+    /// It may fail due to a conversion error to Bech32.
+    // FIXME: We should be using a prefix that depends on the network we are connecting to.
+    fn get_address_bech32(&self) -> Result<String, PrivateKeyAccountError> {
+        let addr = self.get_address();
+        addr.to_bech32(None)
+            .map_err(|e| PrivateKeyAccountError::Bech32Error(e))
     }
 
     #[func]
-    fn get_address_bech32(&self) -> String {
-        return self.get_address().bind().address.as_ref().unwrap().to_bech32(None).unwrap();
+    fn _get_address_bech32(&self) -> Gd<GResult> {
+        Self::to_gresult(self.get_address_bech32())
     }
 
-    #[func]
-    fn sign_transaction(&self, tx: Gd<GTransaction>) -> Gd<GSignature> {
+    fn sign_transaction(&self, gtx: &GTransaction) -> GSignature {
         let account_root = self.get_account_root();
         let spend_key = account_root.derive(0).derive(0).to_raw_key();
-        let tx_hash = hash_transaction(&tx.bind().transaction.body());
+        let tx_hash = hash_transaction(&gtx.transaction.body());
+        GSignature {
+            signature: make_vkey_witness(&tx_hash, &spend_key),
+        }
+    }
 
-        return Gd::from_object(
-            GSignature {
-                signature: make_vkey_witness(&tx_hash, &spend_key)
-            }
-        )
+    #[func]
+    fn _sign_transaction(&self, gtx: Gd<GTransaction>) -> Gd<GSignature> {
+        Gd::from_object(self.sign_transaction(&gtx.bind()))
     }
 }
 
@@ -543,7 +500,7 @@ struct GSignature {
 }
 
 #[derive(GodotClass)]
-#[class(base=RefCounted, rename=Transaction)]
+#[class(base=RefCounted, rename=_Transaction)]
 struct GTransaction {
     transaction: Transaction,
 
@@ -555,7 +512,7 @@ struct GTransaction {
 impl GTransaction {
     #[func]
     fn bytes(&self) -> PackedByteArray {
-        let bytes_vec = self.transaction.to_bytes();
+        let bytes_vec = self.transaction.clone().to_bytes();
         let bytes: &[u8] = bytes_vec.as_slice().into();
         return PackedByteArray::from(bytes);
     }
@@ -564,17 +521,15 @@ impl GTransaction {
     fn add_signature(&mut self, signature: Gd<GSignature>) {
         // NOTE: destroys? transaction and replaces with a new one. might be better to add
         // signatures to the witness set before the transaction is actually built
-        let transaction = &self.transaction;
-        let mut witness_set = transaction.witness_set();
+        let mut witness_set = self.transaction.witness_set();
         let mut vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
         vkey_witnesses.add(&signature.bind().signature);
         witness_set.set_vkeys(&vkey_witnesses);
-        self.transaction =
-            Transaction::new(
-                &transaction.body(),
-                &witness_set,
-                transaction.auxiliary_data()
-            )
+        self.transaction = Transaction::new(
+            &self.transaction.body(),
+            &witness_set,
+            self.transaction.auxiliary_data(),
+        );
     }
 
     #[func]
@@ -758,8 +713,9 @@ impl GPlutusScript {
 }
 
 #[derive(GodotClass)]
-#[class(base=Node, rename=TxBuilder)]
+#[class(base=Node, rename=_TxBuilder)]
 struct GTxBuilder {
+    tx_builder_config: TransactionBuilderConfig,
     tx_builder: TransactionBuilder,
     inputs_builder: TxInputsBuilder,
     mint_builder: MintBuilder,
@@ -772,27 +728,77 @@ struct GTxBuilder {
     mint_redeemer_index: BigNum
 }
 
+#[derive(Debug)]
+pub enum TxBuilderError {
+    BadProtocolParameters(JsError),
+}
+
+impl GodotConvert for TxBuilderError {
+    type Via = i64;
+}
+
+impl ToGodot for TxBuilderError {
+    fn to_godot(&self) -> Self::Via {
+        use TxBuilderError::*;
+        match self {
+            BadProtocolParameters(_) => 0,
+        }
+    }
+}
+
+impl FailsWith for GTxBuilder {
+    type E = TxBuilderError;
+}
+
 #[godot_api]
 impl GTxBuilder {
-    #[func]
-    fn create(gcardano: Gd<Cardano>) -> Gd<GTxBuilder> {
-        let cardano = gcardano.bind();
-        let builder = TransactionBuilder::new(&cardano.tx_builder_config.clone().unwrap());
-        Gd::from_object(
-            Self {
-                tx_builder: builder,
-                inputs_builder: TxInputsBuilder::new(),
-                mint_builder: MintBuilder::new(),
-                plutus_scripts: PlutusScripts::new(),
-                redeemers: Redeemers::new(),
-                max_ex_units: cardano.max_ex_units,
-                slot_config: cardano.slot_config,
+    /// It may fail with a BadProtocolParameters.
+    fn create(
+        params: &ProtocolParameters,
+    ) -> Result<GTxBuilder, TxBuilderError> {
+        let tx_builder_config = TransactionBuilderConfigBuilder::new()
+            .coins_per_utxo_byte(&to_bignum(params.coins_per_utxo_byte))
+            .pool_deposit(&to_bignum(params.pool_deposit))
+            .key_deposit(&to_bignum(params.key_deposit))
+            .max_value_size(params.max_value_size)
+            .max_tx_size(params.max_tx_size)
+            .fee_algo(&LinearFee::new(
+                &to_bignum(params.linear_fee_coefficient),
+                &to_bignum(params.linear_fee_constant),
+            ))
+            .build()
+            .map_err(|e| TxBuilderError::BadProtocolParameters(e))?;
+        let tx_builder = TransactionBuilder::new(&tx_builder_config);
 
-                spend_redeemer_index: BigNum::zero(),
-                mint_redeemer_index: BigNum::zero(),
-            }
+        Ok(GTxBuilder {
+            tx_builder_config,
+            tx_builder,
+            inputs_builder: TxInputsBuilder::new(),
+            mint_builder: MintBuilder::new(),
+            plutus_scripts: PlutusScripts::new(),
+            redeemers: Redeemers::new(),
+            max_ex_units: (params.max_cpu_units, params.max_mem_units),
+            slot_config: (0, 0, 0),
+
+            spend_redeemer_index: BigNum::zero(),
+            mint_redeemer_index: BigNum::zero(),
+        })
+    }
+
+    #[func]
+    fn _create(
+        params: Gd<ProtocolParameters>,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(
+            Self::create(&params.bind())
         )
     }
+
+    #[func]
+    fn set_slot_config(&mut self, start_time: u64, start_slot: u64, slot_length: u32) {
+        self.slot_config = (start_time, start_slot, slot_length);
+    }
+
 
     #[func]
     fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) {
@@ -948,45 +954,6 @@ impl GTxBuilder {
             self.redeemers.add(&redeemer.bind().redeemer)
         };
         return self.balance_and_assemble(gutxos, change_address);
-    }
-}
-
-#[derive(GodotClass)]
-#[class(init, base=Node, rename=_Cardano)]
-struct Cardano {
-    tx_builder_config: Option<TransactionBuilderConfig>,
-    max_ex_units: (u64, u64),
-    slot_config: (u64, u64, u32)
-}
-
-#[godot_api]
-impl Cardano {
-    #[func]
-    fn set_protocol_parameters(&mut self, parameters: Gd<ProtocolParameters>) {
-        let params = parameters.bind();
-        godot_print!("Setting parameters");
-        self.tx_builder_config =
-            Some(
-                TransactionBuilderConfigBuilder::new()
-                    .coins_per_utxo_byte(&to_bignum(params.coins_per_utxo_byte))
-                    .pool_deposit(&to_bignum(params.pool_deposit))
-                    .key_deposit(&to_bignum(params.key_deposit))
-                    .max_value_size(params.max_value_size)
-                    .max_tx_size(params.max_tx_size)
-                    .fee_algo(
-                        &LinearFee::new(
-                            &to_bignum(params.linear_fee_coefficient),
-                            &to_bignum(params.linear_fee_constant)
-                        )
-                    )
-                    .build().expect("Failed to build transaction builder config")
-            );
-        self.max_ex_units = (params.max_cpu_units, params.max_mem_units);
-    }
-
-    #[func]
-    fn set_slot_config(&mut self, start_time: u64, start_slot: u64, slot_length: u32) {
-        self.slot_config = (start_time, start_slot, slot_length);
     }
 }
 

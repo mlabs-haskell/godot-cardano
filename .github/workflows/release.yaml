@@ -1,0 +1,63 @@
+name: release
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: "ubuntu-22.04"
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+
+      - uses: cachix/cachix-action@v13
+        with:
+          name: mlabs
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Build/Download
+        run: nix build .#libcsl_godot .#libcsl_godot-debug .#libcsl_godot-win .#libcsl_godot-win-debug .#csl_demo .#csl_demo-debug .#csl_demo-win .#csl_demo-win-debug
+
+      - name: Prepare release
+        run: |
+          mkdir release release-prep
+          cp result/lib/libcsl_godot.so release/libcsl_godot.linux.template_release.x86_64.so
+          cp result-1/lib/libcsl_godot.so release/libcsl_godot.linux.template_debug.x86_64.so
+          cp result-2/bin/csl_godot.dll release/libcsl_godot.windows.template_release.x86_64.dll
+          cp result-3/bin/csl_godot.dll release/libcsl_godot.windows.template_debug.x86_64.dll
+          cp -r result-4/bin release-prep/csl_demo
+          cp -r result-5/bin release-prep/csl_demo-debug
+          cp -r result-6/bin release-prep/csl_demo-win
+          cp -r result-7/bin release-prep/csl_demo-win-debug
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r release/csl_demo-linux.zip release-prep/csl_demo
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r release/csl_demo-linux-debug.zip release-prep/csl_demo-debug
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r release/csl_demo-win.zip release-prep/csl_demo-win
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r release/csl_demo-win-debug.zip release-prep/csl_demo-win-debug
+
+      - uses: rickstaa/action-create-tag@v1
+        with:
+          tag: release-${{ github.sha }}
+
+      - uses: ncipollo/release-action@v1
+        with:
+          tag: release-${{ github.sha }}
+          commit: ${{ github.sha }}
+          artifacts: "release/*"
