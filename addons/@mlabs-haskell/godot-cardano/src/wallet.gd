@@ -6,20 +6,20 @@ signal got_updated_utxos(utxos: Array[Utxo])
 
 var active: bool = false
 
-func get_utxos() -> Array[Utxo]:
+func _get_utxos() -> Array[Utxo]:
 	return []
 	
-func get_change_address() -> String:
-	return ""
+func _get_change_address() -> Address:
+	return null
 	
 func total_lovelace() -> BigInt:
-	var utxos := await self.get_utxos()
+	var utxos := await self._get_utxos()
 	return utxos.reduce(
 		func (accum: BigInt, utxo: Utxo) -> BigInt: return accum.add(utxo.coin()),
 		BigInt.zero()
 	)
 
-func sign_transaction(_transaction: Transaction) -> Signature:
+func _sign_transaction(_transaction: Transaction) -> Signature:
 	return null
 	
 class MnemonicWallet extends Wallet:
@@ -60,14 +60,14 @@ class MnemonicWallet extends Wallet:
 	## without returning the updated utxos.
 	func update_utxos() -> void:
 		print_debug("update_utxos called")
-		var _utxos := await self.get_updated_utxos()
+		var _utxos := await self._get_updated_utxos()
 		return
 		
 	## Return the cached UTxOs in the wallet. These may be outdated.
-	func get_utxos() -> Array[Utxo]:
+	func _get_utxos() -> Array[Utxo]:
 		#print_debug("get_utxos called")
 		if self.timer.time_left > utxos_cache_age:
-			var new_utxos := await get_updated_utxos()
+			var new_utxos := await _get_updated_utxos()
 			return new_utxos
 		else:
 			return self.utxos
@@ -77,21 +77,24 @@ class MnemonicWallet extends Wallet:
 	## at the time the request was made.
 	##
 	## It will also update the cached utxos and reset the timer.
-	func get_updated_utxos() -> Array[Utxo]:
+	func _get_updated_utxos() -> Array[Utxo]:
 		print_debug("get_updated_utxos called")
 		self.timer.stop()
 		var result := private_key_account.get_address_bech32()
 		if result.is_ok():
 			var address := result.value
-			self.utxos = await self.provider.get_utxos_at_address(address)
+			self.utxos = await self.provider._get_utxos_at_address(address)
 		else:
 			push_error("An error was found while getting the address of an account", result.error)
 		got_updated_utxos.emit(self.utxos)
 		self.timer.start()
 		return self.utxos
 		
-	func get_change_address() -> String:
-		var result := private_key_account.get_address_bech32()
+	func _get_change_address() -> Address:
+		return private_key_account.get_address()
+	
+	func get_change_address_bech32() -> String:
+		var result = private_key_account.get_address_bech32()
 		match result.tag():
 			PrivateKeyAccount.Status.SUCCESS:
 				return result.value
@@ -99,5 +102,5 @@ class MnemonicWallet extends Wallet:
 				push_error("An error was found while getting the address of an account", result.error)
 				return ""
 		
-	func sign_transaction(transaction: Transaction) -> Signature:
+	func _sign_transaction(transaction: Transaction) -> Signature:
 		return private_key_account.sign_transaction(transaction)

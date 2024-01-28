@@ -2,59 +2,105 @@ extends Provider
 
 class_name BlockfrostProvider
 
-class Request:
-	func url() -> String:
+class Epoch extends Abstract:
+	const _abstract_name := "Epoch"
+	
+	func _to_string() -> String:
 		return ""
 		
-	func method() -> HTTPClient.Method:
+class LatestEpoch extends Epoch:
+	func _init() -> void:
+		pass
+		
+	func _to_string() -> String:
+		return "latest"
+	
+class SpecificEpoch extends Epoch:
+	var _epoch: int
+	
+	func _init(epoch: int) -> void:
+		self._epoch = epoch
+	
+	func _to_string() -> String:
+		return str(_epoch)
+		
+class Request:
+	func _url() -> String:
+		push_error("_url() virtual method called")
+		return ""
+		
+	func _method() -> HTTPClient.Method:
 		return HTTPClient.METHOD_GET
 		
-	func headers() -> Array[String]:
+	func _headers() -> Array[String]:
 		return []
 	
-	func body() -> PackedByteArray:
+	func _body() -> PackedByteArray:
 		return PackedByteArray()
 		
 class ProtocolParametersRequest extends Request:
-	var epoch: int = 0
+	var _epoch: Epoch
 	
-	func _init(epoch_: int) -> void:
-		self.epoch = epoch_
+	func _init(epoch: Epoch) -> void:
+		self._epoch = epoch
 	
-	func url() -> String:
-		return "epochs/%s/parameters" % (self.epoch if self.epoch != 0 else "latest")
+	func _url() -> String:
+		return "epochs/%s/parameters" % _epoch
+
+class EraSummariesRequest extends Request:
+	func _init() -> void:
+		pass
+	
+	func _url() -> String:
+		return "network/eras"
 
 class UtxosAtAddressRequest extends Request:
-	var address: String
+	var _address: String
 	
-	func _init(address_: String) -> void:
-		self.address = address_
+	func _init(address: String) -> void:
+		self._address = address
 		
-	func url() -> String:
-		return "addresses/%s/utxos" % self.address
+	func _url() -> String:
+		return "addresses/%s/utxos" % self._address
 		
 class SubmitTransactionRequest extends Request:
-	var tx_cbor: PackedByteArray
+	var _tx_cbor: PackedByteArray
 	
-	func _init(tx_cbor_: PackedByteArray) -> void:
-		self.tx_cbor = tx_cbor_
+	func _init(tx_cbor: PackedByteArray) -> void:
+		self._tx_cbor = tx_cbor
 	
-	func url() -> String:
+	func _url() -> String:
 		return "tx/submit"
 		
-	func method() -> HTTPClient.Method:
+	func _method() -> HTTPClient.Method:
 		return HTTPClient.METHOD_POST
 		
-	func headers() -> Array[String]:
+	func _headers() -> Array[String]:
 		return ["content-type: application/cbor"]
 		
-	func body() -> PackedByteArray:
-		return tx_cbor
+	func _body() -> PackedByteArray:
+		return _tx_cbor
+
+class EvaluateTransactionRequest extends Request:
+	var _tx_cbor: PackedByteArray
+	
+	func _init(tx_cbor: PackedByteArray) -> void:
+		self._tx_cbor = tx_cbor
+	
+	func _url() -> String:
+		return "utils/txs/evaluate"
+	
+	func _method() -> HTTPClient.Method:
+		return HTTPClient.METHOD_POST
 		
+	func _headers() -> Array[String]:
+		return ["content-type: application/cbor"]
+		
+	func _body() -> PackedByteArray:
+		return _tx_cbor.hex_encode().to_ascii_buffer()
+
 var network: Network
 var api_key: String
-
-var current_epoch: int
 
 const network_endpoints: Dictionary = {
 	Network.NETWORK_MAINNET: "https://cardano-mainnet.blockfrost.io/api/v0",
@@ -71,10 +117,10 @@ func blockfrost_request(request: Request) -> Variant:
 	add_child(http_request)
 	
 	var status := http_request.request_raw(
-		"%s/%s" % [network_endpoints[self.network], request.url()],
-		[ "project_id: %s" % self.api_key ] + request.headers(),
-		request.method(),
-		request.body()
+		"%s/%s" % [network_endpoints[self.network], request._url()],
+		[ "project_id: %s" % self.api_key ] + request._headers(),
+		request._method(),
+		request._body()
 	)
 	
 	if status != OK:
@@ -95,8 +141,8 @@ func blockfrost_request(request: Request) -> Variant:
 		
 	return JSON.parse_string(content)
 
-func get_protocol_parameters() -> ProtocolParameters:
-	var params_json: Dictionary = await blockfrost_request(ProtocolParametersRequest.new(current_epoch))
+func _get_protocol_parameters() -> ProtocolParameters:
+	var params_json: Dictionary = await blockfrost_request(ProtocolParametersRequest.new(LatestEpoch.new()))
 	# Type hints and dictionaries don't interact well...
 	# We have to cast the dictionary values to [Variant] before [int], otherwise
 	# it will complain about the operation not being safe.
@@ -107,7 +153,9 @@ func get_protocol_parameters() -> ProtocolParameters:
 		params_json.max_val_size as Variant as int,
 		params_json.max_tx_size as Variant as int,
 		params_json.min_fee_b as Variant as int,
-		params_json.min_fee_a as Variant as int
+		params_json.min_fee_a as Variant as int,
+		params_json.max_tx_ex_steps as Variant as int,
+		params_json.max_tx_ex_mem as Variant as int,
 	)
 	self.got_protocol_parameters.emit(params)
 	return params
@@ -128,7 +176,7 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 	)
 	return assets
 
-func get_utxos_at_address(address: String) -> Array[Utxo]:
+func _get_utxos_at_address(address: String) -> Array[Utxo]:
 	var utxos_json: Array = await blockfrost_request(UtxosAtAddressRequest.new(address))
 	var utxos: Array[Utxo] = []
 	
@@ -152,6 +200,33 @@ func get_utxos_at_address(address: String) -> Array[Utxo]:
 	)
 	
 	return utxos
+
+func _get_era_summaries() -> Array[EraSummary]:
+	var summaries_json: Array = await blockfrost_request(EraSummariesRequest.new())
+	var summaries: Array[EraSummary] = []
+	summaries.assign(
+		summaries_json.map(
+			func (summary: Dictionary) -> EraSummary: 
+				return EraSummary.new(
+					EraTime.new(
+						summary["start"]["time"] as Variant as int,
+						summary["start"]["slot"] as Variant as int,
+						summary["start"]["epoch"] as Variant as int
+					),
+					EraTime.new(
+						summary["end"]["time"] as Variant as int,
+						summary["end"]["slot"] as Variant as int,
+						summary["end"]["epoch"] as Variant as int
+					),
+					EraParameters.new(
+						summary["parameters"]["epoch_length"] as Variant as int,
+						summary["parameters"]["slot_length"] as Variant as int,
+						summary["parameters"]["safe_zone"] as Variant as int,
+					)
+				))
+	)
+	got_era_summaries.emit(summaries)
+	return summaries
 	
-func submit_transaction(tx_cbor: PackedByteArray) -> void:
-	blockfrost_request(SubmitTransactionRequest.new(tx_cbor))
+func _submit_transaction(tx: Transaction) -> void:
+	blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))

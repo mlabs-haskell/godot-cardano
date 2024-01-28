@@ -34,7 +34,6 @@ use cardano_serialization_lib::plutus::{
     Redeemer,
     Redeemers,
     RedeemerTag,
-    RedeemerTagKind
 };
 use cardano_serialization_lib::utils as CSL;
 
@@ -463,6 +462,11 @@ impl PrivateKeyAccount {
         )
         .to_address()
     }
+    
+    #[func]
+    fn _get_address(&self) -> Gd<GAddress> {
+        Gd::from_object(GAddress { address: self.get_address() })
+    }
 
     /// It may fail due to a conversion error to Bech32.
     // FIXME: We should be using a prefix that depends on the network we are connecting to.
@@ -570,39 +574,35 @@ impl GTransaction {
             }
         }
     }
+}
 
-    #[func]
-    fn get_redeemer(
-        &mut self,
-        tag: u64,
-        index: u64
-    ) -> Option<Gd<GRedeemer>> {
-        match self.transaction.witness_set().redeemers() {
-            None => None,
-            Some(redeemers) => {
-                // TODO: check if indices are shared between redeemers? otherwise
-                // find another way to get the correct index/tag pair
-                let redeemer = redeemers.get(index.try_into().unwrap());
-                match (redeemer.tag().kind(), tag) {
-                    (RedeemerTagKind::Spend, 0) =>
-                        Some(Gd::from_object(GRedeemer { redeemer })),
-                    (RedeemerTagKind::Mint, 1) =>
-                        Some(Gd::from_object(GRedeemer { redeemer })),
-                    (RedeemerTagKind::Cert, 2) =>
-                        Some(Gd::from_object(GRedeemer { redeemer })),
-                    (RedeemerTagKind::Reward, 3) =>
-                        Some(Gd::from_object(GRedeemer { redeemer })),
-                    _ => None
-                }
-            }
+#[derive(GodotClass)]
+#[class(base=Node, rename=_Address)]
+struct GAddress {
+    address: Address
+}
+
+#[derive(Debug)]
+pub enum AddressError {
+    Bech32Error(JsError),
+}
+
+impl GodotConvert for AddressError {
+    type Via = i64;
+}
+
+impl ToGodot for AddressError {
+    fn to_godot(&self) -> Self::Via {
+        use AddressError::*;
+        match self {
+            Bech32Error(_) => 1,
         }
     }
 }
 
-#[derive(GodotClass)]
-#[class(init, base=Node, rename=Address)]
-struct GAddress {
-    address: Option<Address>
+
+impl FailsWith for GAddress  {
+    type E = AddressError;
 }
 
 #[godot_api]
@@ -611,14 +611,20 @@ impl GAddress {
     fn from_bech32(address: String) -> Gd<GAddress> {
         return Gd::from_object(
             Self {
-                address: Some(Address::from_bech32(&address).expect("Could not parse address bech32"))
+                address: Address::from_bech32(&address).expect("Could not parse address bech32")
             }
         )
     }
 
+    fn to_bech32(&self) -> Result<String, AddressError> {
+        self.address
+            .to_bech32(None)
+            .map_err(|e| AddressError::Bech32Error(e))
+    }
+
     #[func]
-    fn to_bech32(&self) -> String {
-        return self.address.as_ref().unwrap().to_bech32(None).unwrap();
+    fn _to_bech32(&self) -> Gd<GResult> {
+        Self::to_gresult(self.to_bech32())
     }
 }
 
@@ -799,7 +805,6 @@ impl GTxBuilder {
         self.slot_config = (start_time, start_slot, slot_length);
     }
 
-
     #[func]
     fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) {
         let inputs_builder = &mut self.inputs_builder;
@@ -860,7 +865,7 @@ impl GTxBuilder {
 
         let amount_builder =
             output_builder
-                .with_address(&address.bind().address.as_ref().unwrap())
+                .with_address(&address.bind().address)
                 .next()
                 .expect("Failed to build transaction output");
         let output =
@@ -924,7 +929,7 @@ impl GTxBuilder {
         let mut tx_builder = self.tx_builder.clone();
         tx_builder.set_inputs(&self.inputs_builder);
         tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset).expect("Could not add inputs");
-        tx_builder.add_change_if_needed(&change_address.bind().address.as_ref().unwrap()).expect("Could not set change address");
+        tx_builder.add_change_if_needed(&change_address.bind().address).expect("Could not set change address");
         tx_builder.set_mint_builder(&self.mint_builder);
         let tx_body = tx_builder.build().expect("Could not build transaction");
 
