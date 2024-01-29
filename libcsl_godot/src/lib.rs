@@ -1,4 +1,5 @@
-use bip32::secp256k1::sha2::Sha256;
+use std::array::TryFromSliceError;
+
 use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, StakeCredential};
 use cardano_serialization_lib::crypto::{
     Bip32PrivateKey, Bip32PublicKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
@@ -15,7 +16,7 @@ use cardano_serialization_lib::{
 use bip32::{Language, Mnemonic};
 
 use godot::builtin::meta::GodotConvert;
-use godot::engine::{Crypto, CryptoKey};
+use godot::engine::Crypto;
 use godot::prelude::*;
 
 pub mod bigint;
@@ -23,7 +24,8 @@ pub mod gresult;
 
 use bigint::BigInt;
 use gresult::FailsWith;
-use pbkdf2::pbkdf2_hmac;
+use pkcs5::pbes2;
+use scrypt::errors::InvalidParams;
 
 use crate::gresult::GResult;
 
@@ -104,63 +106,82 @@ fn harden(index: u32) -> u32 {
     return index | 0x80000000;
 }
 
-/// A single address key account is essentially a Cardano single-address
-/// wallet. The wallet can be imported by inputting a seed phrase together
+// #[derive(GodotClass)]
+// #[class(base=RefCounted, rename=_SingleAddressAccount)]
+// struct SingleAddressAccount {
+//     account_public_key: Bip32PublicKey,
+// }
+
+/// A single address account store is essentially a Cardano single-address
+/// wallet, with possibly many accounts.
+///
+/// The wallet can be imported by inputting a seed phrase together
 /// with a password (as explained in the BIP39 standard).
 ///
-/// However, the wallet is serialised to disk as the specific account's
-/// private key. We are not interested in other possible accounts (since
-/// this is a single-address wallet after all). For safety, the private key
-/// is stored encrypted with PBKDF2_HMAC.
+/// The wallet is serialised to disk, however, as the Cardano private master key.
+/// We are not interested in preserving the seed phrase. For safety, the private key
+/// is stored using the PBES2 encryption scheme.
 ///
 /// For convenience, the account public key is also stored. Considering that
 /// this is a single address wallet, not much privacy is lost by simply storing
 /// the public key, as it is equivalent to storing the only address that will
-/// be in use.
+/// be in use for any given account.
 #[derive(GodotClass)]
-#[class(base=Resource, rename=_SingleAddressKeyAccount)]
-struct SingleAddressKeyAccount {
+#[class(base=Resource, rename=_SingleAddressAccountStore)]
+struct SingleAddressAccountStore {
     #[var]
-    account_index: u32,
+    encrypted_master_private_key: PackedByteArray,
     #[var]
-    encrypted_account_private_key: PackedByteArray,
+    account_public_keys: Array<PackedByteArray>,
     #[var]
-    account_public_key: PackedByteArray,
+    scrypt_salt: PackedByteArray,
     #[var]
-    salt: PackedByteArray,
+    scrypt_log_n: u8,
+    #[var]
+    scrypt_r: u32,
+    #[var]
+    scrypt_p: u32,
+    #[var]
+    aes_iv: PackedByteArray,
 }
 
 #[derive(Debug)]
-pub enum SingleAddressKeyAccountError {
+pub enum SingleAddressAccountStoreError {
     BadPhrase(bip32::Error),
-    Bech32Error(JsError),
+    Bip32Error(JsError),
+    Pkcs5Error(pkcs5::Error),
+    BadScryptParams(InvalidParams),
+    CouldNotParseAesIv(TryFromSliceError),
 }
 
-impl GodotConvert for SingleAddressKeyAccountError {
+impl GodotConvert for SingleAddressAccountStoreError {
     type Via = i64;
 }
 
-impl ToGodot for SingleAddressKeyAccountError {
+impl ToGodot for SingleAddressAccountStoreError {
     fn to_godot(&self) -> Self::Via {
-        use SingleAddressKeyAccountError::*;
+        use SingleAddressAccountStoreError::*;
         match self {
             BadPhrase(_) => 1,
-            Bech32Error(_) => 2,
+            Bip32Error(_) => 2,
+            Pkcs5Error(_) => 3,
+            BadScryptParams(_) => 4,
+            CouldNotParseAesIv(_) => 5,
         }
     }
 }
 
-impl FailsWith for SingleAddressKeyAccount {
-    type E = SingleAddressKeyAccountError;
+impl FailsWith for SingleAddressAccountStore {
+    type E = SingleAddressAccountStoreError;
 }
 
 #[godot_api]
-impl SingleAddressKeyAccount {
+impl SingleAddressAccountStore {
     fn import(
         phrase: String,
         mnemonic_password: String,
         account_password: String,
-    ) -> Result<SingleAddressKeyAccount, SingleAddressKeyAccountError> {
+    ) -> Result<SingleAddressAccountStore, SingleAddressAccountStoreError> {
         // we obtain the master private key with the mnemonic and the user
         // password
         let mnemonic = Mnemonic::new(
@@ -171,46 +192,53 @@ impl SingleAddressKeyAccount {
                 .join(" "),
             Language::English,
         )
-        .map_err(|e| SingleAddressKeyAccountError::BadPhrase(e))?;
-
-        // we store the account private key, encrypted with a password using PBKDF2
-        let account_index: u32 = 0;
+        .map_err(|e| SingleAddressAccountStoreError::BadPhrase(e))?;
 
         let master_private_key =
-            Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), mnemonic_password.as_bytes());
+            Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), mnemonic_password.as_bytes())
+                .derive(harden(1852))
+                .derive(harden(1815));
 
-        let account_private_key = master_private_key
-            .derive(harden(1852))
-            .derive(harden(1815))
-            .derive(harden(account_index));
-
+        // TODO: Check how good this RNG actually is.
+        // Use Godot RNG for Scrypt salt and AES initialization vector
         let mut crypto = Crypto::new();
-        let salt: PackedByteArray = crypto.generate_random_bytes(16);
+        let salt: PackedByteArray = crypto.generate_random_bytes(64);
+        let aes_iv_array: PackedByteArray = crypto.generate_random_bytes(16);
+        // this is safe
+        let aes_iv = <&[u8; 16]>::try_from(aes_iv_array.as_slice()).unwrap();
 
-        let mut encrypted_account_private_key: &mut [u8];
+        let scrypt_params = scrypt::Params::recommended();
 
-        pbkdf2_hmac::<Sha256>(
-            account_password.as_bytes(),
-            salt.as_slice(),
-            750_000,
-            encrypted_account_private_key,
-        );
-        master_private_key
-            .derive(harden(1852))
-            .derive(harden(1815))
-            .derive(harden(account_index));
+        let pbes2_params =
+            pbes2::Parameters::scrypt_aes128cbc(scrypt_params, salt.as_slice(), aes_iv)
+                .map_err(|e| SingleAddressAccountStoreError::Pkcs5Error(e))?;
 
-        // we also store the account public key, unencrypted
-        let account_public_key =
-            PackedByteArray::from(account_private_key.to_public().as_bytes().as_slice());
+        let encrypted_master_private_key = pbes2_params
+            .encrypt(account_password, master_private_key.as_bytes().as_slice())
+            .map_err(|e| SingleAddressAccountStoreError::Pkcs5Error(e))?;
+
+        // We also store the account public keys, unencrypted
+        let mut account_public_keys = Array::<PackedByteArray>::new();
+
+        // We store the first account (zero index). Any further accounts need to be created.
+        account_public_keys.push(PackedByteArray::from(
+            master_private_key
+                .derive(0)
+                .to_public()
+                .as_bytes()
+                .as_slice(),
+        ));
 
         Ok(Self {
-            account_index,
-            encrypted_account_private_key: PackedByteArray::from(
-                encrypted_account_private_key.as_ref(),
+            encrypted_master_private_key: PackedByteArray::from(
+                encrypted_master_private_key.as_slice(),
             ),
-            account_public_key,
-            salt,
+            account_public_keys,
+            scrypt_salt: salt,
+            scrypt_log_n: scrypt_params.log_n(),
+            scrypt_r: scrypt_params.r(),
+            scrypt_p: scrypt_params.p(),
+            aes_iv: aes_iv_array,
         })
     }
 
@@ -219,54 +247,146 @@ impl SingleAddressKeyAccount {
         Self::to_gresult_class(Self::import(phrase, mnemonic_password, account_password))
     }
 
-    fn get_account_root(&self) -> Bip32PrivateKey {
-        self.master_private_key
-            .derive(harden(1852))
-            .derive(harden(1815))
-            .derive(harden(self.account_index))
+    fn get_scrypt_params(&self) -> Result<scrypt::Params, SingleAddressAccountStoreError> {
+        scrypt::Params::new(
+            self.scrypt_log_n,
+            self.scrypt_r,
+            self.scrypt_p,
+            10, // we don't care about `len` parameter, it's not used
+        )
+        .map_err(|e| SingleAddressAccountStoreError::BadScryptParams(e))
     }
 
-    fn get_address(&self) -> Address {
-        let account: Bip32PublicKey =
-            Bip32PublicKey::from_bytes(self.account_public_key.as_slice());
-        let spend = account.derive(0).derive(0).to_public();
-        let stake = account.derive(2).derive(0).to_public();
+    fn get_pbes2_params(&self) -> Result<pbes2::Parameters, SingleAddressAccountStoreError> {
+        let scrypt_params = self.get_scrypt_params()?;
+        let aes_iv = <&[u8; 16]>::try_from(self.aes_iv.as_slice())
+            .map_err(|e| SingleAddressAccountStoreError::CouldNotParseAesIv(e))?;
+        pbes2::Parameters::scrypt_aes128cbc(scrypt_params, self.scrypt_salt.as_slice(), aes_iv)
+            .map_err(|e| SingleAddressAccountStoreError::Pkcs5Error(e))
+    }
+
+    fn with_account_private_key<F, O>(
+        &self,
+        password: String,
+        account_index: u32,
+        f: F,
+    ) -> Result<O, SingleAddressAccountStoreError>
+    where
+        F: Fn(Bip32PrivateKey) -> O,
+    {
+        self.with_master_private_key(password, |master_key| f(master_key.derive(account_index)))
+    }
+
+    fn with_master_private_key<F, O>(
+        &self,
+        password: String,
+        f: F,
+    ) -> Result<O, SingleAddressAccountStoreError>
+    where
+        F: Fn(Bip32PrivateKey) -> O,
+    {
+        let pbes2_params = self.get_pbes2_params()?;
+        let decrypted_bytes = pbes2_params
+            .decrypt(
+                AsRef::<[u8]>::as_ref(&password),
+                self.encrypted_master_private_key.as_slice(),
+            )
+            .map_err(|e| SingleAddressAccountStoreError::Pkcs5Error(e))?;
+        let master_key = Bip32PrivateKey::from_bytes(decrypted_bytes.as_slice())
+            .map_err(|e| SingleAddressAccountStoreError::Bip32Error(e))?;
+        Ok(f(master_key))
+    }
+
+    fn get_address(&self, account_index: usize) -> Result<Address, SingleAddressAccountStoreError> {
+        let account_key: Bip32PublicKey =
+            Bip32PublicKey::from_bytes(self.account_public_keys.get(account_index).as_slice())
+                .map_err(|e| SingleAddressAccountStoreError::Bip32Error(e))?;
+        let spend = account_key.derive(0).unwrap().derive(0).unwrap();
+        let stake = account_key.derive(2).unwrap().derive(0).unwrap();
         let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
         let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
 
-        BaseAddress::new(
+        // TODO: We should not hardcode the network
+        Ok(BaseAddress::new(
             NetworkInfo::testnet_preview().network_id(),
             &spend_cred,
             &stake_cred,
         )
-        .to_address()
+        .to_address())
     }
 
     /// It may fail due to a conversion error to Bech32.
     // FIXME: We should be using a prefix that depends on the network we are connecting to.
-    fn get_address_bech32(&self) -> Result<String, SingleAddressKeyAccountError> {
-        let addr = self.get_address();
+    fn get_address_bech32(
+        &self,
+        account_index: usize,
+    ) -> Result<String, SingleAddressAccountStoreError> {
+        let addr = self.get_address(account_index)?;
         addr.to_bech32(None)
-            .map_err(|e| SingleAddressKeyAccountError::Bech32Error(e))
+            .map_err(|e| SingleAddressAccountStoreError::Bip32Error(e))
     }
 
     #[func]
-    fn _get_address_bech32(&self) -> Gd<GResult> {
-        Self::to_gresult(self.get_address_bech32())
+    fn _get_address_bech32(&self, account_index: u64) -> Gd<GResult> {
+        Self::to_gresult(self.get_address_bech32(account_index as usize))
     }
 
-    fn sign_transaction(&self, gtx: &GTransaction) -> GSignature {
-        let account_root = self.get_account_root();
-        let spend_key = account_root.derive(0).derive(0).to_raw_key();
-        let tx_hash = hash_transaction(&gtx.transaction.body());
-        GSignature {
-            signature: make_vkey_witness(&tx_hash, &spend_key),
-        }
+    fn sign_transaction(
+        &self,
+        password: String,
+        account_index: u32,
+        gtx: &GTransaction,
+    ) -> Result<GSignature, SingleAddressAccountStoreError> {
+        self.with_account_private_key(password, account_index, |master_private_key| {
+            let spend_key = master_private_key
+                .derive(account_index)
+                .derive(0)
+                .derive(0)
+                .to_raw_key();
+            let stake_key = master_private_key
+                .derive(account_index)
+                .derive(2)
+                .derive(0)
+                .to_raw_key();
+            let tx_hash = hash_transaction(&gtx.transaction.body());
+            GSignature {
+                signature: vec![
+                    make_vkey_witness(&tx_hash, &spend_key),
+                    make_vkey_witness(&tx_hash, &stake_key),
+                ],
+            }
+        })
     }
 
     #[func]
-    fn _sign_transaction(&self, gtx: Gd<GTransaction>) -> Gd<GSignature> {
-        Gd::from_object(self.sign_transaction(&gtx.bind()))
+    fn _sign_transaction(
+        &self,
+        password: String,
+        account_index: u32,
+        gtx: Gd<GTransaction>,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(self.sign_transaction(password, account_index, &gtx.bind()))
+    }
+
+    fn add_account(&mut self, password: String) -> Result<String, SingleAddressAccountStoreError> {
+        // TODO: Make this safer
+        let new_account_index = (self.account_public_keys.len() + 1) as u32;
+        let new_account_key = self.with_master_private_key(password, |master_key| {
+            master_key.derive(new_account_index).to_public()
+        })?;
+
+        let spend = new_account_key.derive(0).unwrap().derive(0).unwrap();
+        let stake = new_account_key.derive(2).unwrap().derive(0).unwrap();
+        let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
+        let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
+
+        // // TODO: We should not hardcode the network
+        // Ok(BaseAddress::new(
+        //     NetworkInfo::testnet_preview().network_id(),
+        //     &spend_cred,
+        //     &stake_cred,
+        // )
+        // }
     }
 }
 
@@ -274,7 +394,7 @@ impl SingleAddressKeyAccount {
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=Signature)]
 struct GSignature {
-    signature: Vkeywitness,
+    signature: Vec<Vkeywitness>,
 }
 
 #[derive(GodotClass)]
@@ -298,7 +418,9 @@ impl GTransaction {
         // signatures to the witness set before the transaction is actually built
         let mut witness_set = self.transaction.witness_set();
         let mut vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
-        vkey_witnesses.add(&signature.bind().signature);
+        for witness in &signature.bind().signature {
+            vkey_witnesses.add(witness);
+        }
         witness_set.set_vkeys(&vkey_witnesses);
         self.transaction = Transaction::new(
             &self.transaction.body(),

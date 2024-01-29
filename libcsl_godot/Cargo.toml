@@ -13,4 +13,5 @@ godot = { git = "https://github.com/godot-rust/gdext", rev = "4ce4714b8871bf75e9
 cardano-serialization-lib = "11.5.0"
 bip32 = "0.5.1"
 hex = "0.4.0"
-pbkdf2 = "0.12.0"
+pkcs5 = {version = "0.7.1", features = ["pbes2", "alloc"]}
+scrypt = "0.11.0"
