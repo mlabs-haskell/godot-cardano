@@ -44,15 +44,14 @@
             allowBuiltinFetchGit = true;
           };
         };
-        make_demo = { debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
-          name = "demo";
-          src = ./demo;
+        make_gd_project = { name, src, debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
+          inherit name src;
           buildPhase = ''
             SYSTEM="${if windows then "windows" else "linux"}"
             VARIANT="${if debug then "debug" else "release"}"
 
             # copy addons directory
-            rm ./addons
+            rm -rf ./addons
             cp -r ${./addons} ./addons --no-preserve=mode,ownership
 
             # link debug gdextension
@@ -77,19 +76,30 @@
               --headless \
               --export-$VARIANT \
               "${if windows then "Windows Desktop" else "Linux/X11"}" \
-              ./out/demo${if windows then ".exe" else ""} \
+              ./out/${name}${if windows then ".exe" else ""} \
               ./project.godot
           '';
           installPhase = ''
-            [ ! -f out/demo${if windows then ".exe" else ""} ] && echo "out/demo${if windows then ".exe" else ""} not built, failing..." && false
+            [ ! -f out/${name}${if windows then ".exe" else ""} ] && echo "out/${name}${if windows then ".exe" else ""} not built, failing..." && false
             mkdir -p $out/bin
             cp out/* $out/bin/
           '';
           dontFixup = true;
           dontStrip = true;
         };
+        make_demo = { name ? "demo", src ? ./demo, ... }@args :
+          make_gd_project (args // { inherit name src; });
+        make_test = { name ? "test", src ? ./test, ... }@args :
+          make_gd_project (args // { inherit name src; });
+        run_test = pkg: pkgs.runCommand "test" {} ''
+          ${pkgs.steamPackages.steam-fhsenv-without-steam.run}/bin/steam-run ${pkg}/bin/test --headless
+          touch $out
+        '';
       in
       {
+        checks = {
+          test = run_test (make_test {});
+        };
         packages = rec {
           default = libcsl_godot;
           godot = pkgs.godot_4;
@@ -105,6 +115,7 @@
           demo-win = make_demo { windows = true; };
           demo-debug = make_demo { debug = true; };
           demo-win-debug = make_demo { windows = true; debug = true; };
+          test = make_test {};
         };
         devShells = {
           default = pkgs.mkShell {
