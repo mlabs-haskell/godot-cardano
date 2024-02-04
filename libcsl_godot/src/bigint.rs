@@ -9,7 +9,7 @@ use godot::prelude::*;
 #[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[class(init, base=RefCounted, rename=_BigInt)]
 pub struct BigInt {
-    #[init(default = CSL::BigInt::from_str("0").unwrap())]
+    #[init(default = CSL::BigInt::from(0))]
     #[doc(hidden)]
     pub b: CSL::BigInt,
 }
@@ -57,21 +57,15 @@ impl BigInt {
         return self.b.to_str();
     }
 
-    #[func]
-    pub fn to_string(&self) -> String {
-        return self.to_str();
-    }
-
-    pub fn from_int(n: i64) -> Result<BigInt, BigIntError> {
-        CSL::BigInt::from_str(&n.to_string()).map_or_else(
-            |e| Result::Err(BigIntError::CouldNotConvertFromInt(e)),
-            |b| Result::Ok(Self { b }),
-        )
+    pub fn from_int(n: i64) -> BigInt {
+        Self {
+            b: CSL::BigInt::from(n),
+        }
     }
 
     #[func]
-    pub fn _from_int(n: i64) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_int(n))
+    pub fn _from_int(n: i64) -> Gd<BigInt> {
+        Gd::from_object(Self::from_int(n))
     }
 
     #[func]
@@ -89,14 +83,14 @@ impl BigInt {
     #[func]
     fn zero() -> Gd<BigInt> {
         Gd::from_object(Self {
-            b: CSL::BigInt::from_str("0").expect("unexpected error in zero() method"),
+            b: CSL::BigInt::from(0),
         })
     }
 
     #[func]
     fn one() -> Gd<BigInt> {
         Gd::from_object(Self {
-            b: CSL::BigInt::from_str("1").expect("unexpected error in one() method"),
+            b: CSL::BigInt::from(1),
         })
     }
 
@@ -113,5 +107,20 @@ impl BigInt {
     #[func]
     fn lt(&self, other: Gd<BigInt>) -> bool {
         return self < &other.bind();
+    }
+
+    // TODO: return `Result`
+    #[func]
+    fn from_bytes(bytes: PackedByteArray) -> Gd<BigInt> {
+        return Gd::from_object(BigInt {
+            b: CSL::BigInt::from_bytes(bytes.to_vec()).unwrap(),
+        });
+    }
+
+    #[func]
+    fn to_bytes(&self) -> PackedByteArray {
+        let vec = self.b.to_bytes();
+        let bytes: &[u8] = vec.as_slice().into();
+        return PackedByteArray::from(bytes);
     }
 }
