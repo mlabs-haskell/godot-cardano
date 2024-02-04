@@ -32,6 +32,9 @@ func _ready() -> void:
 	wallet_details.text = "No wallet set"
 	var _ret := self.cardano.got_wallet.connect(_on_wallet_set)
 	
+	var bytes := Cbor.from_variant(ExampleDatum.new().to_data()).value
+	var data := Cbor.to_variant(bytes)
+	print(data.value)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
@@ -65,10 +68,10 @@ func _on_send_ada_button_pressed() -> void:
 	var address := Address.from_bech32(address_input.text)
 		
 	var tx: TxBuilder = cardano.new_tx()
-	#tx.pay_to_address(address, amount, {})
-	#print((await tx.complete())._transaction.bytes().hex_encode())
-	#tx.pay_to_address_with_datum(address, amount, {}, ExampleDatum.new())
-	#print((await tx.complete())._transaction.bytes().hex_encode())
+	tx.pay_to_address(address, amount, {})
+	print((await tx.complete())._transaction.bytes().hex_encode())
+	tx.pay_to_address_with_datum(address, amount, {}, ExampleDatum.new())
+	print((await tx.complete())._transaction.bytes().hex_encode())
 	tx.mint_assets(
 		PlutusScript.create("46010000222499".hex_decode()), 
 		[ TxBuilder.MintToken.new("667788".hex_decode(), BigInt.one()) ],

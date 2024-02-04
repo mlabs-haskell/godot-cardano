@@ -53,11 +53,21 @@ func pay_to_address_with_datum(
 	assets: Dictionary,
 	datum: Object
 ) -> void:
+	if !datum.has_method("to_data"):
+		push_error("Provided datum does not implement `to_data`")
+		return
+	
+	var encoded_datum: Cbor.EncodeResult = Cbor.from_variant(PlutusData.unwrap(datum.to_data()))
+	
+	if encoded_datum.is_err():
+		push_error("Encoding datum failed")
+		return
+		
 	_builder.pay_to_address_with_datum(
 		address._address,
 		coin._b,
 		assets,
-		Datum.inline(Cbor.from_variant(datum.call("to_data")))
+		Datum.inline(encoded_datum.value)
 	)
 
 func mint_assets(
@@ -65,17 +75,26 @@ func mint_assets(
 	tokens: Array[MintToken],
 	redeemer: Object
 ) -> void:
+	if !redeemer.has_method("to_data"):
+		push_error("Provided redeemer does not implement `to_data`")
+		return
+		
+	var encoded_redeemer: Cbor.EncodeResult = Cbor.from_variant(redeemer.to_data())
+	
+	if encoded_redeemer.is_err():
+		push_error("Encoding datum failed")
+		return
+		
 	var tokens_dict: Dictionary = {}
 	tokens.map(
 		func (token: MintToken) -> void:
 			var prev = tokens_dict.get(token._token_name, BigInt.zero()._b)
 			tokens_dict[token._token_name] = prev.add(token._quantity._b)
 	)
-	
 	_builder.mint_assets(
 		minting_policy,
 		tokens_dict,
-		Cbor.from_variant(redeemer.call("to_data"))
+		Cbor.from_variant(redeemer.to_data()).value
 	)
 
 func collect_from(utxos: Array[Utxo]) -> void:

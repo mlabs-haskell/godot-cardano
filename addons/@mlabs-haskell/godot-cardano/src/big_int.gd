@@ -27,8 +27,8 @@ static func from_str(s: String) -> ConversionResult:
 	return ConversionResult.new(_BigInt._from_str(s))
 	
 ## Convert an [int] into a [BigInt].
-static func from_int(n: int) -> ConversionResult:
-	return ConversionResult.new(_BigInt._from_int(n))
+static func from_int(n: int) -> BigInt:
+	return new(_BigInt._from_int(n))
 
 static func zero() -> BigInt:
 	return BigInt.new(_BigInt.zero())
@@ -52,4 +52,10 @@ func gt(other: BigInt) -> bool:
 	return _b.gt(other._b)
 	
 func to_str() -> String:
+	return _b.to_str()
+
+func to_data() -> Variant:
+	return _b
+
+func _to_string() -> String:
 	return _b.to_str()
