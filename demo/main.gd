@@ -25,6 +25,19 @@ func _ready() -> void:
 		Provider.Network.NETWORK_PREVIEW,
 		token
 	)
+	var seed_phrase_file := FileAccess.open("./seed_phrase.txt", FileAccess.READ)
+	
+	if seed_phrase_file != null:
+		phrase_input.text = seed_phrase_file.get_as_text(true)
+		
+		var account_result := PrivateKeyAccount.from_mnemonic(phrase_input.text)
+		
+		if account_result.is_ok():
+			var address_result := account_result.value.get_address_bech32()
+			
+			if address_result.is_ok():
+				address_input.text = address_result.value
+		
 	cardano = Cardano.new(provider)
 	add_child(cardano)
 	
@@ -32,9 +45,17 @@ func _ready() -> void:
 	wallet_details.text = "No wallet set"
 	var _ret := self.cardano.got_wallet.connect(_on_wallet_set)
 	
-	var bytes := Cbor.from_variant(ExampleDatum.new().to_data()).value
-	var data := Cbor.to_variant(bytes)
-	print(data.value)
+	# basic check for invertibility
+	var strict := true
+	var datum := ExampleDatum.new()
+	var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
+	if bytes_result.is_ok():
+		var data_result := Cbor.deserialize(bytes_result.value)
+		
+		if data_result.is_ok():
+			var data := ExampleDatum.from_data(data_result.value)
+			print(datum)
+			print(data)
 
 func _process(_delta: float) -> void:
 	if wallet != null:

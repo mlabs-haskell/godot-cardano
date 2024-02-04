@@ -53,15 +53,10 @@ func pay_to_address_with_datum(
 	assets: Dictionary,
 	datum: Object
 ) -> void:
-	if !datum.has_method("to_data"):
-		push_error("Provided datum does not implement `to_data`")
-		return
-	
-	var encoded_datum: Cbor.EncodeResult = Cbor.from_variant(PlutusData.unwrap(datum.to_data()))
-	
-	if encoded_datum.is_err():
-		push_error("Encoding datum failed")
-		return
+	assert(datum.has_method("to_data"), "Provided datum does not implement `to_data`")
+
+	var encoded_datum := Cbor.serialize(datum.to_data(true), true)
+	assert(encoded_datum.is_ok(), "Encoding/serializing datum failed")
 		
 	_builder.pay_to_address_with_datum(
 		address._address,

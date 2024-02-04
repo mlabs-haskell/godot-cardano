@@ -34,7 +34,7 @@ static func zero() -> BigInt:
 	return BigInt.new(_BigInt.zero())
 	
 static func one() -> BigInt:
-	return BigInt.new(_BigInt.zero())
+	return BigInt.new(_BigInt.one())
 	
 func add(other: BigInt) -> BigInt:
 	return BigInt.new(_b.add(other._b))
@@ -54,7 +54,7 @@ func gt(other: BigInt) -> bool:
 func to_str() -> String:
 	return _b.to_str()
 
-func to_data() -> Variant:
+func to_data(_strict := false) -> Variant:
 	return _b
 
 func _to_string() -> String:
