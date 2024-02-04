@@ -10,7 +10,7 @@ use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 
 use crate::bigint::BigInt;
-use crate::gresult::{GResult, FailsWith};
+use crate::gresult::{FailsWith, GResult};
 
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Constr)]
@@ -43,13 +43,13 @@ impl Constr {
 #[class(base=RefCounted, rename=_Bytes)]
 struct Bytes {
     #[var]
-    bytes: PackedByteArray
+    bytes: PackedByteArray,
 }
 
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_PlutusData)]
 struct PlutusData {
-    data: Variant
+    data: Variant,
 }
 
 #[godot_api]
@@ -149,9 +149,7 @@ impl Cbor {
         }
     }
 
-    fn decode_array(
-        raw: &mut Deserializer<Cursor<Vec<u8>>>,
-    ) -> Result<Array<Variant>, CborError> {
+    fn decode_array(raw: &mut Deserializer<Cursor<Vec<u8>>>) -> Result<Array<Variant>, CborError> {
         let mut array: Array<Variant> = Array::new();
         let len = raw.array()?;
         Self::decode_len(raw, len, |raw| {
@@ -240,7 +238,9 @@ impl Cbor {
     fn to_variant(bytes: PackedByteArray) -> Result<PlutusData, CborError> {
         let vec = bytes.to_vec();
         let mut raw = Deserializer::from(Cursor::new(vec));
-        Ok(PlutusData { data: Self::decode_variant(&mut raw)? })
+        Ok(PlutusData {
+            data: Self::decode_variant(&mut raw)?,
+        })
     }
 
     #[func]
@@ -306,7 +306,7 @@ impl Cbor {
                     _ => Err(EncodeUnknownObjectError)?,
                 }
             }
-            _ => Err(EncodeUnsupportedTypeError)?
+            _ => Err(EncodeUnsupportedTypeError)?,
         }
         Ok(())
     }
@@ -316,7 +316,9 @@ impl Cbor {
         Self::encode_variant(variant, &mut serializer)?;
         let bound = serializer.finalize();
         let bytes: &[u8] = bound.as_slice().into();
-        Ok(Bytes { bytes: PackedByteArray::from(bytes) })
+        Ok(Bytes {
+            bytes: PackedByteArray::from(bytes),
+        })
     }
 
     #[func]
