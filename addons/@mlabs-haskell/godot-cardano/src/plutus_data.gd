@@ -1,29 +1,42 @@
 extends RefCounted
 
 class_name PlutusData
-
+		
 ## Recursively unwraps Objects to native data types
 static func unwrap(v: Variant, strict: bool = false) -> Variant:
 	match typeof(v):
 		TYPE_ARRAY:
-			return v.map(func (child): return unwrap(child, strict))
+			var unwrapped = v.map(func (child): return unwrap(child, strict))
+			if unwrapped.any(func (child): return child == null):
+				return null
+			return unwrapped
 		TYPE_DICTIONARY:
 			var unwrapped: Dictionary = {}
 			for key in v:
-				unwrapped[unwrap(key, strict)] = unwrap(v[key], strict)
+				var unwrapped_key = unwrap(key, strict)
+				var unwrapped_value = unwrap(v[key], strict)
+				if unwrapped_key == null or unwrapped_value == null:
+					return null
+				unwrapped[unwrapped_key] = unwrapped_value
 			return unwrapped
 		TYPE_BOOL:
-			assert(not strict, "Got native bool in strict data serialization")
+			if strict:
+				push_error("Got native bool in strict data serialization")
+				return null
 			return unwrap(
 				Constr.new(BigInt.from_int(0), []) if not v 
 				else Constr.new(BigInt.from_int(1), []),
 				strict
 			)
 		TYPE_STRING:
-			assert(not strict, "Got native string in strict data serialization")
+			if strict:
+				push_error("Got native string in strict data serialization")
+				return null
 			return v.to_utf8_buffer()
 		TYPE_INT:
-			assert(not strict, "Got native int in strict data serialization")
+			if strict:
+				push_error("Got native int in strict data serialization")
+				return null
 			return _BigInt._from_int(v)
 		TYPE_OBJECT:
 			var _class: String = v.get_class()
@@ -38,15 +51,17 @@ static func unwrap(v: Variant, strict: bool = false) -> Variant:
 					return data
 				return unwrap(data, strict)
 			elif _class == "_Constr" or _class == "_BigInt":
-				assert(not strict, "Tried to unwrap native types in strict data serialization")
+				if strict:
+					push_error("Tried to unwrap native types in strict data serialization")
+					return null
 				return v
 			else:
-				assert(false, "Constr field does not implement `to_data`: %s" % v)
+				push_error("Constr field does not implement `to_data`: %s" % v)
 				return null
 		TYPE_PACKED_BYTE_ARRAY:
 			return v
 		_:
-			assert(false, "Got unsupported type in data serialization: %s" % v)
+			push_error("Got unsupported type in data serialization: %s" % v)
 			return null
 
 ## Recursively wraps native data types to GDScript types

@@ -46,12 +46,16 @@ func _ready() -> void:
 	var _ret := self.cardano.got_wallet.connect(_on_wallet_set)
 	
 	# basic check for invertibility
-	var strict := false
+	var strict := true
 	var datum := ExampleDatum.new()
-	var bytes := Cbor.serialize(datum.to_data(strict), strict).value
-	var data := ExampleDatum.from_data(Cbor.deserialize(bytes).value)
-	print(datum)
-	print(data)
+	var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
+	if bytes_result.is_ok():
+		var data_result := Cbor.deserialize(bytes_result.value)
+		
+		if data_result.is_ok():
+			var data := ExampleDatum.from_data(data_result.value)
+			print(datum)
+			print(data)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
