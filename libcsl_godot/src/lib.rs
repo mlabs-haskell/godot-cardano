@@ -566,11 +566,11 @@ impl TxBuilder {
             .expect("Failed to build amount output");
         let mut tx_builder = TransactionBuilder::new(&self.tx_builder_config);
         tx_builder
-            .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)
-            .expect("Could not add inputs");
-        tx_builder
             .add_output(&output)
             .expect("Could not add output");
+        tx_builder
+            .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)
+            .expect("Could not add inputs");
         tx_builder
             .add_change_if_needed(&change_address)
             .expect("Could not set change address");
