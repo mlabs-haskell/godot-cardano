@@ -22,35 +22,35 @@ jobs:
           skipPush: true
 
       - name: Build/Download
-        run: nix build .#libcsl_godot .#libcsl_godot-debug .#libcsl_godot-win .#libcsl_godot-win-debug .#csl_demo .#csl_demo-debug .#csl_demo-win .#csl_demo-win-debug
+        run: nix build .#godot-cardano .#demo .#demo-debug .#demo-windows .#demo-windows-debug
 
       - name: Prepare release
         run: |
           mkdir release release-prep
-          cp result/lib/libcsl_godot.so release/libcsl_godot.linux.template_release.x86_64.so
-          cp result-1/lib/libcsl_godot.so release/libcsl_godot.linux.template_debug.x86_64.so
-          cp result-2/bin/csl_godot.dll release/libcsl_godot.windows.template_release.x86_64.dll
-          cp result-3/bin/csl_godot.dll release/libcsl_godot.windows.template_debug.x86_64.dll
-          cp -r result-4/bin release-prep/csl_demo
-          cp -r result-5/bin release-prep/csl_demo-debug
-          cp -r result-6/bin release-prep/csl_demo-win
-          cp -r result-7/bin release-prep/csl_demo-win-debug
+          cp -r result-1/bin release-prep/godot-cardano-demo-linux
+          cp -r result-2/bin release-prep/godot-cardano-demo-linux-debug
+          cp -r result-3/bin release-prep/godot-cardano-demo-windows
+          cp -r result-4/bin release-prep/godot-cardano-demo-windows-debug
 
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r release/csl_demo-linux.zip release-prep/csl_demo
+          args: zip -qq -r release/godot-cardano.zip result/assets
 
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r release/csl_demo-linux-debug.zip release-prep/csl_demo-debug
+          args: zip -qq -r release/godot-cardano-demo-linux.zip release-prep/godot-cardano-demo-linux
 
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r release/csl_demo-win.zip release-prep/csl_demo-win
+          args: zip -qq -r release/godot-cardano-demo-linux-debug.zip release-prep/godot-cardano-demo-linux-debug
 
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r release/csl_demo-win-debug.zip release-prep/csl_demo-win-debug
+          args: zip -qq -r release/godot-cardano-demo-windows.zip release-prep/godot-cardano-demo-windows
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r release/godot-cardano-demo-windows-debug.zip release-prep/godot-cardano-demo-windows-debug
 
       - uses: rickstaa/action-create-tag@v1
         with:

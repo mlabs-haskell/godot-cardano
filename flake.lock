@@ -18,6 +18,23 @@
         "type": "github"
       }
     },
+    "gut": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1707108756,
+        "narHash": "sha256-QPlcnnAFPS9ZqUdAJCKTxeH5AK8P2HlmRoI5v990XWQ=",
+        "owner": "bitwes",
+        "repo": "gut",
+        "rev": "479c992bd5c04e5139bd75b4fdc946e207dec3d4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bitwes",
+        "ref": "v9.2.0",
+        "repo": "gut",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1701626906,
@@ -55,6 +72,7 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
+        "gut": "gut",
         "nixpkgs": "nixpkgs"
       }
     }

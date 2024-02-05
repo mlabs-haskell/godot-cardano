@@ -1,11 +1,8 @@
 libcsl_godot/target
-csl_demo/preview_token.txt
-
+demo/preview_token.txt
+demo/addons/
+test/addons/
 *.so
-
-# Godot 4+ specific ignores
 */.godot/
-
 */seed_phrase.txt
-
-*/result
+*/result*
