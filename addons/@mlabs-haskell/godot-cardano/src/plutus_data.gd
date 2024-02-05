@@ -1,7 +1,7 @@
 extends RefCounted
 
 class_name PlutusData
-
+		
 ## Recursively unwraps Objects to native data types
 static func unwrap(v: Variant, strict: bool = false) -> Variant:
 	match typeof(v):
@@ -39,6 +39,7 @@ static func unwrap(v: Variant, strict: bool = false) -> Variant:
 				return null
 			return _BigInt._from_int(v)
 		TYPE_OBJECT:
+			var _class: String = v.get_class()
 			if v.has_method("to_data"):
 				var data = v.to_data(strict)
 				if strict:
@@ -54,6 +55,9 @@ static func unwrap(v: Variant, strict: bool = false) -> Variant:
 					push_error("Tried to unwrap native types in strict data serialization")
 					return null
 				return v
+			else:
+				push_error("Constr field does not implement `to_data`: %s" % v)
+				return null
 		TYPE_PACKED_BYTE_ARRAY:
 			return v
 		_:

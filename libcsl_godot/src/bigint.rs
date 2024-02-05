@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use crate::gresult::{FailsWith, GResult};
-use cardano_serialization_lib::error::JsError;
+use cardano_serialization_lib::error::{DeserializeError, JsError};
 use cardano_serialization_lib::utils as CSL;
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
@@ -17,7 +17,7 @@ pub struct BigInt {
 #[derive(Debug)]
 pub enum BigIntError {
     CouldNotParseBigInt(JsError),
-    CouldNotConvertFromInt(JsError),
+    CouldNotDeserializeBigInt(DeserializeError),
 }
 
 impl GodotConvert for BigIntError {
@@ -29,7 +29,7 @@ impl ToGodot for BigIntError {
         use BigIntError::*;
         match self {
             CouldNotParseBigInt(_) => 1,
-            CouldNotConvertFromInt(_) => 2,
+            CouldNotDeserializeBigInt(_) => 2,
         }
     }
 }
@@ -54,7 +54,7 @@ impl BigInt {
 
     #[func]
     pub fn to_str(&self) -> String {
-        return self.b.to_str();
+        self.b.to_str()
     }
 
     pub fn from_int(n: i64) -> BigInt {
@@ -69,58 +69,62 @@ impl BigInt {
     }
 
     #[func]
-    fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
+    pub fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
         let b = self.b.add(&other.bind().deref().b);
-        return Gd::from_object(Self { b });
+        Gd::from_object(Self { b })
     }
 
     #[func]
-    fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
+    pub fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
         let b = self.b.mul(&other.bind().deref().b);
-        return Gd::from_object(Self { b });
+        Gd::from_object(Self { b })
     }
 
     #[func]
-    fn zero() -> Gd<BigInt> {
+    pub fn zero() -> Gd<BigInt> {
         Gd::from_object(Self {
             b: CSL::BigInt::from(0),
         })
     }
 
     #[func]
-    fn one() -> Gd<BigInt> {
+    pub fn one() -> Gd<BigInt> {
         Gd::from_object(Self {
             b: CSL::BigInt::from(1),
         })
     }
 
     #[func]
-    fn eq(&self, other: Gd<BigInt>) -> bool {
-        return self.b == other.bind().b;
+    pub fn eq(&self, other: Gd<BigInt>) -> bool {
+        self.b == other.bind().b
     }
 
     #[func]
-    fn gt(&self, other: Gd<BigInt>) -> bool {
-        return self > &other.bind();
+    pub fn gt(&self, other: Gd<BigInt>) -> bool {
+        self > &other.bind()
     }
 
     #[func]
-    fn lt(&self, other: Gd<BigInt>) -> bool {
-        return self < &other.bind();
+    pub fn lt(&self, other: Gd<BigInt>) -> bool {
+        self < &other.bind()
     }
 
-    // TODO: return `Result`
-    #[func]
-    fn from_bytes(bytes: PackedByteArray) -> Gd<BigInt> {
-        return Gd::from_object(BigInt {
-            b: CSL::BigInt::from_bytes(bytes.to_vec()).unwrap(),
-        });
+    pub fn from_bytes(bytes: PackedByteArray) -> Result<BigInt, BigIntError> {
+        CSL::BigInt::from_bytes(bytes.to_vec()).map_or_else(
+            |e| Result::Err(BigIntError::CouldNotDeserializeBigInt(e)),
+            |b| Result::Ok(BigInt { b }),
+        )
     }
 
     #[func]
-    fn to_bytes(&self) -> PackedByteArray {
+    pub fn _from_bytes(bytes: PackedByteArray) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_bytes(bytes))
+    }
+
+    #[func]
+    pub fn to_bytes(&self) -> PackedByteArray {
         let vec = self.b.to_bytes();
         let bytes: &[u8] = vec.as_slice().into();
-        return PackedByteArray::from(bytes);
+        PackedByteArray::from(bytes)
     }
 }

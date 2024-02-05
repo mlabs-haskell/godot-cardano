@@ -142,6 +142,11 @@ func blockfrost_request(request: Request) -> Variant:
 	return JSON.parse_string(content)
 
 func _get_protocol_parameters() -> ProtocolParameters:
+	var float_to_ten_millionths := func (x: float) -> int:
+		var padded := str(x).pad_decimals(7)
+		var point := padded.find(".")
+		return int(padded.substr(0, point) + padded.substr(point + 1))
+	
 	var params_json: Dictionary = await blockfrost_request(ProtocolParametersRequest.new(LatestEpoch.new()))
 	# Type hints and dictionaries don't interact well...
 	# We have to cast the dictionary values to [Variant] before [int], otherwise
@@ -154,10 +159,13 @@ func _get_protocol_parameters() -> ProtocolParameters:
 		params_json.max_tx_size as Variant as int,
 		params_json.min_fee_b as Variant as int,
 		params_json.min_fee_a as Variant as int,
+		float_to_ten_millionths.call(params_json.price_mem),
+		float_to_ten_millionths.call(params_json.price_step),
 		params_json.max_tx_ex_steps as Variant as int,
 		params_json.max_tx_ex_mem as Variant as int,
 	)
-	self.got_protocol_parameters.emit(params)
+	var cost_models := CostModels.new(params_json.cost_models)
+	self.got_protocol_parameters.emit(params, cost_models)
 	return params
 
 func utxo_assets(utxo: Dictionary) -> Dictionary:

@@ -2,7 +2,7 @@ use cardano_serialization_lib as CSL;
 use CSL::crypto::{ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
 use CSL::plutus::{ExUnits, PlutusData, RedeemerTag};
-use CSL::tx_builder_constants::TxBuilderConstants;
+use CSL::tx_builder::tx_inputs_builder::TxInputsBuilder;
 use CSL::utils::*;
 use CSL::{AssetName, MultiAsset, TransactionInput, TransactionOutput};
 
@@ -191,6 +191,14 @@ impl PlutusScript {
             script: CSL::plutus::PlutusScript::new_v2(script.to_vec()),
         });
     }
+    
+    #[func]
+    fn hash(&self) -> PackedByteArray {
+        let hash = self.script.hash();
+        let bound = hash.to_bytes();
+        let bytes: &[u8] = bound.as_slice().into();
+        PackedByteArray::from(bytes)
+    }
 }
 
 #[derive(GodotClass, Debug)]
@@ -251,6 +259,86 @@ impl Utxo {
             ),
         )
     }
+
+    pub fn add_to_inputs_builder(&self, inputs_builder: &mut TxInputsBuilder) {
+        inputs_builder.add_key_input(
+            &CSL::address::BaseAddress::from_address(
+                &CSL::address::Address::from_bech32(&self.address.to_string()).unwrap(),
+            )
+            .unwrap()
+            .stake_cred()
+            .to_keyhash()
+            .unwrap(),
+            &CSL::TransactionInput::new(
+                &CSL::crypto::TransactionHash::from_hex(&self.tx_hash.to_string())
+                    .expect("Could not decode transaction hash"),
+                self.output_index,
+            ),
+            &Value::new_with_assets(
+                &to_bignum(
+                    self.coin
+                        .bind()
+                        .b
+                        .as_u64()
+                        .expect("UTxO Lovelace exceeds maximum")
+                        .into(),
+                ),
+                &multiasset_from_dictionary(&self.assets),
+            ),
+        );
+    }
+}
+
+
+#[derive(GodotClass)]
+#[class(base=RefCounted, rename=_CostModels)]
+pub struct CostModels {
+    pub cost_models: CSL::plutus::Costmdls
+}
+
+#[godot_api]
+impl CostModels {
+    #[func]
+    pub fn create() -> Gd<CostModels> {
+        Gd::from_object(CostModels { cost_models: CSL::plutus::Costmdls::new() })
+    }
+
+    fn build_model(ops: Array<u64>) -> CSL::plutus::CostModel {
+        let mut model = CSL::plutus::CostModel::new();
+        let mut i = 0;
+        for op in ops.iter_shared() {
+            model.set(i, &Int::new(&BigNum::from(op))).unwrap();
+            i += 1;
+        }
+        model
+    }
+
+    #[func]
+    pub fn set_plutus_v1_model(&mut self, ops: Array<u64>) {
+        self.cost_models.insert(
+            &CSL::plutus::Language::new_plutus_v1(),
+            &Self::build_model(ops)
+        );
+    }
+
+    #[func]
+    pub fn set_plutus_v2_model(&mut self, ops: Array<u64>) {
+        self.cost_models.insert(
+            &CSL::plutus::Language::new_plutus_v2(),
+            &Self::build_model(ops)
+        );
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=_EvaluationResult)]
+pub struct EvaluationResult {
+    pub redeemers: Array<Gd<Redeemer>>,
+    pub fee: u64
+}
+
+#[godot_api]
+impl EvaluationResult {
 }
 
 #[derive(GodotClass)]
@@ -260,6 +348,7 @@ pub struct Transaction {
 
     pub max_ex_units: (u64, u64),
     pub slot_config: (u64, u64, u32),
+    pub cost_models: CSL::plutus::Costmdls
 }
 
 #[godot_api]
@@ -287,7 +376,7 @@ impl Transaction {
     }
 
     #[func]
-    fn evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Array<Gd<Redeemer>> {
+    fn evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<EvaluationResult> {
         let mut utxos: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
         gutxos.iter_shared().for_each(|gutxo| {
             let utxo = gutxo.bind().to_transaction_unspent_output();
@@ -297,7 +386,7 @@ impl Transaction {
         let eval_result = eval_phase_two_raw(
             &self.transaction.to_bytes(),
             &utxos,
-            &TxBuilderConstants::plutus_default_cost_models().to_bytes(),
+            &self.cost_models.to_bytes(),
             self.max_ex_units,
             self.slot_config,
             false,
@@ -312,9 +401,12 @@ impl Transaction {
                         redeemer: CSL::plutus::Redeemer::from_bytes(redeemer.to_vec()).unwrap(),
                     }))
                 });
-                actual_redeemers
+                Gd::from_object(EvaluationResult {
+                    redeemers: actual_redeemers,
+                    fee: self.transaction.body().fee().into()
+                })
             }
-            Err(_err) => Array::new(),
+            Err(_err) => Gd::from_object(EvaluationResult { redeemers: Array::new(), fee: 0 })
         }
     }
 }
