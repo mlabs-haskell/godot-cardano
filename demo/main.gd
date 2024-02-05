@@ -1,7 +1,12 @@
 extends Node2D
 
-var cardano: Cardano
-var wallet: Wallet.MnemonicWallet
+var provider: Provider
+@onready
+var cardano: Cardano = null
+@onready
+var key_ring_store: SingleAddressWalletStore = null
+@onready
+var wallet: Wallet.MnemonicWallet = null
 
 @onready
 var wallet_details: RichTextLabel = %WalletDetails
@@ -21,17 +26,15 @@ func _ready() -> void:
 		.open("./preview_token.txt", FileAccess.READ)\
 		.get_as_text(true)\
 		.replace("\n", "")
-	var provider: Provider = await BlockfrostProvider.new(
+		
+	provider = BlockfrostProvider.new(
 		Provider.Network.NETWORK_PREVIEW,
 		token
 	)
-	cardano = Cardano.new(provider)
-	add_child(cardano)
+	add_child(provider)
 	
 	# Connect signals to wallet details functions
 	wallet_details.text = "No wallet set"
-	var _ret := self.cardano.got_wallet.connect(_on_wallet_set)
-	
 
 func _process(_delta: float) -> void:
 	if wallet != null:
@@ -53,12 +56,28 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]		
 
 func _on_set_wallet_button_pressed() -> void:
-	wallet = cardano.set_wallet_from_mnemonic(phrase_input.text)
+	var res := SingleAddressWalletStore.import_from_seedphrase(
+		phrase_input.text,
+		"",
+		"1234",
+		0,
+		"First account",
+		"The first account created")
+	if res.is_ok():
+		key_ring_store = res.value.wallet_store
+		var key_ring := res.value.wallet
+		wallet = Wallet.MnemonicWallet.new(key_ring, provider)
+		add_child(wallet)
+		cardano = Cardano.new(wallet, provider)
+		add_child(cardano)
+		_on_wallet_set()
+	else:
+		push_error("Could not set wallet, found error", res.error)
 
 func _on_send_ada_button_pressed() -> void:
 	var address := address_input.text
 	var res: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
 	if res.is_ok():
-		cardano.send_lovelace_to(address, res.value)
+		cardano.send_lovelace_to("1234", address, res.value)
 	else:
 		push_error("There was an error while parsing the amount as a BigInt", res.error)

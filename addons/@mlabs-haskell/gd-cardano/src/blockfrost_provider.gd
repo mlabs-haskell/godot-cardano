@@ -70,6 +70,8 @@ func blockfrost_request(request: Request) -> Variant:
 	var http_request := HTTPRequest.new()
 	add_child(http_request)
 	
+	print_debug("Request URL", "%s/%s" % [network_endpoints[self.network], request.url()])
+	
 	var status := http_request.request_raw(
 		"%s/%s" % [network_endpoints[self.network], request.url()],
 		[ "project_id: %s" % self.api_key ] + request.headers(),
@@ -152,6 +154,5 @@ func get_utxos_at_address(address: String) -> Array[Utxo]:
 	)
 	
 	return utxos
-	
 func submit_transaction(tx_cbor: PackedByteArray) -> void:
-	blockfrost_request(SubmitTransactionRequest.new(tx_cbor))
+	var res := await blockfrost_request(SubmitTransactionRequest.new(tx_cbor))
