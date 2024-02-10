@@ -61,7 +61,7 @@ func pay_to_address_with_datum(
 		assets,
 		Datum.inline(encoded_datum.value)
 	)
-
+	
 func collect_from(utxos: Array[Utxo]) -> void:
 	_builder.collect_from(utxos)
 

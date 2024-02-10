@@ -24,9 +24,8 @@ func _init(provider_: Provider) -> void:
 		push_error("Failed to connect provider's 'got_era_summaries' signal ")
 
 func _ready() -> void:
-	@warning_ignore("redundant_await")
-	var _params := await provider._get_protocol_parameters()
-	var _summaries := await provider._get_era_summaries()
+	provider._get_protocol_parameters()
+	provider._get_era_summaries()
 
 func _on_got_protocol_parameters(params: ProtocolParameters) -> void:
 	_protocol_params = params

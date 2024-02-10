@@ -294,11 +294,8 @@ impl GTxBuilder {
             DatumValue::NoDatum => TransactionOutputBuilder::new(),
             DatumValue::Inline(bytes) => TransactionOutputBuilder::new()
                 .with_plutus_data(&PlutusData::from_bytes(bytes.to_vec()).unwrap()),
-            DatumValue::Hash(_bytes) =>
-            // TODO: datum hashes
-            {
-                TransactionOutputBuilder::new()
-            }
+            DatumValue::Hash(bytes) => TransactionOutputBuilder::new()
+                .with_data_hash(&CSL::crypto::DataHash::from_bytes(bytes.to_vec()).unwrap()),
         };
 
         let amount_builder = output_builder

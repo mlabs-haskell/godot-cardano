@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use crate::gresult::{FailsWith, GResult};
-use cardano_serialization_lib::error::{JsError, DeserializeError};
+use cardano_serialization_lib::error::{DeserializeError, JsError};
 use cardano_serialization_lib::utils as CSL;
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
@@ -17,7 +17,7 @@ pub struct BigInt {
 #[derive(Debug)]
 pub enum BigIntError {
     CouldNotParseBigInt(JsError),
-    CouldNotDeserializeBigInt(DeserializeError)
+    CouldNotDeserializeBigInt(DeserializeError),
 }
 
 impl GodotConvert for BigIntError {
