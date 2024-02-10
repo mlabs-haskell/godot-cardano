@@ -7,7 +7,7 @@ class_name BigInt
 ## methods. Alternatively, you can use [BigInt.one] or [BigInt.zero] to get those
 ## numbers.
 
-enum Status { SUCCESS = 0, COULD_NOT_PARSE_BIGINT = 1, COULD_NOT_CONVERT_FROM_INT = 2 }
+enum Status { SUCCESS = 0, COULD_NOT_PARSE_BIGINT = 1, COULD_NOT_DESERIALIZE_BIGINT = 2 }
 
 var _b: _BigInt
 
