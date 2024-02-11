@@ -32,9 +32,25 @@ func _ready() -> void:
 		token
 	)
 	add_child(provider)
-	
-	# Connect signals to wallet details functions
 	wallet_details.text = "No wallet set"
+	
+	# if a seed phrase file is available, we load the seed phrase from there
+	var seed_phrase_file := FileAccess.open("./seed_phrase.txt", FileAccess.READ)
+	if seed_phrase_file != null:
+		phrase_input.text = seed_phrase_file.get_as_text(true)
+		_create_wallet_from_seedphrase(phrase_input.text)
+	
+	# basic check for invertibility
+	var strict := true
+	var datum := ExampleDatum.new()
+	var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
+	if bytes_result.is_ok():
+		var data_result := Cbor.deserialize(bytes_result.value)
+		
+		if data_result.is_ok():
+			var data := ExampleDatum.from_data(data_result.value)
+			print(datum)
+			print(data)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
@@ -42,7 +58,9 @@ func _process(_delta: float) -> void:
 
 func _on_wallet_set() -> void:
 	var _ret := self.cardano.wallet.got_updated_utxos.connect(_on_utxos_updated)
-	wallet_details.text = "Using wallet %s" % cardano.wallet.get_change_address()
+	var addr := cardano.wallet.get_change_address().to_bech32()
+	wallet_details.text = "Using wallet %s" % addr
+	address_input.text = addr
 	send_ada_button.disabled = false
 	
 func _on_utxos_updated(utxos: Array[Utxo]) -> void:
@@ -51,13 +69,33 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 		func (acc: BigInt, utxo: Utxo) -> BigInt: return acc.add(utxo.coin()),
 		BigInt.zero()
 	)
-	wallet_details.text = "Using wallet %s" % cardano.wallet.get_change_address()
+	wallet_details.text = "Using wallet %s" % cardano.wallet.get_change_address().to_bech32()
 	if num_utxos > 0:
 		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]		
 
 func _on_set_wallet_button_pressed() -> void:
+	_create_wallet_from_seedphrase(phrase_input.text)
+
+func _on_send_ada_button_pressed() -> void:
+	var res: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
+	var amount := BigInt.zero()
+	if res.is_ok():
+		cardano.send_lovelace_to("1234", address_input.text, res.value)
+		amount = res.value
+	else:
+		push_error("There was an error while parsing the amount as a BigInt", res.error)
+	var address := Address.from_bech32(address_input.text)
+		
+	var tx: TxBuilder = cardano.new_tx()
+	tx.pay_to_address_with_datum(address, amount, {}, ExampleDatum.new())
+	var tx_complete: TxComplete = tx.complete()
+	tx_complete.sign("1234")
+	print(tx_complete._transaction.bytes().hex_encode())
+	tx_complete.submit()
+	
+func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	var res := SingleAddressWalletStore.import_from_seedphrase(
-		phrase_input.text,
+		seedphrase,
 		"",
 		"1234",
 		0,
@@ -73,11 +111,3 @@ func _on_set_wallet_button_pressed() -> void:
 		_on_wallet_set()
 	else:
 		push_error("Could not set wallet, found error", res.error)
-
-func _on_send_ada_button_pressed() -> void:
-	var address := address_input.text
-	var res: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
-	if res.is_ok():
-		cardano.send_lovelace_to("1234", address, res.value)
-	else:
-		push_error("There was an error while parsing the amount as a BigInt", res.error)

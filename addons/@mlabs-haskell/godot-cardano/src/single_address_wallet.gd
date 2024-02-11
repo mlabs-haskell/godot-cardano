@@ -18,8 +18,12 @@ var _wallet : _SingleAddressWallet
 
 func _init(wallet: _SingleAddressWallet) -> void:
 	self._wallet = wallet
+	
+## Get the account's [Address]
+func get_address() -> Address:
+	return Address.new(_wallet._get_address())
 
- ## Get the account's address as a BECH32-encoded [String].
+## Get the account's address as a BECH32-encoded [String].
 func get_address_bech32() -> String:
 	return _wallet._get_address_bech32()
 	
@@ -33,7 +37,7 @@ class SingleAddressWalletError extends Result:
 	
 	
 ## Sign the given [Transaction] and obtain a [Signature]
-func sign_transaction(password: String, tx: Transaction) -> SingleAddressWalletError:
+func _sign_transaction(password: String, tx: Transaction) -> SingleAddressWalletError:
 	return SingleAddressWalletError.new(_wallet._sign_transaction(password, tx._tx))
 	
 ## Switch to the account with the given `account_index`. It may fail if no such account

@@ -44,24 +44,23 @@
             allowBuiltinFetchGit = true;
           };
         };
-        make_demo = { debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
-          name = "demo";
-          src = ./demo;
+        make_gd_project = { name, src, debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
+          inherit name src;
           buildPhase = ''
             SYSTEM="${if windows then "windows" else "linux"}"
             VARIANT="${if debug then "debug" else "release"}"
 
             # copy addons directory
-            rm ./addons
+            rm -rf ./addons
             cp -r ${./addons} ./addons --no-preserve=mode,ownership
 
             # link debug gdextension
-            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/gd-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
+            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
 
             # link gdextension
             GDEXTENSION_PACKAGE="${make_libcsl_godot { inherit debug windows; }}"
             GDEXTENSION="$GDEXTENSION_PACKAGE/${if windows then "bin/csl_godot.dll" else "lib/libcsl_godot.so"}"
-            GDEXTENSION_LINK_NAME="addons/@mlabs-haskell/gd-cardano/bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
+            GDEXTENSION_LINK_NAME="addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
             ln -sf $GDEXTENSION $GDEXTENSION_LINK_NAME
 
             # link export templates
@@ -77,19 +76,30 @@
               --headless \
               --export-$VARIANT \
               "${if windows then "Windows Desktop" else "Linux/X11"}" \
-              ./out/demo${if windows then ".exe" else ""} \
+              ./out/${name}${if windows then ".exe" else ""} \
               ./project.godot
           '';
           installPhase = ''
-            [ ! -f out/demo${if windows then ".exe" else ""} ] && echo "out/demo${if windows then ".exe" else ""} not built, failing..." && false
+            [ ! -f out/${name}${if windows then ".exe" else ""} ] && echo "out/${name}${if windows then ".exe" else ""} not built, failing..." && false
             mkdir -p $out/bin
             cp out/* $out/bin/
           '';
           dontFixup = true;
           dontStrip = true;
         };
+        make_demo = { name ? "demo", src ? ./demo, ... }@args :
+          make_gd_project (args // { inherit name src; });
+        make_test = { name ? "test", src ? ./test, ... }@args :
+          make_gd_project (args // { inherit name src; });
+        run_test = pkg: pkgs.runCommand "test" {} ''
+          ${pkgs.steamPackages.steam-fhsenv-without-steam.run}/bin/steam-run ${pkg}/bin/test --headless
+          touch $out
+        '';
       in
       {
+        checks = {
+          test = run_test (make_test {});
+        };
         packages = rec {
           default = libcsl_godot;
           godot = pkgs.godot_4;
@@ -105,6 +115,7 @@
           demo-win = make_demo { windows = true; };
           demo-debug = make_demo { debug = true; };
           demo-win-debug = make_demo { windows = true; debug = true; };
+          test = make_test {};
         };
         devShells = {
           default = pkgs.mkShell {

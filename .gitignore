@@ -5,3 +5,7 @@ csl_demo/preview_token.txt
 
 # Godot 4+ specific ignores
 */.godot/
+
+*/seed_phrase.txt
+
+*/result

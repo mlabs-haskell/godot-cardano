@@ -9,7 +9,8 @@ use std::array::TryFromSliceError;
 use std::collections::BTreeMap;
 
 use bip32::{Language, Mnemonic};
-use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, StakeCredential};
+use cardano_serialization_lib::address::Address as CSLAddress;
+use cardano_serialization_lib::address::{BaseAddress, NetworkInfo, StakeCredential};
 use cardano_serialization_lib::crypto::{Bip32PrivateKey, Bip32PublicKey};
 use cardano_serialization_lib::error::JsError;
 use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
@@ -20,7 +21,7 @@ use pkcs5::{pbes2, Error};
 use scrypt::errors::InvalidParams;
 
 use crate::gresult::{FailsWith, GResult};
-use crate::{GSignature, GTransaction};
+use crate::ledger::transaction::{Address, Signature, Transaction};
 
 /// A single address wallet is a wallet with possibly many accounts
 /// and where each account has one address. It is possible to switch from one
@@ -97,8 +98,8 @@ impl SingleAddressWallet {
     pub fn sign_transaction(
         &self,
         password: String,
-        gtx: Gd<GTransaction>,
-    ) -> Result<GSignature, SingleAddressWalletError> {
+        gtx: Gd<Transaction>,
+    ) -> Result<Signature, SingleAddressWalletError> {
         let pbes2_params = self.get_pbes2_params();
         with_account_private_key(
             pbes2_params,
@@ -108,20 +109,27 @@ impl SingleAddressWallet {
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0).to_raw_key();
                 let tx_hash = hash_transaction(&gtx.bind().transaction.body());
-                GSignature {
-                    signature: vec![make_vkey_witness(&tx_hash, &spend_key)],
+                Signature {
+                    signature: make_vkey_witness(&tx_hash, &spend_key),
                 }
             },
         )
     }
 
     #[func]
-    fn _sign_transaction(&self, password: String, gtx: Gd<GTransaction>) -> Gd<GResult> {
+    fn _sign_transaction(&self, password: String, gtx: Gd<Transaction>) -> Gd<GResult> {
         Self::to_gresult_class(self.sign_transaction(password, gtx))
     }
 
-    pub fn get_address(&self) -> Address {
-        address_from_key(&self.account_info.public_key)
+    pub fn get_address(&self) -> Gd<Address> {
+        Gd::from_object(Address {
+            address: address_from_key(&self.account_info.public_key),
+        })
+    }
+
+    #[func]
+    fn _get_address(&self) -> Gd<Address> {
+        self.get_address()
     }
 
     pub fn get_address_bech32(&self) -> GString {
@@ -602,7 +610,7 @@ pub struct AccountInfo {
     name: GString,
     description: GString,
     public_key: Bip32PublicKey,
-    address: Address,
+    address: CSLAddress,
     address_bech32: GString,
 }
 
@@ -677,7 +685,7 @@ fn duplicate_key(k: &Bip32PublicKey) -> Bip32PublicKey {
 }
 
 // Takes the account key
-fn address_from_key(key: &Bip32PublicKey) -> Address {
+fn address_from_key(key: &Bip32PublicKey) -> CSLAddress {
     let spend = key.derive(0).unwrap().derive(0).unwrap();
     let stake = key.derive(2).unwrap().derive(0).unwrap();
     let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
