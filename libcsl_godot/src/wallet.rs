@@ -107,13 +107,9 @@ impl SingleAddressWallet {
             self.account_info.index,
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0).to_raw_key();
-                let stake_key = account_private_key.derive(2).derive(0).to_raw_key();
                 let tx_hash = hash_transaction(&gtx.bind().transaction.body());
                 GSignature {
-                    signature: vec![
-                        make_vkey_witness(&tx_hash, &spend_key),
-                        make_vkey_witness(&tx_hash, &stake_key),
-                    ],
+                    signature: vec![make_vkey_witness(&tx_hash, &spend_key)],
                 }
             },
         )
