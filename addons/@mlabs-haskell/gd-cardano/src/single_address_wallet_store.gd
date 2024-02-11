@@ -31,20 +31,20 @@ class GetWalletError extends Result:
 func get_wallet(account_index: int) -> GetWalletError:
 	return GetWalletError.new(_wallet_store._get_wallet(account_index))
 
-class ImportResult extends RefCounted:
-	var _import_res: _SingleAddressWalletImportResult
+class WalletCreation extends RefCounted:
+	var _creation_res: _SingleAddressWalletCreationResult
 	var wallet_store: SingleAddressWalletStore:
-		get: return SingleAddressWalletStore.new(_import_res.wallet_store)
+		get: return SingleAddressWalletStore.new(_creation_res.wallet_store)
 	var wallet: SingleAddressWallet:
-		get: return SingleAddressWallet.new(_import_res.wallet)
+		get: return SingleAddressWallet.new(_creation_res.wallet)
 	
-	func _init(import_res: _SingleAddressWalletImportResult):
-		_import_res = import_res
+	func _init(creation_res: _SingleAddressWalletCreationResult):
+		_creation_res = creation_res
 
-class ImportWalletError extends Result:
+class WalletCreationResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
-	var value: ImportResult:
-		get: return ImportResult.new(_res.unsafe_value() as _SingleAddressWalletImportResult)
+	var value: WalletCreation:
+		get: return WalletCreation.new(_res.unsafe_value() as _SingleAddressWalletCreationResult)
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
@@ -69,7 +69,22 @@ static func import_from_seedphrase(
 	wallet_password: String,
 	account_index: int,
 	name: String,
-	account_description: String) -> ImportWalletError:
-	return ImportWalletError.new(
+	account_description: String) -> WalletCreationResult:
+	return WalletCreationResult.new(
 		_SingleAddressWalletStore._import_from_seedphrase(
 			phrase, phrase_password, wallet_password, account_index, name, account_description))
+
+## Construct a [SingleAddressWalletStoreError] from a wallet password and using
+## Godot's entropy source. It does *not* return a seed phrase.
+## Check [SingleAddressWalletStore.import_from_seedphrase] to learn more about
+## how Godot wallets work.
+static func create(
+	wallet_password: String,
+	account_index: int,
+	name: String,
+	account_description) -> WalletCreationResult:
+	return WalletCreationResult.new(
+		_SingleAddressWalletStore._create(
+			wallet_password, account_index, name, account_description
+		)
+	)

@@ -243,7 +243,7 @@ impl SingleAddressWalletStore {
         account_index: u32,
         account_name: String,
         account_description: String,
-    ) -> Result<SingleAddressWalletImportResult, SingleAddressWalletStoreError> {
+    ) -> Result<SingleAddressWalletCreationResult, SingleAddressWalletStoreError> {
         // We obtain the master private key with the mnemonic and the user
         // password
         let mnemonic = Mnemonic::new(
@@ -255,9 +255,50 @@ impl SingleAddressWalletStore {
             Language::English,
         )
         .map_err(|e| SingleAddressWalletStoreError::BadPhrase(e))?;
+        Self::from_entropy(
+            mnemonic.entropy(),
+            phrase_password,
+            wallet_password,
+            account_index,
+            account_name,
+            account_description,
+        )
+    }
 
+    /// Create a `SingleAddressWalletStore` by using entropy to generate the
+    /// private key.
+    ///
+    /// We do not return a seed phrase - for now we consider that importing godot-cardano
+    /// wallets is not a likely use case.
+    pub fn create(
+        wallet_password: String,
+        account_index: u32,
+        account_name: String,
+        account_description: String,
+    ) -> Result<SingleAddressWalletCreationResult, SingleAddressWalletStoreError> {
+        // we use the longest possible entropy array allowed by BIP39 (256 b = 32 B)
+        let mut crypto = Crypto::new();
+        let entropy = crypto.generate_random_bytes(32);
+        Self::from_entropy(
+            entropy.as_slice(),
+            String::from(""),
+            wallet_password,
+            account_index,
+            account_name,
+            account_description,
+        )
+    }
+
+    pub fn from_entropy(
+        entropy: &[u8],
+        phrase_password: String,
+        wallet_password: String,
+        account_index: u32,
+        account_name: String,
+        account_description: String,
+    ) -> Result<SingleAddressWalletCreationResult, SingleAddressWalletStoreError> {
         let master_private_key =
-            Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), phrase_password.as_bytes())
+            Bip32PrivateKey::from_bip39_entropy(entropy, phrase_password.as_bytes())
                 .derive(harden(1852))
                 .derive(harden(1815));
 
@@ -338,7 +379,7 @@ impl SingleAddressWalletStore {
             account_infos,
         );
 
-        Ok(SingleAddressWalletImportResult {
+        Ok(SingleAddressWalletCreationResult {
             wallet_store: Gd::from_object(wallet_store),
             wallet: Gd::from_object(wallet),
         })
@@ -348,7 +389,7 @@ impl SingleAddressWalletStore {
     fn _import_from_seedphrase(
         phrase: String,
         mnemonic_password: String,
-        account_password: String,
+        wallet_password: String,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -356,7 +397,22 @@ impl SingleAddressWalletStore {
         Self::to_gresult_class(Self::import_from_seedphrase(
             phrase,
             mnemonic_password,
-            account_password,
+            wallet_password,
+            account_index,
+            account_name,
+            account_description,
+        ))
+    }
+
+    #[func]
+    fn _create(
+        wallet_password: String,
+        account_index: u32,
+        account_name: String,
+        account_description: String,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(Self::create(
+            wallet_password,
             account_index,
             account_name,
             account_description,
@@ -565,8 +621,8 @@ impl Clone for AccountInfo {
 }
 
 #[derive(GodotClass)]
-#[class(base=RefCounted, rename=_SingleAddressWalletImportResult)]
-pub struct SingleAddressWalletImportResult {
+#[class(base=RefCounted, rename=_SingleAddressWalletCreationResult)]
+pub struct SingleAddressWalletCreationResult {
     #[var]
     wallet_store: Gd<SingleAddressWalletStore>,
     #[var]
