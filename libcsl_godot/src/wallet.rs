@@ -606,7 +606,7 @@ where
         pbes2_params,
         encrypted_master_private_key,
         password,
-        &mut |master_key| f(master_key.derive(account_index)),
+        &mut |master_key| f(master_key.derive(harden(account_index))),
     )
 }
 
