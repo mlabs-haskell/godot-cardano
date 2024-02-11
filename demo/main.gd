@@ -95,12 +95,12 @@ func _on_send_ada_button_pressed() -> void:
 	print((tx.complete())._transaction.bytes().hex_encode())
 	tx.mint_assets(
 		PlutusScript.create("46010000222499".hex_decode()), 
-		[ TxBuilder.MintToken.new("667788".hex_decode(), BigInt.one().negate()) ],
+		[ TxBuilder.MintToken.new("667788".hex_decode(), BigInt.one()) ],
 		VoidData.new()
 	)
 	tx.mint_assets(
 		PlutusScript.create("46010000222601".hex_decode()),
-		[ TxBuilder.MintToken.new("8899aa".hex_decode(), BigInt.one().negate()) ],
+		[ TxBuilder.MintToken.new("8899aa".hex_decode(), BigInt.one()) ],
 		VoidData.new()
 	)
 	var tx_complete: TxComplete = tx.complete()
