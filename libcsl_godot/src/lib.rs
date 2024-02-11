@@ -394,7 +394,7 @@ impl GTxBuilder {
                 self.mint_builder.add_asset(
                     &MintWitness::new_plutus_script(&PlutusScriptSource::new(script), redeemer),
                     &AssetName::new(asset_name.to_vec()).unwrap(),
-                    &Int::new(&BigNum::from_str(&amount.bind().b.to_str()).unwrap()),
+                    &Int::from_str(&amount.bind().b.to_str()).unwrap(),
                 )
             },
         );
@@ -439,6 +439,7 @@ impl GTxBuilder {
         tx_builder
             .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)
             .expect("Could not add inputs");
+
         tx_builder.set_mint_builder(&self.mint_builder.clone());
         if self.redeemers.len() > 0 {
             let min_collateral = self.fee * 150 / 100 + 1;
