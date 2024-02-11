@@ -23,7 +23,7 @@ func _init(wallet: _SingleAddressWallet) -> void:
 func get_address_bech32() -> String:
 	return _wallet._get_address_bech32()
 	
-class SignTransactionError extends Result:
+class SingleAddressWalletError extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: Signature:
 		get: return _res.unsafe_value() as Signature
@@ -33,6 +33,10 @@ class SignTransactionError extends Result:
 	
 	
 ## Sign the given [Transaction] and obtain a [Signature]
-func sign_transaction(password: String, tx: Transaction) -> SignTransactionError:
-	return SignTransactionError.new(_wallet._sign_transaction(password, tx._tx))
-
+func sign_transaction(password: String, tx: Transaction) -> SingleAddressWalletError:
+	return SingleAddressWalletError.new(_wallet._sign_transaction(password, tx._tx))
+	
+## Switch to the account with the given `account_index`. It may fail if no such account
+## exists. It returns the account index when it succeeds.
+func switch_account(account_index: int) -> SingleAddressWalletError:
+	return SingleAddressWalletError.new(_wallet._switch_account(account_index))

@@ -134,13 +134,18 @@ impl SingleAddressWallet {
     }
 
     // Switch to the given account
-    pub fn switch_account(&mut self, account_index: u32) -> Result<(), SingleAddressWalletError> {
+    pub fn switch_account(&mut self, account_index: u32) -> Result<u32, SingleAddressWalletError> {
         let new_account = self
             .accounts
             .get(&account_index)
             .ok_or(SingleAddressWalletError::NonExistentAccount(account_index))?;
         self.account_info = new_account.to_owned();
-        Ok(())
+        Ok(account_index)
+    }
+
+    #[func]
+    fn _switch_account(&mut self, account_index: u32) -> Gd<GResult> {
+        Self::to_gresult(self.switch_account(account_index))
     }
 }
 
@@ -339,6 +344,25 @@ impl SingleAddressWalletStore {
         })
     }
 
+    #[func]
+    fn _import_from_seedphrase(
+        phrase: String,
+        mnemonic_password: String,
+        account_password: String,
+        account_index: u32,
+        account_name: String,
+        account_description: String,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(Self::import_from_seedphrase(
+            phrase,
+            mnemonic_password,
+            account_password,
+            account_index,
+            account_name,
+            account_description,
+        ))
+    }
+
     /// Obtains a `SingleAddressWallet` that can be used for signing operations.
     /// This step may fail, since a `SingleAddressWalletStore` is a resource
     /// loaded from disk and may contain erroneous information.
@@ -426,25 +450,6 @@ impl SingleAddressWalletStore {
             account_infos.insert(account.index, account_info);
         }
         Ok(account_infos)
-    }
-
-    #[func]
-    fn _import_from_seedphrase(
-        phrase: String,
-        mnemonic_password: String,
-        account_password: String,
-        account_index: u32,
-        account_name: String,
-        account_description: String,
-    ) -> Gd<GResult> {
-        Self::to_gresult_class(Self::import_from_seedphrase(
-            phrase,
-            mnemonic_password,
-            account_password,
-            account_index,
-            account_name,
-            account_description,
-        ))
     }
 
     fn get_scrypt_params(&self) -> Result<scrypt::Params, SingleAddressWalletStoreError> {
