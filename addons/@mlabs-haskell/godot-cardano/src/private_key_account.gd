@@ -36,6 +36,10 @@ class GetAddressResult extends Result:
 ## Get the account's address as a BECH32-encoded [String].
 func get_address_bech32() -> GetAddressResult:
 	return GetAddressResult.new(_account._get_address_bech32())
+
+## Get the account's address as an [Address]
+func get_address() -> Address:
+	return Address.new(_account._get_address())
 	
 ## Sign the given [Transaction] and obtain a [Signature]
 func sign_transaction(tx: Transaction) -> Signature:

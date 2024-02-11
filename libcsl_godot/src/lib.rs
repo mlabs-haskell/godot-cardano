@@ -1,15 +1,16 @@
-use cardano_serialization_lib::address::{Address, BaseAddress, NetworkInfo, StakeCredential};
-use cardano_serialization_lib::crypto::{
-    Bip32PrivateKey, ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses,
-};
+use std::ops::Deref;
+
+use cardano_serialization_lib as CSL;
+use cardano_serialization_lib::address::{BaseAddress, NetworkInfo, StakeCredential};
+use cardano_serialization_lib::crypto::{Bip32PrivateKey, TransactionHash, Vkeywitnesses};
 use cardano_serialization_lib::error::JsError;
 use cardano_serialization_lib::fees::LinearFee;
 use cardano_serialization_lib::output_builder::*;
+use cardano_serialization_lib::plutus::PlutusData;
+use cardano_serialization_lib::tx_builder::tx_inputs_builder::TxInputsBuilder;
 use cardano_serialization_lib::tx_builder::*;
 use cardano_serialization_lib::utils::*;
-use cardano_serialization_lib::{
-    AssetName, MultiAsset, Transaction, TransactionInput, TransactionOutput, TransactionWitnessSet,
-};
+use cardano_serialization_lib::{TransactionInput, TransactionWitnessSet};
 
 use bip32::{Language, Mnemonic};
 
@@ -18,48 +19,18 @@ use godot::prelude::*;
 
 pub mod bigint;
 pub mod gresult;
+pub mod plutus;
+pub mod ledger {
+    pub mod transaction;
+}
 
-use bigint::BigInt;
-use gresult::FailsWith;
-
-use crate::gresult::GResult;
+use crate::bigint::BigInt;
+use crate::gresult::{FailsWith, GResult};
+use crate::ledger::transaction::{
+    multiasset_from_dictionary, Address, Datum, DatumValue, Signature, Transaction, Utxo,
+};
 
 struct MyExtension;
-
-#[derive(GodotClass, Debug)]
-#[class(init, base=RefCounted, rename=_Utxo)]
-struct Utxo {
-    #[var(get)]
-    tx_hash: GString,
-    #[var(get)]
-    output_index: u32,
-    #[var(get)]
-    address: GString,
-    #[var(get)]
-    coin: Gd<BigInt>,
-    #[var(get)]
-    assets: Dictionary,
-}
-
-#[godot_api]
-impl Utxo {
-    #[func]
-    fn create(
-        tx_hash: GString,
-        output_index: u32,
-        address: GString,
-        coin: Gd<BigInt>,
-        assets: Dictionary,
-    ) -> Gd<Utxo> {
-        return Gd::from_object(Self {
-            tx_hash,
-            output_index,
-            address,
-            coin,
-            assets,
-        });
-    }
-}
 
 #[derive(GodotClass)]
 #[class(init, base=RefCounted)]
@@ -164,7 +135,7 @@ impl PrivateKeyAccount {
             .derive(harden(self.account_index))
     }
 
-    fn get_address(&self) -> Address {
+    fn get_address(&self) -> CSL::address::Address {
         let account_root = self.get_account_root();
         let spend = account_root.derive(0).derive(0).to_public();
         let stake = account_root.derive(2).derive(0).to_public();
@@ -177,6 +148,13 @@ impl PrivateKeyAccount {
             &stake_cred,
         )
         .to_address()
+    }
+
+    #[func]
+    fn _get_address(&self) -> Gd<Address> {
+        Gd::from_object(Address {
+            address: self.get_address(),
+        })
     }
 
     /// It may fail due to a conversion error to Bech32.
@@ -192,63 +170,26 @@ impl PrivateKeyAccount {
         Self::to_gresult(self.get_address_bech32())
     }
 
-    fn sign_transaction(&self, gtx: &GTransaction) -> GSignature {
+    fn sign_transaction(&self, gtx: &Transaction) -> Signature {
         let account_root = self.get_account_root();
         let spend_key = account_root.derive(0).derive(0).to_raw_key();
         let tx_hash = hash_transaction(&gtx.transaction.body());
-        GSignature {
+        Signature {
             signature: make_vkey_witness(&tx_hash, &spend_key),
         }
     }
 
     #[func]
-    fn _sign_transaction(&self, gtx: Gd<GTransaction>) -> Gd<GSignature> {
+    fn _sign_transaction(&self, gtx: Gd<Transaction>) -> Gd<Signature> {
         Gd::from_object(self.sign_transaction(&gtx.bind()))
-    }
-}
-
-// TODO: qualify all CSL types and skip renaming
-#[derive(GodotClass)]
-#[class(base=RefCounted, rename=Signature)]
-struct GSignature {
-    signature: Vkeywitness,
-}
-
-#[derive(GodotClass)]
-#[class(base=RefCounted, rename=_Transaction)]
-struct GTransaction {
-    transaction: Transaction,
-}
-
-#[godot_api]
-impl GTransaction {
-    #[func]
-    fn bytes(&self) -> PackedByteArray {
-        let bytes_vec = self.transaction.clone().to_bytes();
-        let bytes: &[u8] = bytes_vec.as_slice().into();
-        return PackedByteArray::from(bytes);
-    }
-
-    #[func]
-    fn add_signature(&mut self, signature: Gd<GSignature>) {
-        // NOTE: destroys? transaction and replaces with a new one. might be better to add
-        // signatures to the witness set before the transaction is actually built
-        let mut witness_set = self.transaction.witness_set();
-        let mut vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
-        vkey_witnesses.add(&signature.bind().signature);
-        witness_set.set_vkeys(&vkey_witnesses);
-        self.transaction = Transaction::new(
-            &self.transaction.body(),
-            &witness_set,
-            self.transaction.auxiliary_data(),
-        )
     }
 }
 
 #[derive(GodotClass)]
 #[class(base=Node, rename=_TxBuilder)]
-struct TxBuilder {
-    tx_builder_config: TransactionBuilderConfig,
+struct GTxBuilder {
+    tx_builder: TransactionBuilder,
+    inputs_builder: TxInputsBuilder,
 }
 
 #[derive(Debug)]
@@ -269,14 +210,14 @@ impl ToGodot for TxBuilderError {
     }
 }
 
-impl FailsWith for TxBuilder {
+impl FailsWith for GTxBuilder {
     type E = TxBuilderError;
 }
 
 #[godot_api]
-impl TxBuilder {
+impl GTxBuilder {
     /// It may fail with a BadProtocolParameters.
-    fn create(params: &ProtocolParameters) -> Result<TxBuilder, TxBuilderError> {
+    fn create(params: &ProtocolParameters) -> Result<GTxBuilder, TxBuilderError> {
         let tx_builder_config = TransactionBuilderConfigBuilder::new()
             .coins_per_utxo_byte(&to_bignum(params.coins_per_utxo_byte))
             .pool_deposit(&to_bignum(params.pool_deposit))
@@ -289,8 +230,12 @@ impl TxBuilder {
             ))
             .build()
             .map_err(|e| TxBuilderError::BadProtocolParameters(e))?;
+        let tx_builder = TransactionBuilder::new(&tx_builder_config);
 
-        Ok(TxBuilder { tx_builder_config })
+        Ok(GTxBuilder {
+            tx_builder,
+            inputs_builder: TxInputsBuilder::new(),
+        })
     }
 
     #[func]
@@ -299,105 +244,115 @@ impl TxBuilder {
     }
 
     #[func]
-    /// FIXME: This function should take validated parameters of the
-    /// appropriate type instead of Strings.
-    fn send_lovelace(
-        &mut self,
-        recipient_bech32: String,
-        change_address_bech32: String,
-        amount: Gd<BigInt>,
-        gutxos: Array<Gd<Utxo>>,
-    ) -> Gd<GTransaction> {
-        let recipient =
-            Address::from_bech32(&recipient_bech32).expect("Could not decode address bech32");
-        let change_address =
-            Address::from_bech32(&change_address_bech32).expect("Could not decode address bech32");
-
-        let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
-
-        for gutxo in gutxos.iter_shared() {
+    fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) {
+        let inputs_builder = &mut self.inputs_builder;
+        gutxos.iter_shared().for_each(|gutxo| {
             let utxo = gutxo.bind();
-            let mut assets: MultiAsset = MultiAsset::new();
-            for (unit, amount) in utxo.assets.iter_shared().typed::<GString, Gd<BigInt>>() {
-                assets.set_asset(
-                    &ScriptHash::from_hex(
-                        &unit
-                            .to_string()
-                            .get(0..56)
-                            .expect("Could not extract policy ID"),
-                    )
-                    .expect("Could not decode policy ID"),
-                    &AssetName::new(
-                        hex::decode(
-                            unit.to_string()
-                                .get(56..)
-                                .expect("Could not extract asset name"),
-                        )
-                        .unwrap()
-                        .into(),
-                    )
-                    .expect("Could not decode asset name"),
-                    BigNum::from_str(&amount.bind().to_str()).unwrap(),
-                );
-            }
-
-            utxos.add(&TransactionUnspentOutput::new(
+            inputs_builder.add_key_input(
+                &BaseAddress::from_address(
+                    &CSL::address::Address::from_bech32(&utxo.address.to_string()).unwrap(),
+                )
+                .unwrap()
+                .stake_cred()
+                .to_keyhash()
+                .unwrap(),
                 &TransactionInput::new(
                     &TransactionHash::from_hex(&utxo.tx_hash.to_string())
                         .expect("Could not decode transaction hash"),
                     utxo.output_index,
                 ),
-                &TransactionOutput::new(
-                    &Address::from_bech32(&utxo.address.to_string())
-                        .expect("Could not decode address bech32"),
-                    &Value::new_with_assets(
-                        &to_bignum(
-                            utxo.coin
-                                .bind()
-                                .b
-                                .as_u64()
-                                .expect("UTxO Lovelace exceeds maximum")
-                                .into(),
-                        ),
-                        &assets,
+                &Value::new_with_assets(
+                    &to_bignum(
+                        utxo.coin
+                            .bind()
+                            .b
+                            .as_u64()
+                            .expect("UTxO Lovelace exceeds maximum")
+                            .into(),
                     ),
+                    &multiasset_from_dictionary(&utxo.assets),
                 ),
-            ));
-        }
-        let output_builder = TransactionOutputBuilder::new();
+            );
+        });
+    }
+
+    #[func]
+    fn pay_to_address(&mut self, address: Gd<Address>, coin: Gd<BigInt>, assets: Dictionary) {
+        self.pay_to_address_with_datum(address, coin, assets, Datum::none());
+    }
+
+    #[func]
+    fn pay_to_address_with_datum(
+        &mut self,
+        address: Gd<Address>,
+        coin: Gd<BigInt>,
+        assets: Dictionary,
+        datum: Gd<Datum>,
+    ) {
+        let output_builder = match &datum.bind().deref().datum {
+            // TODO: do this privately inside `Datum`?
+            DatumValue::NoDatum => TransactionOutputBuilder::new(),
+            DatumValue::Inline(bytes) => TransactionOutputBuilder::new()
+                .with_plutus_data(&PlutusData::from_bytes(bytes.to_vec()).unwrap()),
+            DatumValue::Hash(bytes) => TransactionOutputBuilder::new()
+                .with_data_hash(&CSL::crypto::DataHash::from_bytes(bytes.to_vec()).unwrap()),
+        };
+
         let amount_builder = output_builder
-            .with_address(&recipient)
+            .with_address(&address.bind().address)
             .next()
-            .expect("Failed to build transaction output");
+            .expect("Error to build transaction output");
         let output = amount_builder
-            .with_coin(
-                &amount
+            .with_coin_and_asset(
+                &coin
                     .bind()
                     .b
                     .as_u64()
                     .expect("Output lovelace exceeds maximum"),
+                &multiasset_from_dictionary(&assets),
             )
             .build()
-            .expect("Failed to build amount output");
-        let mut tx_builder = TransactionBuilder::new(&self.tx_builder_config);
+            .expect("Error to build amount output");
+        self.tx_builder
+            .add_output(&output)
+            .expect("Could not add output");
+    }
+
+    #[func]
+    fn balance_and_assemble(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+        change_address: Gd<Address>,
+    ) -> Gd<Transaction> {
+        let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
+        gutxos.iter_shared().for_each(|gutxo| {
+            utxos.add(&gutxo.bind().to_transaction_unspent_output());
+        });
+        let mut tx_builder = self.tx_builder.clone();
+        tx_builder.set_inputs(&self.inputs_builder);
         tx_builder
             .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)
             .expect("Could not add inputs");
         tx_builder
-            .add_output(&output)
-            .expect("Could not add output");
-        tx_builder
-            .add_change_if_needed(&change_address)
+            .add_change_if_needed(&change_address.bind().address)
             .expect("Could not set change address");
         let tx_body = tx_builder.build().expect("Could not build transaction");
 
         let mut witnesses = TransactionWitnessSet::new();
         let vkey_witnesses = Vkeywitnesses::new();
         witnesses.set_vkeys(&vkey_witnesses);
-
-        return Gd::from_object(GTransaction {
-            transaction: Transaction::new(&tx_body, &witnesses, None),
+        return Gd::from_object(Transaction {
+            transaction: CSL::Transaction::new(&tx_body, &witnesses, None),
         });
+    }
+
+    #[func]
+    fn complete(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+        change_address: Gd<Address>,
+    ) -> Gd<Transaction> {
+        return self.balance_and_assemble(gutxos, change_address);
     }
 }
 
