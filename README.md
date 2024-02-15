@@ -5,7 +5,7 @@ the Godot engine and Cardano blockchain. The project is currently a *work-in-pro
 
 This project was publicly funded by the Cardano community in round 10 of [Project Catalyst](https://projectcatalyst.io/funds/10/f10-developer-ecosystem-the-evolution/mlabs-cardano-game-engine-wallet-godot-integration). Thank you for your support!
 
-## Status of the project
+## Status
 
 The project currently consists of a small demo that showcases two features:
 
@@ -13,7 +13,7 @@ The project currently consists of a small demo that showcases two features:
 * Transferring ADA to an arbitrary Cardano address.
 
 At the momment, the demo runs on the *preview* testnet and was tested on
-*Linux, x86-64 PCs*. Support for others operating systems is coming in the future.
+*Linux and Windows x86-64 PCs*.
 
 ## How to build and run the demo with Godot
 
@@ -91,7 +91,7 @@ For instance, here we use [Cardanoscan (Preview)](https://preview.cardanoscan.io
 
 ## What's next?
 
-Check our milestones [here](https://milestones.projectcatalyst.io/projects/1000114)! This README is concerned mostly with running the demo we are delivering as part of milestone 1.
+Check our milestones [here](https://milestones.projectcatalyst.io/projects/1000114)!
 
 You may also read our [Proof Of Achievement / Research report](./docs/M1_PoA-Research-Report.pdf) written for the milestone as well. This document discusses our work and rationale for the technical decisions we have made.
 
@@ -128,7 +128,8 @@ Enter development shell with all dependencies in PATH and addons linked.
 
 ```
 nix develop
-# in development shell
-cd libcsl_godot
-cargo build
+# ... entered development shell
+(cd libcsl_godot && cargo build)
+(cd demo && godot4 --headless --export-debug "Linux/X11" out/demo project.godot)
+(cd test && godot4 --headless --debug --script res://addons/gut/gut_cmdln.gd)
 ```

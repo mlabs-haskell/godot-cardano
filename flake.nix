@@ -95,18 +95,6 @@
         };
         make_demo = { name ? "demo", src ? ./demo, ... }@args:
           make_gd_project (args // { inherit name src; });
-        make_test = { name ? "test", src ? ./test, ... }@args:
-          (make_gd_project (args // { inherit name src; })).overrideAttrs {
-            preConfigurePhase = ''
-              rm -rf ./addons/gut
-              mkdir -p ./addons
-              ln -s ${inputs.gut}/addons/gut ./addons/gut
-            '';
-          };
-        run_test = pkg: pkgs.runCommand "test" { } ''
-          ${self'.packages.steam-run}/bin/steam-run ${pkg}/bin/test --headless
-          touch $out
-        '';
         run_gut_test = { name ? "godot-cardano-test", src ? ./test }: pkgs.stdenv.mkDerivation {
           inherit name src;
           configurePhase = ''
@@ -164,12 +152,20 @@
             shellHook = ''
               set -e
               test -f demo/project.godot
-              cd demo
-              ${self'.packages.demo.configurePhase}
-              cd ..
-              cd test
-              ${self'.packages.test.configurePhase}
-              cd ..
+
+              mkdir -p demo/out
+
+              # link gdextension
+              rm -f addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.*.template_*.*
+              ln -s ../../../../libcsl_godot/target/debug/libcsl_godot.so 'addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so'
+
+              link-addon () {
+                rm -rf ./addons/@mlabs-haskell/godot-cardano
+                ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+              }
+              (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
+              (cd test && (${self'.packages.test.configurePhase}) && link-addon)
+
               set +e
             '';
           };
