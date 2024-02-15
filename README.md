@@ -131,5 +131,5 @@ nix develop
 # ... entered development shell
 (cd libcsl_godot && cargo build)
 (cd demo && godot4 --headless --export-debug "Linux/X11" out/demo project.godot)
-(cd test && godot4 --headless --debug --script res://addons/gut/gut_cmdln.gd)
+(cd test && godot4 --headless --script res://addons/gut/gut_cmdln.gd)
 ```

@@ -112,10 +112,47 @@
             echo "Reimporting resources..."
             timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
             echo "Reimporting resources done."
-            ${self'.packages.godot}/bin/godot4 --headless --debug --script res://addons/gut/gut_cmdln.gd
+            RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd)
+            echo -e "$RESULT"
+            [[ $RESULT =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
           '';
           installPhase = "touch $out";
           dontFixup = true;
+        };
+        devShell = pkgs.mkShell {
+          buildInputs = [
+            self'.packages.godot
+            self'.packages.steam-run
+            pkgs.cargo
+            pkgs.rustc
+          ];
+          shellHook = ''
+            set -e
+            test -f demo/project.godot
+
+            mkdir -p demo/out
+
+            # link gdextension
+            rm -f addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.*.template_*.*
+            ln -s ../../../../libcsl_godot/target/debug/libcsl_godot.so 'addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so'
+
+            link-addon () {
+              rm -rf ./addons/@mlabs-haskell/godot-cardano
+              ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+            }
+            (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
+            (cd test && (${self'.packages.test.configurePhase}) && link-addon)
+
+            set +e
+          '';
+        };
+        devShellCrossWin = pkgs.mkShell {
+          buildInputs = [
+            self'.packages.godot
+            pkgsCrossWin.rustPlatform.rust.cargo
+            pkgsCrossWin.rustPlatform.rust.rustc
+          ];
+          shellHook = self'.devShells.default.shellHook;
         };
       in
       {
@@ -142,41 +179,8 @@
           test = run_gut_test { };
         };
         devShells = {
-          default = pkgs.mkShell {
-            buildInputs = [
-              self'.packages.godot
-              self'.packages.steam-run
-              pkgs.cargo
-              pkgs.rustc
-            ];
-            shellHook = ''
-              set -e
-              test -f demo/project.godot
-
-              mkdir -p demo/out
-
-              # link gdextension
-              rm -f addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.*.template_*.*
-              ln -s ../../../../libcsl_godot/target/debug/libcsl_godot.so 'addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so'
-
-              link-addon () {
-                rm -rf ./addons/@mlabs-haskell/godot-cardano
-                ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
-              }
-              (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
-              (cd test && (${self'.packages.test.configurePhase}) && link-addon)
-
-              set +e
-            '';
-          };
-          cross-windows = pkgs.mkShell {
-            buildInputs = [
-              self'.packages.godot
-              pkgsCrossWin.rustPlatform.rust.cargo
-              pkgsCrossWin.rustPlatform.rust.rustc
-            ];
-            shellHook = self'.devShells.default.shellHook;
-          };
+          default = devShell;
+          cross-windows = devShellCrossWin;
         };
       };
     systems = [ "x86_64-linux" ];
