@@ -101,7 +101,7 @@ Development is supported on linux. On other platforms, use a virtual machine or 
 
 ### Setup
 
-[Install Nix](https://nixos.org/download.html) and [enable flakes](https://nixos.wiki/wiki/Flakes#Installing_flakes).
+[Install Nix](https://nixos.org/download.html) and [enable flakes](https://nixos.wiki/wiki/Flakes#Installing_flakes), or do it in one step with the [Determinate nix installer](https://github.com/DeterminateSystems/nix-installer).
 
 ### Build Asset
 
@@ -131,5 +131,7 @@ nix develop
 # ... entered development shell
 (cd libcsl_godot && cargo build)
 (cd demo && godot4 --headless --export-debug "Linux/X11" out/demo project.godot)
-(cd test && godot4 --headless --script res://addons/gut/gut_cmdln.gd)
+(cd test && godot4 --headless --script addons/gut/gut_cmdln.gd)
 ```
+
+If you open the projects in the Godot editor, it should automatically reload the gdextension after `cargo build`.
