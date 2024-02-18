@@ -191,7 +191,7 @@ impl PlutusScript {
             script: CSL::plutus::PlutusScript::new_v2(script.to_vec()),
         });
     }
-    
+
     #[func]
     fn hash(&self) -> PackedByteArray {
         let hash = self.script.hash();
@@ -289,26 +289,25 @@ impl Utxo {
     }
 }
 
-
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_CostModels)]
 pub struct CostModels {
-    pub cost_models: CSL::plutus::Costmdls
+    pub cost_models: CSL::plutus::Costmdls,
 }
 
 #[godot_api]
 impl CostModels {
     #[func]
     pub fn create() -> Gd<CostModels> {
-        Gd::from_object(CostModels { cost_models: CSL::plutus::Costmdls::new() })
+        Gd::from_object(CostModels {
+            cost_models: CSL::plutus::Costmdls::new(),
+        })
     }
 
     fn build_model(ops: Array<u64>) -> CSL::plutus::CostModel {
         let mut model = CSL::plutus::CostModel::new();
-        let mut i = 0;
-        for op in ops.iter_shared() {
+        for (i, op) in ops.iter_shared().enumerate() {
             model.set(i, &Int::new(&BigNum::from(op))).unwrap();
-            i += 1;
         }
         model
     }
@@ -317,7 +316,7 @@ impl CostModels {
     pub fn set_plutus_v1_model(&mut self, ops: Array<u64>) {
         self.cost_models.insert(
             &CSL::plutus::Language::new_plutus_v1(),
-            &Self::build_model(ops)
+            &Self::build_model(ops),
         );
     }
 
@@ -325,7 +324,7 @@ impl CostModels {
     pub fn set_plutus_v2_model(&mut self, ops: Array<u64>) {
         self.cost_models.insert(
             &CSL::plutus::Language::new_plutus_v2(),
-            &Self::build_model(ops)
+            &Self::build_model(ops),
         );
     }
 }
@@ -334,12 +333,11 @@ impl CostModels {
 #[class(base=RefCounted, rename=_EvaluationResult)]
 pub struct EvaluationResult {
     pub redeemers: Array<Gd<Redeemer>>,
-    pub fee: u64
+    pub fee: u64,
 }
 
 #[godot_api]
-impl EvaluationResult {
-}
+impl EvaluationResult {}
 
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Transaction)]
@@ -348,7 +346,7 @@ pub struct Transaction {
 
     pub max_ex_units: (u64, u64),
     pub slot_config: (u64, u64, u32),
-    pub cost_models: CSL::plutus::Costmdls
+    pub cost_models: CSL::plutus::Costmdls,
 }
 
 #[godot_api]
@@ -403,10 +401,13 @@ impl Transaction {
                 });
                 Gd::from_object(EvaluationResult {
                     redeemers: actual_redeemers,
-                    fee: self.transaction.body().fee().into()
+                    fee: self.transaction.body().fee().into(),
                 })
             }
-            Err(_err) => Gd::from_object(EvaluationResult { redeemers: Array::new(), fee: 0 })
+            Err(_err) => Gd::from_object(EvaluationResult {
+                redeemers: Array::new(),
+                fee: 0,
+            }),
         }
     }
 }

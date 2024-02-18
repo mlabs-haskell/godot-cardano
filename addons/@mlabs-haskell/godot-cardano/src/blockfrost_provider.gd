@@ -161,6 +161,7 @@ func _get_protocol_parameters() -> ProtocolParameters:
 		params_json.min_fee_a as Variant as int,
 		float_to_ten_millionths.call(params_json.price_mem),
 		float_to_ten_millionths.call(params_json.price_step),
+		params_json.collateral_percent as Variant as int,
 		params_json.max_tx_ex_steps as Variant as int,
 		params_json.max_tx_ex_mem as Variant as int,
 	)

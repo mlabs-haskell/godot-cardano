@@ -63,6 +63,16 @@ disabled = true
 text = "Send ADA
 "
 
+[node name="MintTokenButton" type="Button" parent="SendAdaForm"]
+unique_name_in_owner = true
+offset_left = 260.0
+offset_top = 579.0
+offset_right = 460.0
+offset_bottom = 621.0
+disabled = true
+text = "Mint token
+"
+
 [node name="Recipient" type="Node2D" parent="SendAdaForm"]
 
 [node name="Label" type="Label" parent="SendAdaForm/Recipient"]
@@ -98,3 +108,4 @@ text = "5000000"
 
 [connection signal="pressed" from="SetWalletForm/SetButton" to="." method="_on_set_wallet_button_pressed"]
 [connection signal="pressed" from="SendAdaForm/SendAdaButton" to="." method="_on_send_ada_button_pressed"]
+[connection signal="pressed" from="SendAdaForm/MintTokenButton" to="." method="_on_mint_token_button_pressed"]
