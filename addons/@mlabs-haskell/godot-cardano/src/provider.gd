@@ -36,7 +36,10 @@ class EraSummary:
 		_end = end
 		_parameters = parameters
 
-signal got_protocol_parameters(parameters: ProtocolParameters)
+signal got_protocol_parameters(
+	parameters: ProtocolParameters,
+	cost_models: CostModels
+)
 signal got_era_summaries(summaries: Array[EraSummary])
 signal _empty()
 

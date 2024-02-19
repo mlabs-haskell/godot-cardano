@@ -1,8 +1,12 @@
 use cardano_serialization_lib as CSL;
 use CSL::crypto::{ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
+use CSL::plutus::{ExUnits, PlutusData, RedeemerTag};
+use CSL::tx_builder::tx_inputs_builder::TxInputsBuilder;
 use CSL::utils::*;
 use CSL::{AssetName, MultiAsset, TransactionInput, TransactionOutput};
+
+use uplc::tx::eval_phase_two_raw;
 
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
@@ -133,6 +137,71 @@ impl Datum {
 }
 
 #[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=Redeemer)]
+pub struct Redeemer {
+    pub redeemer: CSL::plutus::Redeemer,
+}
+
+#[godot_api]
+impl Redeemer {
+    #[func]
+    fn create(
+        tag: u64,
+        index: u64,
+        data: PackedByteArray,
+        ex_units_mem: u64,
+        ex_units_steps: u64,
+    ) -> Gd<Redeemer> {
+        let redeemer_tag: RedeemerTag = match tag {
+            0 => RedeemerTag::new_spend(),
+            1 => RedeemerTag::new_mint(),
+            2 => RedeemerTag::new_cert(),
+            3 => RedeemerTag::new_reward(),
+            _ => RedeemerTag::new_mint(),
+        };
+        return Gd::from_object(Redeemer {
+            redeemer: CSL::plutus::Redeemer::new(
+                &redeemer_tag,
+                &BigNum::from(index),
+                &PlutusData::from_bytes(data.to_vec()).unwrap(),
+                &ExUnits::new(&BigNum::from(ex_units_mem), &BigNum::from(ex_units_steps)),
+            ),
+        });
+    }
+
+    #[func]
+    fn get_data(&self) -> PackedByteArray {
+        let vec = self.redeemer.data().to_bytes();
+        let bytes: &[u8] = vec.as_slice().into();
+        PackedByteArray::from(bytes)
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=PlutusScript)]
+pub struct PlutusScript {
+    pub script: CSL::plutus::PlutusScript,
+}
+
+#[godot_api]
+impl PlutusScript {
+    #[func]
+    fn create(script: PackedByteArray) -> Gd<PlutusScript> {
+        return Gd::from_object(PlutusScript {
+            script: CSL::plutus::PlutusScript::new_v2(script.to_vec()),
+        });
+    }
+
+    #[func]
+    fn hash(&self) -> PackedByteArray {
+        let hash = self.script.hash();
+        let bound = hash.to_bytes();
+        let bytes: &[u8] = bound.as_slice().into();
+        PackedByteArray::from(bytes)
+    }
+}
+
+#[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=_Utxo)]
 pub struct Utxo {
     #[var(get)]
@@ -190,12 +259,94 @@ impl Utxo {
             ),
         )
     }
+
+    pub fn add_to_inputs_builder(&self, inputs_builder: &mut TxInputsBuilder) {
+        inputs_builder.add_key_input(
+            &CSL::address::BaseAddress::from_address(
+                &CSL::address::Address::from_bech32(&self.address.to_string()).unwrap(),
+            )
+            .unwrap()
+            .stake_cred()
+            .to_keyhash()
+            .unwrap(),
+            &CSL::TransactionInput::new(
+                &CSL::crypto::TransactionHash::from_hex(&self.tx_hash.to_string())
+                    .expect("Could not decode transaction hash"),
+                self.output_index,
+            ),
+            &Value::new_with_assets(
+                &to_bignum(
+                    self.coin
+                        .bind()
+                        .b
+                        .as_u64()
+                        .expect("UTxO Lovelace exceeds maximum")
+                        .into(),
+                ),
+                &multiasset_from_dictionary(&self.assets),
+            ),
+        );
+    }
 }
+
+#[derive(GodotClass)]
+#[class(base=RefCounted, rename=_CostModels)]
+pub struct CostModels {
+    pub cost_models: CSL::plutus::Costmdls,
+}
+
+#[godot_api]
+impl CostModels {
+    #[func]
+    pub fn create() -> Gd<CostModels> {
+        Gd::from_object(CostModels {
+            cost_models: CSL::plutus::Costmdls::new(),
+        })
+    }
+
+    fn build_model(ops: Array<u64>) -> CSL::plutus::CostModel {
+        let mut model = CSL::plutus::CostModel::new();
+        for (i, op) in ops.iter_shared().enumerate() {
+            model.set(i, &Int::new(&BigNum::from(op))).unwrap();
+        }
+        model
+    }
+
+    #[func]
+    pub fn set_plutus_v1_model(&mut self, ops: Array<u64>) {
+        self.cost_models.insert(
+            &CSL::plutus::Language::new_plutus_v1(),
+            &Self::build_model(ops),
+        );
+    }
+
+    #[func]
+    pub fn set_plutus_v2_model(&mut self, ops: Array<u64>) {
+        self.cost_models.insert(
+            &CSL::plutus::Language::new_plutus_v2(),
+            &Self::build_model(ops),
+        );
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=_EvaluationResult)]
+pub struct EvaluationResult {
+    pub redeemers: Array<Gd<Redeemer>>,
+    pub fee: u64,
+}
+
+#[godot_api]
+impl EvaluationResult {}
 
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Transaction)]
 pub struct Transaction {
     pub transaction: CSL::Transaction,
+
+    pub max_ex_units: (u64, u64),
+    pub slot_config: (u64, u64, u32),
+    pub cost_models: CSL::plutus::Costmdls,
 }
 
 #[godot_api]
@@ -220,5 +371,43 @@ impl Transaction {
             &witness_set,
             self.transaction.auxiliary_data(),
         );
+    }
+
+    #[func]
+    fn evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<EvaluationResult> {
+        let mut utxos: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        gutxos.iter_shared().for_each(|gutxo| {
+            let utxo = gutxo.bind().to_transaction_unspent_output();
+            utxos.push((utxo.input().to_bytes(), utxo.output().to_bytes()))
+        });
+
+        let eval_result = eval_phase_two_raw(
+            &self.transaction.to_bytes(),
+            &utxos,
+            &self.cost_models.to_bytes(),
+            self.max_ex_units,
+            self.slot_config,
+            false,
+            |_| {},
+        );
+
+        match eval_result {
+            Ok(redeemers) => {
+                let mut actual_redeemers: Array<Gd<Redeemer>> = Array::new();
+                redeemers.iter().for_each(|redeemer| {
+                    actual_redeemers.push(Gd::from_object(Redeemer {
+                        redeemer: CSL::plutus::Redeemer::from_bytes(redeemer.to_vec()).unwrap(),
+                    }))
+                });
+                Gd::from_object(EvaluationResult {
+                    redeemers: actual_redeemers,
+                    fee: self.transaction.body().fee().into(),
+                })
+            }
+            Err(_err) => Gd::from_object(EvaluationResult {
+                redeemers: Array::new(),
+                fee: 0,
+            }),
+        }
     }
 }

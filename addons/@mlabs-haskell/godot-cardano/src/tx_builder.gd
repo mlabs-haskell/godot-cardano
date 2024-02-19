@@ -41,6 +41,12 @@ static func create(cardano: Cardano, params: ProtocolParameters) -> CreateResult
 	var res : CreateResult = CreateResult.new(cardano, _TxBuilder._create(params))
 	return res
 
+func set_slot_config(start_time: int, start_slot: int, slot_length: int) -> void:
+	_builder.set_slot_config(start_time, start_slot, slot_length)
+
+func set_cost_models(cost_models: CostModels) -> void:
+	_builder.set_cost_models(cost_models._cost_models)
+	
 func pay_to_address(address: Address, coin: BigInt, assets: Dictionary) -> void:
 	_builder.pay_to_address(address._address, coin._b, assets)
 	
@@ -61,7 +67,34 @@ func pay_to_address_with_datum(
 		assets,
 		Datum.inline(encoded_datum.value)
 	)
+
+func mint_assets(
+	minting_policy: PlutusScript,
+	tokens: Array[MintToken],
+	redeemer: Object
+) -> void:
+	if !redeemer.has_method("to_data"):
+		push_error("Provided redeemer does not implement `to_data`")
+		return
+		
+	var encoded_redeemer: Cbor.SerializeResult = Cbor.serialize(redeemer.to_data(true), true)
 	
+	if encoded_redeemer.is_err():
+		push_error("Encoding datum failed")
+		return
+		
+	var tokens_dict: Dictionary = {}
+	tokens.map(
+		func (token: MintToken) -> void:
+			var prev = tokens_dict.get(token._token_name, BigInt.zero()._b)
+			tokens_dict[token._token_name] = prev.add(token._quantity._b)
+	)
+	_builder.mint_assets(
+		minting_policy,
+		tokens_dict,
+		encoded_redeemer.value
+	)
+
 func collect_from(utxos: Array[Utxo]) -> void:
 	_builder.collect_from(utxos)
 
@@ -73,13 +106,19 @@ func complete() -> TxComplete:
 	wallet_utxos.assign(
 		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
+	
+	var eval_result := \
+		_builder \
+			.balance_and_assemble(wallet_utxos, change_address._address) \
+			.evaluate(wallet_utxos + additional_utxos)
 		
 	return TxComplete.new(
 		_cardano,
 		Transaction.new(
 			_builder.complete(
 				wallet_utxos,
-				change_address._address
+				change_address._address,
+				eval_result
 			)
 		)
 	)
