@@ -22,20 +22,18 @@ jobs:
           skipPush: true
 
       - name: Download / Build
-        run: nix build .#godot-cardano .#demo .#demo-debug .#demo-windows .#demo-windows-debug
+        run: nix build .#godot-cardano .#demo .#demo-windows
 
       - name: Pack Release
         run: |
           mkdir release release-prep
+          cp -r result/addons release-prep
           cp -r result-1/bin release-prep/godot-cardano-demo-linux
-          cp -r result-2/bin release-prep/godot-cardano-demo-linux-debug
-          cp -r result-3/bin release-prep/godot-cardano-demo-windows
-          cp -r result-4/bin release-prep/godot-cardano-demo-windows-debug
-          zip -qq -r release/godot-cardano.zip result assets
-          zip -qq -r release/godot-cardano-demo-linux.zip release-prep godot-cardano-demo-linux
-          zip -qq -r release/godot-cardano-demo-linux.zip release-prep godot-cardano-demo-linux
-          zip -qq -r release/godot-cardano-demo-windows.zip release-prep godot-cardano-demo-windows
-          zip -qq -r release/godot-cardano-demo-windows-debug.zip release-prep godot-cardano-demo-windows-debug
+          cp -r result-2/bin release-prep/godot-cardano-demo-windows
+          cd release-prep
+          zip -qq -r ../release/godot-cardano-addon.zip addons
+          zip -qq -r ../release/godot-cardano-demo-linux.zip godot-cardano-demo-linux
+          zip -qq -r ../release/godot-cardano-demo-windows.zip godot-cardano-demo-windows
 
       - uses: rickstaa/action-create-tag@v1
         with:
