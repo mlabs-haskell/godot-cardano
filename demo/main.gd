@@ -58,7 +58,7 @@ func _process(_delta: float) -> void:
 
 func _on_wallet_set() -> void:
 	var _ret := self.cardano.wallet.got_updated_utxos.connect(_on_utxos_updated)
-	var addr := cardano.wallet.get_change_address().to_bech32()
+	var addr: String = cardano.wallet._get_change_address().to_bech32()
 	wallet_details.text = "Using wallet %s" % addr
 	address_input.text = addr
 	send_ada_button.disabled = false
@@ -69,7 +69,7 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 		func (acc: BigInt, utxo: Utxo) -> BigInt: return acc.add(utxo.coin()),
 		BigInt.zero()
 	)
-	wallet_details.text = "Using wallet %s" % cardano.wallet.get_change_address().to_bech32()
+	wallet_details.text = "Using wallet %s" % cardano.wallet._get_change_address().to_bech32()
 	if num_utxos > 0:
 		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]		
 

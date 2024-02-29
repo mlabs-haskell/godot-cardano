@@ -35,7 +35,7 @@ func new_tx() -> TxBuilder:
 
 func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
 	@warning_ignore("redundant_await")
-	var change_address := await wallet.get_change_address()
+	var change_address := await wallet._get_change_address()
 	@warning_ignore("redundant_await")
 	var utxos := await wallet._get_utxos()
 	var total_lovelace := await wallet.total_lovelace()

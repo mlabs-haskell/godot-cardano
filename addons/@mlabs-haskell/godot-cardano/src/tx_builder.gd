@@ -67,7 +67,7 @@ func collect_from(utxos: Array[Utxo]) -> void:
 
 func complete() -> TxComplete:
 	var wallet_utxos: Array[_Utxo] = []
-	var change_address := _cardano.wallet.get_change_address()
+	var change_address := _cardano.wallet._get_change_address()
 	var additional_utxos: Array[_Utxo] = []
 	
 	wallet_utxos.assign(

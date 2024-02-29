@@ -9,7 +9,7 @@ var active: bool = false
 func _get_utxos() -> Array[Utxo]:
 	return []
 	
-func get_change_address() -> Address:
+func _get_change_address() -> Address:
 	return null
 	
 func total_lovelace() -> BigInt:
@@ -85,7 +85,7 @@ class MnemonicWallet extends Wallet:
 		self.timer.start()
 		return self.utxos
 		
-	func get_change_address() -> Address:
+	func _get_change_address() -> Address:
 		return single_address_wallet.get_address()
 		
 	func _sign_transaction(password: String, transaction: Transaction) -> Signature:
