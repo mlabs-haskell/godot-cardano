@@ -4,12 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    gut = { url = "github:bitwes/gut/v9.2.0"; flake = false; };
   };
 
   outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     perSystem = { self', pkgs, ... }:
       let
-        pkgsWin = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.mingwW64;
+        pkgsCrossWin = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.mingwW64;
         make_godot-export-templates-bin = { version ? "4.2.1" }: pkgs.stdenv.mkDerivation {
           name = "godot-export-templates-bin";
           inherit version;
@@ -35,7 +36,7 @@
               cp bin/* $out/bin/
             '';
           };
-        make_libcsl_godot = { debug ? false, windows ? false }: (if windows then pkgsWin else pkgs).rustPlatform.buildRustPackage {
+        make_libcsl_godot = { debug ? false, windows ? false }: (if windows then pkgsCrossWin else pkgs).rustPlatform.buildRustPackage {
           name = "libcsl_godot";
           src = ./libcsl_godot;
           buildType = if debug then "debug" else "release";
@@ -44,33 +45,38 @@
             allowBuiltinFetchGit = true;
           };
         };
-        make_gd_project = { name, src, debug ? false, windows ? false }: pkgs.stdenv.mkDerivation {
+        make_addon = {}: pkgs.runCommand "godot-cardano"
+          {
+            dontFixup = true;
+            dontStrip = true;
+          } ''
+          OUT_DIR="$out/addons/@mlabs-haskell/godot-cardano"
+          mkdir -p "$OUT_DIR/bin"
+          cp -r ${./addons}/@mlabs-haskell/godot-cardano/* $OUT_DIR/ --no-preserve=mode,ownership
+          cp "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "$OUT_DIR/bin/libcsl_godot.linux.template_debug.x86_64.so"
+          cp "${make_libcsl_godot { windows = false; debug = false;} }/lib/libcsl_godot.so" "$OUT_DIR/bin/libcsl_godot.linux.template_release.x86_64.so"
+          cp "${make_libcsl_godot { windows = true; debug = true;} }/bin/csl_godot.dll" "$OUT_DIR/bin/libcsl_godot.windows.template_debug.x86_64.dll"
+          cp "${make_libcsl_godot { windows = true; debug = false;} }/bin/csl_godot.dll" "$OUT_DIR/bin/libcsl_godot.windows.template_release.x86_64.dll"
+        '';
+        make_gd_project = { name, src, debug ? false, windows ? false }: (if windows then pkgsCrossWin else pkgs).stdenv.mkDerivation {
           inherit name src;
+          SYSTEM = if windows then "windows" else "linux";
+          VARIANT = if debug then "debug" else "release";
+          configurePhase = ''
+            # link addon
+            rm -rf ./addons/@mlabs-haskell/godot-cardano
+            mkdir -p ./addons/@mlabs-haskell
+            ln -s ${make_addon {}}/addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+          '';
           buildPhase = ''
-            SYSTEM="${if windows then "windows" else "linux"}"
-            VARIANT="${if debug then "debug" else "release"}"
-
-            # copy addons directory
-            rm -rf ./addons
-            cp -r ${./addons} ./addons --no-preserve=mode,ownership
-
-            # link debug gdextension
-            ln -s "${make_libcsl_godot { windows = false; debug = true;} }/lib/libcsl_godot.so" "addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so"
-
-            # link gdextension
-            GDEXTENSION_PACKAGE="${make_libcsl_godot { inherit debug windows; }}"
-            GDEXTENSION="$GDEXTENSION_PACKAGE/${if windows then "bin/csl_godot.dll" else "lib/libcsl_godot.so"}"
-            GDEXTENSION_LINK_NAME="addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.$SYSTEM.template_$VARIANT.x86_64.${if windows then "dll" else "so"}"
-            ln -sf $GDEXTENSION $GDEXTENSION_LINK_NAME
-
             # link export templates
-            export HOME=$(mktemp -d)
+            mkdir -p .home
+            export HOME=$(pwd)/.home
             TEMPLATES_PACKAGE="${make_godot-export-templates-bin {}}"
             TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.2.stable"
             mkdir -p $(dirname $TEMPLATE_DIR)
             ln -s $TEMPLATES_PACKAGE $TEMPLATE_DIR
 
-            # build
             mkdir -p out
             ${self'.packages.godot}/bin/godot4 \
               --headless \
@@ -87,52 +93,95 @@
           dontFixup = true;
           dontStrip = true;
         };
-        make_demo = { name ? "demo", src ? ./demo, ... }@args :
+        make_demo = { name ? "demo", src ? ./demo, ... }@args:
           make_gd_project (args // { inherit name src; });
-        make_test = { name ? "test", src ? ./test, ... }@args :
-          make_gd_project (args // { inherit name src; });
-        run_test = pkg: pkgs.runCommand "test" {} ''
-          ${pkgs.steamPackages.steam-fhsenv-without-steam.run}/bin/steam-run ${pkg}/bin/test --headless
-          touch $out
-        '';
+        run_gut_test = { name ? "godot-cardano-test", src ? ./test }: pkgs.stdenv.mkDerivation {
+          inherit name src;
+          configurePhase = ''
+            rm -rf ./addons/gut
+            mkdir -p ./addons
+            ln -s ${inputs.gut}/addons/gut ./addons/gut
+
+            rm -rf ./addons/@mlabs-haskell/godot-cardano
+            mkdir -p ./addons/@mlabs-haskell
+            ln -s ${make_addon {}}/addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+          '';
+          buildPhase = ''
+            mkdir -p .home
+            export HOME=$(pwd)/.home
+            echo "Reimporting resources..."
+            timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
+            echo "Reimporting resources done."
+            RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd)
+            echo -e "$RESULT"
+            [[ $RESULT =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
+          '';
+          installPhase = "touch $out";
+          dontFixup = true;
+        };
+        devShell = pkgs.mkShell {
+          buildInputs = [
+            self'.packages.godot
+            self'.packages.steam-run
+            pkgs.cargo
+            pkgs.rustc
+            pkgs.rust-analyzer
+          ];
+          shellHook = ''
+            set -e
+            test -f demo/project.godot
+
+            mkdir -p demo/out
+
+            # link gdextension
+            rm -f addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.*.template_*.*
+            ln -s ../../../../libcsl_godot/target/debug/libcsl_godot.so 'addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so'
+
+            link-addon () {
+              rm -rf ./addons/@mlabs-haskell/godot-cardano
+              ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+            }
+            (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
+            (cd test && (${self'.packages.test.configurePhase}) && link-addon)
+
+            set +e
+          '';
+        };
+        devShellCrossWin = pkgs.mkShell {
+          buildInputs = [
+            self'.packages.godot
+            pkgsCrossWin.rustPlatform.rust.cargo
+            pkgsCrossWin.rustPlatform.rust.rustc
+          ];
+          shellHook = self'.devShells.default.shellHook;
+        };
       in
       {
         checks = {
-          test = run_test (make_test {});
+          test = run_gut_test { };
         };
         packages = rec {
-          default = libcsl_godot;
+          default = godot-cardano;
+          steam-run = pkgs.steamPackages.steam-fhsenv-without-steam.run;
           godot = pkgs.godot_4;
           godot-bin = pkgs.callPackage (import ./godot-bin.nix) { };
           libcsl_godot = make_libcsl_godot { };
-          libcsl_godot-win = make_libcsl_godot { windows = true; };
           libcsl_godot-debug = make_libcsl_godot { debug = true; };
-          libcsl_godot-win-debug = make_libcsl_godot { windows = true; debug = true; };
+          libcsl_godot-windows = make_libcsl_godot { windows = true; };
+          libcsl_godot-windows-debug = make_libcsl_godot { windows = true; debug = true; };
           godot-export-template = make_godot-export-template { };
           godot-export-template-debug = make_godot-export-template { debug = true; };
           godot-export-templates-bin = make_godot-export-templates-bin { };
+          godot-cardano = make_addon { };
           demo = make_demo { };
-          demo-win = make_demo { windows = true; };
           demo-debug = make_demo { debug = true; };
-          demo-win-debug = make_demo { windows = true; debug = true; };
-          test = make_test {};
+          demo-windows = make_demo { windows = true; };
+          demo-windows-debug = make_demo { windows = true; debug = true; };
+          test = run_gut_test { };
         };
         devShells = {
-          default = pkgs.mkShell {
-            buildInputs = [
-              self'.packages.godot
-              pkgs.cargo
-              pkgs.rustc
-              pkgs.rust-analyzer
-            ];
-          };
-          windows = pkgs.mkShell {
-            buildInputs = [
-              self'.packages.godot
-              pkgsWin.rustPlatform.rust.cargo
-              pkgsWin.rustPlatform.rust.rustc
-            ];
-          };
+          default = devShell;
+          cross-windows = devShellCrossWin;
         };
       };
     systems = [ "x86_64-linux" ];

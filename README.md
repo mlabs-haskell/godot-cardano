@@ -5,7 +5,7 @@ the Godot engine and Cardano blockchain. The project is currently a *work-in-pro
 
 This project was publicly funded by the Cardano community in round 10 of [Project Catalyst](https://projectcatalyst.io/funds/10/f10-developer-ecosystem-the-evolution/mlabs-cardano-game-engine-wallet-godot-integration). Thank you for your support!
 
-## Status of the project
+## Status
 
 The project currently consists of a small demo that showcases two features:
 
@@ -13,17 +13,14 @@ The project currently consists of a small demo that showcases two features:
 * Transferring ADA to an arbitrary Cardano address.
 
 At the momment, the demo runs on the *preview* testnet and was tested on
-*Linux, x86-64 PCs*. Support for others operating systems is coming in the future.
+*Linux and Windows x86-64 PCs*.
 
-## How to run the demo
+## How to build and run the demo with Godot
 
 ### Pre-requisites
 
 * Godot Engine 4.2: The demo runs on version 4.2 of the Godot engine, which you
   can download at the [official website](https://godotengine.org/).
-
-* The Rust toolchain: This demo uses Rust and therefore requires a Rust toolchain.
-  We recommend using the ubiquitous [rustup](https://rustup.rs/) tool.
 
 * A wallet with funds in the Cardano preview testnet: You can use any wallet you like, as
   long as it supports the preview testnet. *Take note of the seed-phrase of your wallet*. To get test ADA (tADA), use the [Cardano testnet faucet](https://docs.cardano.org/cardano-testnet/tools/faucet/).
@@ -40,21 +37,20 @@ $ git clone https://github.com/mlabs-haskell/godot-cardano.git
 $ cd godot-cardano
 ```
 
-Inside the `csl_demo` folder, create a "preview_token.txt" file with your Blockfrost preview token.
-
-
-```bash
-$ echo "<YOUR TOKEN>" > csl_demo/preview_token.txt
-```
-
-Then, execute the `build.sh` script. This will compile the Rust library located in `libcsl_godot` and
-make it available to the Godot project in `csl_demo`.
+Download `godot-cardano.zip` from the [releases page](https://github.com/mlabs-haskell/godot-cardano/releases/), unzip it and copy the `addons` folder into the `demo` folder of the repo.
 
 ```bash
-$ ./build.sh
+$ curl https://github.com/mlabs-haskell/godot-cardano/releases/download/release-.../godot-cardano.zip -O godot-cardano.zip
+$ unzip godot-cardano.zip -o demo
 ```
 
-Once that is done, open the Godot editor. You will be greeted by the _Project Manager_. Import and open the project located in the `csl_demo` folder.
+Inside the `demo` folder, create a "preview_token.txt" file with your Blockfrost preview token.
+
+```bash
+$ echo "<YOUR TOKEN>" > demo/preview_token.txt
+```
+
+Open the Godot editor. You will be greeted by the _Project Manager_. Import and open the project located in the `demo` folder.
 
 ![Screenshot of the project manager](./screenshots/01_project-manager.png)
 
@@ -95,18 +91,47 @@ For instance, here we use [Cardanoscan (Preview)](https://preview.cardanoscan.io
 
 ## What's next?
 
-Check our milestones [here](https://milestones.projectcatalyst.io/projects/1000114)! This README is concerned mostly with running the demo we are delivering as part of milestone 1.
+Check our milestones [here](https://milestones.projectcatalyst.io/projects/1000114)!
 
 You may also read our [Proof Of Achievement / Research report](./docs/M1_PoA-Research-Report.pdf) written for the milestone as well. This document discusses our work and rationale for the technical decisions we have made.
 
 ## Development
 
+Development is supported on linux. On other platforms, use a virtual machine or WSL. To get started, clone the repo and enter it.
+
 ### Setup
 
-[Install Nix](https://nixos.org/download.html) and [enable flakes](https://nixos.wiki/wiki/Flakes#Installing_flakes).
+[Install Nix](https://nixos.org/download.html) and [enable flakes](https://nixos.wiki/wiki/Flakes#Installing_flakes), or do it in one step with the [Determinate nix installer](https://github.com/DeterminateSystems/nix-installer).
 
-### Build
+### Build Asset
 
 ```
-nix build
+nix build .#godot-cardano
 ```
+
+#### Build and Run Demo
+
+```
+nix build .#demo
+nix run .#steam-run result/bin/demo
+```
+
+### Test
+
+```
+nix build .#test
+```
+
+### Develop
+
+Enter development shell with all dependencies in PATH and addons linked.
+
+```
+nix develop
+# ... entered development shell
+(cd libcsl_godot && cargo build)
+(cd demo && godot4 --headless --export-debug "Linux/X11" out/demo project.godot)
+(cd test && godot4 --headless --script addons/gut/gut_cmdln.gd)
+```
+
+If you open the projects in the Godot editor, it should automatically reload the gdextension after `cargo build`.
