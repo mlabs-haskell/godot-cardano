@@ -50,7 +50,7 @@ func new_tx() -> TxBuilder:
 func _on_got_era_summaries(summaries: Array[Provider.EraSummary]) -> void:
 	_era_summaries = summaries
 
-func send_lovelace_to(recipient: String, amount: BigInt) -> void:
+func send_lovelace_to(recipient: Address, amount: BigInt) -> void:
 	@warning_ignore("redundant_await")
 	var change_address := await wallet._get_change_address()
 	@warning_ignore("redundant_await")
@@ -62,7 +62,7 @@ func send_lovelace_to(recipient: String, amount: BigInt) -> void:
 		return
 		
 	var builder = new_tx()
-	builder.pay_to_address(Address.from_bech32(recipient), amount, {})
+	builder.pay_to_address(recipient, amount, MultiAsset.from_dictionary({}).value)
 	var transaction = builder.complete()
 	transaction.sign()
 	print(transaction.bytes().hex_encode())

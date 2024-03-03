@@ -83,28 +83,41 @@ func _on_set_wallet_button_pressed() -> void:
 	wallet = cardano.set_wallet_from_mnemonic(phrase_input.text)
 
 func _on_send_ada_button_pressed() -> void:
-	var res: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
-	var amount := BigInt.zero()
-	if res.is_ok():
-		amount = res.value
-	else:
-		push_error("There was an error while parsing the amount as a BigInt", res.error)
-	var address := Address.from_bech32(address_input.text)
-
-	var tx: TxBuilder = cardano.new_tx()
-	tx.pay_to_address(address, amount, {})
-	var tx_complete: TxComplete = tx.complete()
-	tx_complete.sign()
-	tx_complete.submit()
+	var amount_result: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
+	
+	if amount_result.is_err():
+		push_error("There was an error while parsing the amount as a BigInt", amount_result.error)
+		return
+		
+	var address_result := Address.from_bech32(address_input.text)
+	
+	if address_result.is_err():
+		push_error("There was an error while parsing the address", address_result.error)
+		return
+		
+	var tx := cardano.new_tx()
+	tx.pay_to_address(
+		address_result.value,
+		amount_result.value,
+		MultiAsset.from_dictionary({}).value
+	)
+	var result := tx.complete()
+	
+	if result.is_ok():
+		result.value.sign()
+		result.value.submit()
 
 func _on_mint_token_button_pressed() -> void:
 	var address := Address.from_bech32(address_input.text)
-	var tx: TxBuilder = cardano.new_tx()
+	var tx := cardano.new_tx()
 	tx.mint_assets(
 		PlutusScript.create("46010000222499".hex_decode()), 
 		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
 		VoidData.new()
 	)
-	var tx_complete: TxComplete = tx.complete()
-	tx_complete.sign()
-	tx_complete.submit()
+	var result := tx.complete()
+	
+	if result.is_ok():
+		result.value.sign()
+		print(result.value._transaction.bytes().hex_encode())
+		result.value.submit()

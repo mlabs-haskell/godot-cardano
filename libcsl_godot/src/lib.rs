@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::ops::Deref;
 
 use cardano_serialization_lib as CSL;
@@ -30,8 +30,8 @@ pub mod ledger {
 use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 use crate::ledger::transaction::{
-    multiasset_from_dictionary, Address, CostModels, Datum, DatumValue, EvaluationResult,
-    PlutusScript, Signature, Transaction, Utxo,
+    Address, CostModels, Datum, DatumValue, EvaluationResult, MultiAsset, PlutusScript, Signature,
+    Transaction, Utxo,
 };
 
 struct MyExtension;
@@ -218,11 +218,19 @@ struct GTxBuilder {
     cost_models: Costmdls,
     fee: u64,
     used_langs: BTreeSet<CSL::plutus::Language>,
+
+    minted_assets: HashMap<u32, (CSL::plutus::PlutusScript, Dictionary)>,
 }
 
 #[derive(Debug)]
 pub enum TxBuilderError {
     BadProtocolParameters(JsError),
+    QuantityExceedsMaximum(),
+    DeserializeError(CSL::error::DeserializeError),
+    ByronAddressUnsupported(),
+    CouldNotGetKeyHash(),
+    UnknownRedeemerIndex(CSL::plutus::Redeemer),
+    OtherError(JsError),
 }
 
 impl GodotConvert for TxBuilderError {
@@ -233,13 +241,67 @@ impl ToGodot for TxBuilderError {
     fn to_godot(&self) -> Self::Via {
         use TxBuilderError::*;
         match self {
-            BadProtocolParameters(_) => 0,
+            BadProtocolParameters(_) => 1,
+            QuantityExceedsMaximum() => 2,
+            DeserializeError(_) => 3,
+            ByronAddressUnsupported() => 4,
+            CouldNotGetKeyHash() => 5,
+            UnknownRedeemerIndex(_) => 6,
+            OtherError(_) => 7,
         }
     }
 }
 
 impl FailsWith for GTxBuilder {
     type E = TxBuilderError;
+}
+
+impl From<CSL::error::DeserializeError> for TxBuilderError {
+    fn from(err: CSL::error::DeserializeError) -> TxBuilderError {
+        return TxBuilderError::DeserializeError(err);
+    }
+}
+
+impl From<JsError> for TxBuilderError {
+    fn from(err: JsError) -> TxBuilderError {
+        return TxBuilderError::OtherError(err);
+    }
+}
+
+fn add_utxo_to_inputs_builder(
+    utxo: &Utxo,
+    inputs_builder: &mut TxInputsBuilder,
+) -> Result<(), TxBuilderError> {
+    let address = &utxo.address.bind().address;
+    let from_base_address = CSL::address::BaseAddress::from_address(address)
+        .and_then(|addr| addr.payment_cred().to_keyhash())
+        .ok_or(TxBuilderError::CouldNotGetKeyHash);
+    let from_enterprise_address = CSL::address::EnterpriseAddress::from_address(address)
+        .and_then(|addr| addr.payment_cred().to_keyhash())
+        .ok_or(TxBuilderError::CouldNotGetKeyHash);
+    // TODO: figure out how keys/signatures work with Byron addresses
+    let from_byron_address = match CSL::address::ByronAddress::from_address(address) {
+        None => Err(TxBuilderError::CouldNotGetKeyHash()),
+        Some(_byron_address) => Err(TxBuilderError::ByronAddressUnsupported()),
+    };
+    inputs_builder.add_key_input(
+        &from_base_address
+            .or(from_enterprise_address)
+            .or(from_byron_address)?,
+        &CSL::TransactionInput::new(&utxo.tx_hash.bind().hash, utxo.output_index),
+        &Value::new_with_assets(
+            &to_bignum(
+                utxo.coin
+                    .bind()
+                    .b
+                    .as_u64()
+                    .ok_or(TxBuilderError::QuantityExceedsMaximum())?
+                    .into(),
+            ),
+            &utxo.assets.bind().assets,
+        ),
+    );
+    Ok(())
 }
 
 #[godot_api]
@@ -282,6 +344,8 @@ impl GTxBuilder {
             slot_config: (0, 0, 0),
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
             used_langs: BTreeSet::new(),
+
+            minted_assets: HashMap::new(),
         })
     }
 
@@ -300,40 +364,48 @@ impl GTxBuilder {
         self.cost_models = cost_models.bind().cost_models.clone();
     }
 
-    #[func]
-    fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) {
+    fn collect_from(&mut self, gutxos: Array<Gd<Utxo>>) -> Result<(), TxBuilderError> {
         let inputs_builder = &mut self.inputs_builder;
-        gutxos.iter_shared().for_each(|gutxo| {
-            gutxo.bind().add_to_inputs_builder(inputs_builder);
-        });
+        for gutxo in gutxos.iter_shared() {
+            add_utxo_to_inputs_builder(gutxo.bind().deref(), inputs_builder)?;
+        }
+        Ok(())
     }
 
     #[func]
-    fn pay_to_address(&mut self, address: Gd<Address>, coin: Gd<BigInt>, assets: Dictionary) {
-        self.pay_to_address_with_datum(address, coin, assets, Datum::none());
+    fn _collect_from(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<GResult> {
+        Self::to_gresult(self.collect_from(gutxos))
     }
 
     #[func]
+    fn pay_to_address(
+        &mut self,
+        address: Gd<Address>,
+        coin: Gd<BigInt>,
+        assets: Gd<MultiAsset>,
+    ) -> Gd<GResult> {
+        self._pay_to_address_with_datum(address, coin, assets, Datum::none())
+    }
+
     fn pay_to_address_with_datum(
         &mut self,
         address: Gd<Address>,
         coin: Gd<BigInt>,
-        assets: Dictionary,
+        assets: Gd<MultiAsset>,
         datum: Gd<Datum>,
-    ) {
+    ) -> Result<(), TxBuilderError> {
         let output_builder = match &datum.bind().deref().datum {
             // TODO: do this privately inside `Datum`?
             DatumValue::NoDatum => TransactionOutputBuilder::new(),
             DatumValue::Inline(bytes) => TransactionOutputBuilder::new()
-                .with_plutus_data(&PlutusData::from_bytes(bytes.to_vec()).unwrap()),
+                .with_plutus_data(&PlutusData::from_bytes(bytes.to_vec())?),
             DatumValue::Hash(bytes) => TransactionOutputBuilder::new()
-                .with_data_hash(&CSL::crypto::DataHash::from_bytes(bytes.to_vec()).unwrap()),
+                .with_data_hash(&CSL::crypto::DataHash::from_bytes(bytes.to_vec())?),
         };
 
         let amount_builder = output_builder
             .with_address(&address.bind().address)
-            .next()
-            .expect("Failed to build transaction output");
+            .next()?;
         let output = if coin.bind().gt(BigInt::zero()) {
             amount_builder
                 .with_coin_and_asset(
@@ -341,129 +413,136 @@ impl GTxBuilder {
                         .bind()
                         .b
                         .as_u64()
-                        .expect("Output lovelace exceeds maximum"),
-                    &multiasset_from_dictionary(&assets),
+                        .ok_or(TxBuilderError::QuantityExceedsMaximum())?,
+                    &assets.bind().assets,
                 )
-                .build()
-                .expect("Failed to build amount output")
+                .build()?
         } else {
             amount_builder
                 .with_asset_and_min_required_coin_by_utxo_cost(
-                    &multiasset_from_dictionary(&assets),
+                    &assets.bind().assets,
                     &CSL::DataCost::new_coins_per_byte(&to_bignum(
                         self.protocol_parameters.coins_per_utxo_byte,
                     )),
-                )
-                .expect("Failed to build minUTxO output")
-                .build()
-                .expect("Failed to build amount output")
+                )?
+                .build()?
         };
 
-        self.tx_builder
-            .add_output(&output)
-            .expect("Could not add output");
+        self.tx_builder.add_output(&output)?;
+        Ok(())
     }
 
     #[func]
+    fn _pay_to_address_with_datum(
+        &mut self,
+        address: Gd<Address>,
+        coin: Gd<BigInt>,
+        assets: Gd<MultiAsset>,
+        datum: Gd<Datum>,
+    ) -> Gd<GResult> {
+        Self::to_gresult(self.pay_to_address_with_datum(address, coin, assets, datum))
+    }
+
+    fn add_mint_asset(
+        &mut self,
+        script: &PlutusScript,
+        tokens: &Dictionary,
+        redeemer: &CSL::plutus::Redeemer,
+    ) -> Result<(), TxBuilderError> {
+        for (asset_name, amount) in tokens.iter_shared().typed::<PackedByteArray, Gd<BigInt>>() {
+            self.mint_builder.add_asset(
+                &MintWitness::new_plutus_script(&PlutusScriptSource::new(&script.script), redeemer),
+                &AssetName::new(asset_name.to_vec())?,
+                &Int::from_str(&amount.bind().b.to_str())?,
+            )
+        }
+        Ok(())
+    }
+
     fn mint_assets(
         &mut self,
-        script: Gd<PlutusScript>,
-        tokens: Dictionary,
-        redeemer: PackedByteArray,
-    ) {
-        let bound = script.bind();
-        let script = &bound.deref().script;
+        gscript: Gd<PlutusScript>,
+        tokens: &Dictionary,
+        redeemer_bytes: PackedByteArray,
+    ) -> Result<(), TxBuilderError> {
+        let bound = gscript.bind();
+        let script = bound.deref();
         let mut index: u32 = 0;
         let num_scripts: u32 = self.plutus_scripts.len() as u32;
         while index < num_scripts {
-            if self.plutus_scripts.get(index as usize).hash() == script.hash() {
+            if self.plutus_scripts.get(index as usize).hash() == script.script.hash() {
                 break;
             }
             index += 1;
         }
-        let redeemer = &CSL::plutus::Redeemer::new(
+        let redeemer = CSL::plutus::Redeemer::new(
             &RedeemerTag::new_mint(),
             &to_bignum(index as u64),
-            &PlutusData::from_bytes(redeemer.to_vec()).unwrap(),
+            &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
             &ExUnits::new(&BigNum::zero(), &BigNum::zero()),
         );
-        tokens.iter_shared().typed().for_each(
-            |(asset_name, amount): (PackedByteArray, Gd<BigInt>)| {
-                self.mint_builder.add_asset(
-                    &MintWitness::new_plutus_script(&PlutusScriptSource::new(script), redeemer),
-                    &AssetName::new(asset_name.to_vec()).unwrap(),
-                    &Int::from_str(&amount.bind().b.to_str()).unwrap(),
-                )
-            },
-        );
         if index >= num_scripts {
-            self.plutus_scripts.add(script);
-            self.redeemers.add(redeemer);
-            self.used_langs.insert(script.language_version());
+            self.plutus_scripts.add(&script.script);
+            self.redeemers.add(&redeemer);
+            self.used_langs.insert(script.script.language_version());
         }
-    }
-
-    pub fn calc_script_data_hash(&mut self) -> CSL::crypto::ScriptDataHash {
-        let mut retained_cost_models = Costmdls::new();
-
-        for lang in &self.used_langs {
-            match self.cost_models.get(&lang) {
-                Some(cost) => {
-                    retained_cost_models.insert(&lang, &cost);
-                }
-                _ => {}
-            }
-        }
-
-        return hash_script_data(&self.redeemers, &retained_cost_models, None);
+        self.minted_assets
+            .insert(index, (script.script.clone(), tokens.clone()));
+        self.add_mint_asset(&script, &tokens, &redeemer)
     }
 
     #[func]
+    fn _mint_assets(
+        &mut self,
+        script: Gd<PlutusScript>,
+        tokens: Dictionary,
+        redeemer: PackedByteArray,
+    ) -> Gd<GResult> {
+        Self::to_gresult(self.mint_assets(script, &tokens, redeemer))
+    }
+
     fn balance_and_assemble(
         &mut self,
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<Address>,
-    ) -> Gd<Transaction> {
+    ) -> Result<Transaction, TxBuilderError> {
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         let mut tx_builder = self.tx_builder.clone();
         let uses_plutus_scripts = self.redeemers.len() > 0;
 
-        gutxos.iter_shared().for_each(|gutxo| {
+        for gutxo in gutxos.iter_shared() {
             utxos.add(&gutxo.bind().to_transaction_unspent_output());
-        });
+        }
 
         tx_builder.set_inputs(&self.inputs_builder.clone());
-        tx_builder
-            .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)
-            .expect("Could not add inputs");
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
         if uses_plutus_scripts {
             let min_collateral =
                 self.fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
-            let collateral_amount =
-                Gd::from_object(BigInt::from_int(min_collateral.try_into().unwrap()));
+            let collateral_amount = Gd::from_object(BigInt::from_int(
+                min_collateral
+                    .try_into()
+                    .expect("Collateral amount exceeds expected limits"),
+            ));
             for gutxo in gutxos.iter_shared() {
                 let utxo = gutxo.bind();
                 if utxo.coin.bind().gt(collateral_amount.clone()) {
                     let mut inputs_builder = TxInputsBuilder::new();
-                    utxo.add_to_inputs_builder(&mut inputs_builder);
+                    add_utxo_to_inputs_builder(utxo.deref(), &mut inputs_builder)?;
                     tx_builder.set_collateral(&inputs_builder);
-                    tx_builder
-                        .set_total_collateral_and_return(
-                            &BigNum::from(min_collateral),
-                            &change_address.bind().address,
-                        )
-                        .unwrap();
+                    tx_builder.set_total_collateral_and_return(
+                        &BigNum::from(min_collateral),
+                        &change_address.bind().address,
+                    )?;
                     break;
                 }
             }
-            tx_builder.set_script_data_hash(&self.calc_script_data_hash());
+            tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
-        tx_builder
-            .add_change_if_needed(&change_address.bind().address)
-            .expect("Could not set change address");
-        let tx_body = tx_builder.build().expect("Could not build transaction");
+        tx_builder.add_change_if_needed(&change_address.bind().address)?;
+        let tx_body = tx_builder.build()?;
 
         let mut witnesses = TransactionWitnessSet::new();
         let vkey_witnesses = Vkeywitnesses::new();
@@ -472,27 +551,62 @@ impl GTxBuilder {
             witnesses.set_plutus_scripts(&self.plutus_scripts);
             witnesses.set_redeemers(&self.redeemers);
         }
-        return Gd::from_object(Transaction {
+        Ok(Transaction {
             transaction: CSL::Transaction::new(&tx_body, &witnesses, None),
             max_ex_units: self.max_ex_units,
             slot_config: self.slot_config,
             cost_models: self.cost_models.clone(),
-        });
+        })
     }
 
     #[func]
+    fn _balance_and_assemble(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+        change_address: Gd<Address>,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(self.balance_and_assemble(gutxos, change_address))
+    }
+
     fn complete(
         &mut self,
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
-    ) -> Gd<Transaction> {
+    ) -> Result<Transaction, TxBuilderError> {
         self.redeemers = Redeemers::new();
+        self.mint_builder = MintBuilder::new();
         for redeemer in eval_result.bind().redeemers.iter_shared() {
-            self.redeemers.add(&redeemer.bind().redeemer)
+            let bound = redeemer.bind().deref().redeemer.clone();
+            match bound.tag().kind() {
+                CSL::plutus::RedeemerTagKind::Mint => {
+                    let (script, assets) = self
+                        .minted_assets
+                        .get(&bound.index().try_into()?)
+                        .ok_or(TxBuilderError::UnknownRedeemerIndex(
+                            redeemer.bind().deref().redeemer.clone(),
+                        ))?
+                        .to_owned();
+                    self.add_mint_asset(&PlutusScript { script }, &assets, &bound)?;
+                }
+                CSL::plutus::RedeemerTagKind::Spend => (),
+                CSL::plutus::RedeemerTagKind::Cert => (),
+                CSL::plutus::RedeemerTagKind::Reward => (),
+            }
+            self.redeemers.add(&bound);
         }
         self.fee = eval_result.bind().fee;
-        return self.balance_and_assemble(gutxos, change_address);
+        self.balance_and_assemble(gutxos, change_address)
+    }
+
+    #[func]
+    fn _complete(
+        &mut self,
+        gutxos: Array<Gd<Utxo>>,
+        change_address: Gd<Address>,
+        eval_result: Gd<EvaluationResult>,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(self.complete(gutxos, change_address, eval_result))
     }
 }
 

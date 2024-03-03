@@ -199,14 +199,20 @@ func _get_utxos_at_address(address: String) -> Array[Utxo]:
 				var tx_index: int = utxo.tx_index
 				var utxo_address: String = utxo.address
 				
-				return Utxo.new(
+				var result = Utxo.create(
 					tx_hash,
-					tx_index, 
+					tx_index,
 					utxo_address,
-					coin,
+					coin.to_str(),
 					assets
-				))
-	)
+				)
+				
+				if result.is_err():
+					push_error("Could not create UTxO: %s" % result.error)
+					return null
+					
+				return result.value
+	))
 	
 	return utxos
 

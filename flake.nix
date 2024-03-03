@@ -123,6 +123,7 @@
               self'.packages.godot
               pkgs.cargo
               pkgs.rustc
+              pkgs.rust-analyzer
             ];
           };
           windows = pkgs.mkShell {
