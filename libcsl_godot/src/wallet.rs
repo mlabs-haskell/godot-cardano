@@ -247,8 +247,8 @@ impl SingleAddressWalletStore {
     /// A name and description may be used for the account.
     pub fn import_from_seedphrase(
         phrase: String,
-        phrase_password: String,
-        wallet_password: String,
+        phrase_password: PackedByteArray,
+        wallet_password: PackedByteArray,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -279,7 +279,7 @@ impl SingleAddressWalletStore {
     ///
     /// The seed phrase is stred in the `wallet_seedphrase` parameter.
     pub fn create(
-        wallet_password: String,
+        wallet_password: PackedByteArray,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -294,7 +294,7 @@ impl SingleAddressWalletStore {
             wallet,
         } = Self::from_entropy(
             entropy_bytes,
-            seed_phrase.phrase().to_string(),
+            PackedByteArray::new(),
             wallet_password,
             account_index,
             account_name,
@@ -309,14 +309,14 @@ impl SingleAddressWalletStore {
 
     pub fn from_entropy(
         entropy: &[u8],
-        phrase_password: String,
-        wallet_password: String,
+        phrase_password: PackedByteArray,
+        wallet_password: PackedByteArray,
         account_index: u32,
         account_name: String,
         account_description: String,
     ) -> Result<SingleAddressWalletImportResult, SingleAddressWalletStoreError> {
         let master_private_key =
-            Bip32PrivateKey::from_bip39_entropy(entropy, phrase_password.as_bytes())
+            Bip32PrivateKey::from_bip39_entropy(entropy, phrase_password.as_slice())
                 .derive(harden(1852))
                 .derive(harden(1815));
 
@@ -335,7 +335,10 @@ impl SingleAddressWalletStore {
                 .map_err(|e| SingleAddressWalletStoreError::Pkcs5Error(e))?;
 
         let encrypted_master_private_key = pbes2_params
-            .encrypt(wallet_password, master_private_key.as_bytes().as_slice())
+            .encrypt(
+                wallet_password.as_slice(),
+                master_private_key.as_bytes().as_slice(),
+            )
             .map_err(|e| SingleAddressWalletStoreError::Pkcs5Error(e))?;
 
         // We store the first account (zero index). Any further accounts need
@@ -406,8 +409,8 @@ impl SingleAddressWalletStore {
     #[func]
     fn _import_from_seedphrase(
         phrase: String,
-        mnemonic_password: String,
-        wallet_password: String,
+        mnemonic_password: PackedByteArray,
+        wallet_password: PackedByteArray,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -424,7 +427,7 @@ impl SingleAddressWalletStore {
 
     #[func]
     fn _create(
-        wallet_password: String,
+        wallet_password: PackedByteArray,
         account_index: u32,
         account_name: String,
         account_description: String,

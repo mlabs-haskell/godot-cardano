@@ -72,7 +72,7 @@ static func import_from_seedphrase(
 	account_description: String) -> WalletImportResult:
 	return WalletImportResult.new(
 		_SingleAddressWalletStore._import_from_seedphrase(
-			phrase, phrase_password, wallet_password, account_index, name, account_description))
+			phrase, phrase_password.to_utf8_buffer(), wallet_password.to_utf8_buffer(), account_index, name, account_description))
 			
 class WalletCreation extends RefCounted:
 	var _create_res: _SingleAddressWalletCreateResult
@@ -105,6 +105,6 @@ static func create(
 	account_description) -> WalletCreationResult:
 	return WalletCreationResult.new(
 		_SingleAddressWalletStore._create(
-			wallet_password, account_index, name, account_description
+			wallet_password.to_utf8_buffer(), account_index, name, account_description
 		)
 	)
