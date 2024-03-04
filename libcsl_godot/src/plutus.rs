@@ -287,10 +287,10 @@ impl Cbor {
                             .ok_or(EncodeTagError)?
                             .into();
 
-                        if constructor_int <= 7 {
+                        if constructor_int < 7 {
                             serializer.write_tag(121 + constructor_int)?;
                         } else if constructor_int <= 127 {
-                            serializer.write_tag(1280 + constructor_int)?;
+                            serializer.write_tag(1280 - 7 + constructor_int)?;
                         } else {
                             serializer.write_array(Len::Len(2))?;
                             serializer.write_unsigned_integer(constructor_int)?;

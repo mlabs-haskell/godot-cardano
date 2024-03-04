@@ -69,47 +69,47 @@ impl BigInt {
     }
 
     #[func]
-    fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
+    pub fn add(&self, other: Gd<BigInt>) -> Gd<BigInt> {
         let b = self.b.add(&other.bind().deref().b);
         Gd::from_object(Self { b })
     }
 
     #[func]
-    fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
+    pub fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
         let b = self.b.mul(&other.bind().deref().b);
         Gd::from_object(Self { b })
     }
 
     #[func]
-    fn zero() -> Gd<BigInt> {
+    pub fn zero() -> Gd<BigInt> {
         Gd::from_object(Self {
             b: CSL::BigInt::from(0),
         })
     }
 
     #[func]
-    fn one() -> Gd<BigInt> {
+    pub fn one() -> Gd<BigInt> {
         Gd::from_object(Self {
             b: CSL::BigInt::from(1),
         })
     }
 
     #[func]
-    fn eq(&self, other: Gd<BigInt>) -> bool {
+    pub fn eq(&self, other: Gd<BigInt>) -> bool {
         self.b == other.bind().b
     }
 
     #[func]
-    fn gt(&self, other: Gd<BigInt>) -> bool {
+    pub fn gt(&self, other: Gd<BigInt>) -> bool {
         self > &other.bind()
     }
 
     #[func]
-    fn lt(&self, other: Gd<BigInt>) -> bool {
+    pub fn lt(&self, other: Gd<BigInt>) -> bool {
         self < &other.bind()
     }
 
-    fn from_bytes(bytes: PackedByteArray) -> Result<BigInt, BigIntError> {
+    pub fn from_bytes(bytes: PackedByteArray) -> Result<BigInt, BigIntError> {
         CSL::BigInt::from_bytes(bytes.to_vec()).map_or_else(
             |e| Result::Err(BigIntError::CouldNotDeserializeBigInt(e)),
             |b| Result::Ok(BigInt { b }),
@@ -117,12 +117,12 @@ impl BigInt {
     }
 
     #[func]
-    fn _from_bytes(bytes: PackedByteArray) -> Gd<GResult> {
+    pub fn _from_bytes(bytes: PackedByteArray) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_bytes(bytes))
     }
 
     #[func]
-    fn to_bytes(&self) -> PackedByteArray {
+    pub fn to_bytes(&self) -> PackedByteArray {
         let vec = self.b.to_bytes();
         let bytes: &[u8] = vec.as_slice().into();
         PackedByteArray::from(bytes)

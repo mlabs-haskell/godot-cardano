@@ -20,6 +20,8 @@ var phrase_input: TextEdit = %PhraseInput
 var timers_details: Label = %WalletTimers
 @onready
 var send_ada_button: Button = %SendAdaButton
+@onready
+var mint_token_button: Button = %MintTokenButton
 
 func _ready() -> void:
 	var token : String = FileAccess\
@@ -58,10 +60,7 @@ func _process(_delta: float) -> void:
 
 func _on_wallet_set() -> void:
 	var _ret := self.cardano.wallet.got_updated_utxos.connect(_on_utxos_updated)
-	var addr: String = cardano.wallet._get_change_address().to_bech32()
-	wallet_details.text = "Using wallet %s" % addr
-	address_input.text = addr
-	send_ada_button.disabled = false
+	wallet_details.text = "Using wallet %s" % cardano.wallet._get_change_address().to_bech32()
 	
 func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 	var num_utxos := utxos.size()
@@ -71,7 +70,9 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 	)
 	wallet_details.text = "Using wallet %s" % cardano.wallet._get_change_address().to_bech32()
 	if num_utxos > 0:
-		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]		
+		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]
+		send_ada_button.disabled = false
+		mint_token_button.disabled = false
 
 func _on_set_wallet_button_pressed() -> void:
 	_create_wallet_from_seedphrase(phrase_input.text)
@@ -85,12 +86,22 @@ func _on_send_ada_button_pressed() -> void:
 	else:
 		push_error("There was an error while parsing the amount as a BigInt", res.error)
 	var address := Address.from_bech32(address_input.text)
-		
+
 	var tx: TxBuilder = cardano.new_tx()
-	tx.pay_to_address_with_datum(address, amount, {}, ExampleDatum.new())
+	tx.pay_to_address(address, amount, {})
 	var tx_complete: TxComplete = tx.complete()
 	tx_complete.sign("1234")
-	print(tx_complete._transaction.bytes().hex_encode())
+	tx_complete.submit()
+
+func _on_mint_token_button_pressed() -> void:
+	var tx: TxBuilder = cardano.new_tx()
+	tx.mint_assets(
+		PlutusScript.create("46010000222499".hex_decode()), 
+		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
+		VoidData.new()
+	)
+	var tx_complete: TxComplete = tx.complete()
+	tx_complete.sign("1234")
 	tx_complete.submit()
 	
 func _create_wallet_from_seedphrase(seedphrase: String) -> void:

@@ -50,12 +50,22 @@ func lt(other: BigInt) -> bool:
 	
 func gt(other: BigInt) -> bool:
 	return _b.gt(other._b)
+
+func negate() -> BigInt:
+	var str = to_str()
+	if str[0] == "-":
+		return BigInt.from_str(str.substr(1)).value
+	else:
+		return BigInt.from_str("-" + str).value
+
+func sub(other: BigInt) -> BigInt:
+	return self.add(other.negate())
 	
 func to_str() -> String:
 	return _b.to_str()
 
 func to_data(_strict := false) -> Variant:
 	return _b
-
+	
 func _to_string() -> String:
 	return _b.to_str()
