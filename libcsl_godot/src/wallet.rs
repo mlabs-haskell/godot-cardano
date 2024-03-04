@@ -15,10 +15,9 @@ use cardano_serialization_lib::crypto::{Bip32PrivateKey, Bip32PublicKey};
 use cardano_serialization_lib::error::JsError;
 use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
 use godot::builtin::meta::GodotConvert;
-use godot::engine::Crypto;
 use godot::prelude::*;
 use pkcs5::{pbes2, Error};
-use rand::SeedableRng;
+use rand::{RngCore, SeedableRng};
 use scrypt::errors::InvalidParams;
 
 use crate::gresult::{FailsWith, GResult};
@@ -320,18 +319,23 @@ impl SingleAddressWalletStore {
                 .derive(harden(1852))
                 .derive(harden(1815));
 
-        // TODO: Check how good this RNG actually is.
-        // Use Godot RNG for Scrypt salt and AES initialization vector
-        let mut crypto = Crypto::new();
-        let salt: PackedByteArray = crypto.generate_random_bytes(64);
-        // this is safe
-        let aes_iv_array: PackedByteArray = crypto.generate_random_bytes(16);
-        let aes_iv = <&[u8; 16]>::try_from(aes_iv_array.as_slice()).unwrap();
-
+        let mut rng = rand::rngs::StdRng::from_entropy();
+        let salt: PackedByteArray = { 
+            let mut bs: [u8; 64] = [0; 64];
+            rng.fill_bytes(&mut bs);
+            PackedByteArray::from(bs.as_slice())
+        };
+        let aes_iv_array: [u8; 16] = {
+            let mut bs: [u8; 16] = [0; 16];
+            rng.fill_bytes(&mut bs);
+            bs
+        };
+        let aes_iv: PackedByteArray = PackedByteArray::from(aes_iv_array.as_slice());
+            
         // Create PBES2 params and encrypt the master key.
         let scrypt_params = scrypt::Params::recommended();
         let pbes2_params =
-            pbes2::Parameters::scrypt_aes128cbc(scrypt_params, salt.as_slice(), aes_iv)
+            pbes2::Parameters::scrypt_aes128cbc(scrypt_params, salt.as_slice(), &aes_iv_array)
                 .map_err(|e| SingleAddressWalletStoreError::Pkcs5Error(e))?;
 
         let encrypted_master_private_key = pbes2_params
@@ -371,7 +375,7 @@ impl SingleAddressWalletStore {
             scrypt_log_n: scrypt_params.log_n(),
             scrypt_r: scrypt_params.r(),
             scrypt_p: scrypt_params.p(),
-            aes_iv: aes_iv_array.clone(),
+            aes_iv,
         };
 
         // We return a `SingleAddressWallet` (for convenience). We know that
@@ -394,7 +398,7 @@ impl SingleAddressWalletStore {
         let wallet = Self::unsafe_make_wallet(
             &encrypted_master_private_key,
             &salt.to_vec(),
-            aes_iv,
+            &aes_iv_array,
             &scrypt_params,
             account_info,
             account_infos,
