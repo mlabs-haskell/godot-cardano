@@ -6,9 +6,8 @@ var _tx: _Transaction
 
 enum TransactionStatus {
 	SUCCESS = 0,
-	TRANSACTION_UTXO_ERROR = 1,
-	TRANSACTION_JS_ERROR = 2,
-	TRANSACTION_EVALUATION_ERROR = 3,
+	EVALUATION_ERROR = 1,
+	DESERIALIZE_ERROR = 2,
 }
 
 class EvaluationResult extends Result:
