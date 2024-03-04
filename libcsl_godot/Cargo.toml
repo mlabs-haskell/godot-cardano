@@ -15,6 +15,7 @@ uplc = { git = "https://github.com/aiken-lang/aiken", rev = "b50e4ab63aa35d8fd8b
 cardano-serialization-lib = "11.5.0"
 bip32 = "0.5.1"
 hex = "0.4.0"
+rand = "0.8.5"
 pkcs5 = {version = "0.7.1", features = ["pbes2", "alloc"]}
 scrypt = "0.11.0"
 cbor_event = "2.1.3"

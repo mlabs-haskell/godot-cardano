@@ -31,20 +31,20 @@ class GetWalletError extends Result:
 func get_wallet(account_index: int) -> GetWalletError:
 	return GetWalletError.new(_wallet_store._get_wallet(account_index))
 
-class WalletCreation extends RefCounted:
-	var _creation_res: _SingleAddressWalletCreationResult
+class WalletImport extends RefCounted:
+	var _import_res: _SingleAddressWalletImportResult
 	var wallet_store: SingleAddressWalletStore:
-		get: return SingleAddressWalletStore.new(_creation_res.wallet_store)
+		get: return SingleAddressWalletStore.new(_import_res.wallet_store)
 	var wallet: SingleAddressWallet:
-		get: return SingleAddressWallet.new(_creation_res.wallet)
+		get: return SingleAddressWallet.new(_import_res.wallet)
 	
-	func _init(creation_res: _SingleAddressWalletCreationResult):
-		_creation_res = creation_res
+	func _init(import_res: _SingleAddressWalletImportResult):
+		_import_res = import_res
 
-class WalletCreationResult extends Result:
+class WalletImportResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
-	var value: WalletCreation:
-		get: return WalletCreation.new(_res.unsafe_value() as _SingleAddressWalletCreationResult)
+	var value: WalletImport:
+		get: return WalletImport.new(_res.unsafe_value() as _SingleAddressWalletImportResult)
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
@@ -69,10 +69,30 @@ static func import_from_seedphrase(
 	wallet_password: String,
 	account_index: int,
 	name: String,
-	account_description: String) -> WalletCreationResult:
-	return WalletCreationResult.new(
+	account_description: String) -> WalletImportResult:
+	return WalletImportResult.new(
 		_SingleAddressWalletStore._import_from_seedphrase(
 			phrase, phrase_password, wallet_password, account_index, name, account_description))
+			
+class WalletCreation extends RefCounted:
+	var _create_res: _SingleAddressWalletCreateResult
+	var wallet_store: SingleAddressWalletStore:
+		get: return SingleAddressWalletStore.new(_create_res.wallet_store)
+	var wallet: SingleAddressWallet:
+		get: return SingleAddressWallet.new(_create_res.wallet)
+	var seed_phrase: String:
+		get: return _create_res.seed_phrase
+	
+	func _init(create_res: _SingleAddressWalletCreateResult):
+		_create_res = create_res
+			
+class WalletCreationResult extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: WalletCreation:
+		get: return WalletCreation.new(_res.unsafe_value() as _SingleAddressWalletCreateResult)
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
 
 ## Construct a [SingleAddressWalletStoreError] from a wallet password and using
 ## Godot's entropy source. It does *not* return a seed phrase.

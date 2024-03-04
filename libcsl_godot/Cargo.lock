@@ -305,6 +305,7 @@ dependencies = [
  "godot",
  "hex",
  "pkcs5",
+ "rand",
  "scrypt",
  "uplc",
 ]
