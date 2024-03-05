@@ -45,6 +45,7 @@ offset_bottom = 31.0
 text = "Wallet mnemonic phrase:"
 
 [node name="SetButton" type="Button" parent="SetWalletForm"]
+unique_name_in_owner = true
 offset_left = 47.0
 offset_top = 311.0
 offset_right = 247.0

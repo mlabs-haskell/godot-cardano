@@ -4,8 +4,6 @@ var provider: Provider
 @onready
 var cardano: Cardano = null
 @onready
-var key_ring_store: SingleAddressWalletStore = null
-@onready
 var wallet: Wallet.MnemonicWallet = null
 
 @onready
@@ -22,6 +20,8 @@ var timers_details: Label = %WalletTimers
 var send_ada_button: Button = %SendAdaButton
 @onready
 var mint_token_button: Button = %MintTokenButton
+@onready
+var set_button: Button = %SetButton
 
 func _ready() -> void:
 	var token : String = FileAccess\
@@ -104,8 +104,13 @@ func _on_mint_token_button_pressed() -> void:
 	tx_complete.sign("1234")
 	tx_complete.submit()
 	
+# Asynchronously load the wallet from a seedphrase
 func _create_wallet_from_seedphrase(seedphrase: String) -> void:
-	var res := SingleAddressWalletStore.import_from_seedphrase(
+	var old_text := set_button.text
+	set_button.text = "Loading wallet..."
+	set_button.disabled = true
+	var loader := SingleAddressWalletLoader.new()
+	var res := await loader.import_from_seedphrase(
 		seedphrase,
 		"",
 		"1234",
@@ -113,7 +118,6 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 		"First account",
 		"The first account created")
 	if res.is_ok():
-		key_ring_store = res.value.wallet_store
 		var key_ring := res.value.wallet
 		wallet = Wallet.MnemonicWallet.new(key_ring, provider)
 		add_child(wallet)
@@ -122,3 +126,5 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 		_on_wallet_set()
 	else:
 		push_error("Could not set wallet, found error", res.error)
+	set_button.text = old_text
+	set_button.disabled = false

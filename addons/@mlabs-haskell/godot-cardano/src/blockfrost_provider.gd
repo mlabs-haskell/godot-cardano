@@ -116,17 +116,18 @@ func blockfrost_request(request: Request) -> Variant:
 	var http_request := HTTPRequest.new()
 	add_child(http_request)
 	
-	print_debug("Request URL", "%s/%s" % [network_endpoints[self.network], request._url()])
+	var url := "%s/%s" % [network_endpoints[self.network], request._url()]
+	print_debug("Request URL: ", url.c_escape())
 	
 	var status := http_request.request_raw(
-		"%s/%s" % [network_endpoints[self.network], request._url()],
+		url,
 		[ "project_id: %s" % self.api_key ] + request._headers(),
 		request._method(),
 		request._body()
 	)
 	
 	if status != OK:
-		print("Blockfrost request failed: ", status)
+		print("Blockfrost request failed: ", status, request)
 		remove_child(http_request)
 		return {}
 
@@ -140,7 +141,8 @@ func blockfrost_request(request: Request) -> Variant:
 	if status_code != 200:
 		print("Blockfrost request failed: ", content)
 		return null
-		
+	
+	print_debug(content)
 	return JSON.parse_string(content)
 
 func _get_protocol_parameters() -> ProtocolParameters:
