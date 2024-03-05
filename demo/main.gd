@@ -5,6 +5,8 @@ var provider: Provider
 var cardano: Cardano = null
 @onready
 var wallet: Wallet.MnemonicWallet = null
+@onready
+var loader := SingleAddressWalletLoader.new()
 
 @onready
 var wallet_details: RichTextLabel = %WalletDetails
@@ -34,6 +36,7 @@ func _ready() -> void:
 		token
 	)
 	add_child(provider)
+	add_child(loader)
 	wallet_details.text = "No wallet set"
 	
 	# if a seed phrase file is available, we load the seed phrase from there
@@ -109,7 +112,6 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	var old_text := set_button.text
 	set_button.text = "Loading wallet..."
 	set_button.disabled = true
-	var loader := SingleAddressWalletLoader.new()
 	var res := await loader.import_from_seedphrase(
 		seedphrase,
 		"",

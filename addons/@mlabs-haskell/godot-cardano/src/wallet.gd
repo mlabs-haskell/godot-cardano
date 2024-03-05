@@ -37,7 +37,7 @@ class MnemonicWallet extends Wallet:
 		get: return timer.time_left
 	
 	var timer: Timer
-	
+
 	## Cached utxos, these can and _will_ be outdated. To get the latest utxos,
 	## call [MnemonicWallet.get_utxos].
 	var utxos: Array[Utxo] = []

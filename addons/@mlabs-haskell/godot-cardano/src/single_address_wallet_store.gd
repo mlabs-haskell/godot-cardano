@@ -1,4 +1,4 @@
-extends Resource
+extends Node
 
 class_name SingleAddressWalletLoader
 
@@ -97,7 +97,7 @@ func _wrap_import_from_seedphrase(
 		var res := WalletImportResult.new(
 		_SingleAddressWalletStore._import_from_seedphrase(
 			phrase, phrase_password.to_utf8_buffer(), wallet_password.to_utf8_buffer(), account_index, name, account_description))
-		import_completed.emit(res)
+		call_deferred("emit_signal", "import_completed", res)
 			
 class WalletCreation extends RefCounted:
 	var _create_res: _SingleAddressWalletCreateResult
