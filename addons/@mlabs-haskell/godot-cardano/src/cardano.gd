@@ -61,5 +61,4 @@ func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> vo
 	builder.pay_to_address(Address.from_bech32(recipient), amount, {})
 	var transaction := builder.complete()
 	transaction.sign(password)
-	print(transaction.bytes().hex_encode())
 	transaction.submit()

@@ -1,11 +1,8 @@
 extends Node2D
 
 var provider: Provider
-@onready
 var cardano: Cardano = null
-@onready
 var wallet: Wallet.MnemonicWallet = null
-@onready
 var loader := SingleAddressWalletLoader.new()
 
 @onready
