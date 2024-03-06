@@ -133,7 +133,7 @@ static func create(
 	)
 
 func _exit_tree():
-	if thread.is_started():
+	if not (thread == null) and thread.is_started():
 		thread.wait_to_finish()
 	else:
 		pass # the thread was never started or it's still running
