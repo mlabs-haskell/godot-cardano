@@ -74,10 +74,15 @@ func import_from_seedphrase(
 	account_index: int,
 	name: String,
 	account_description: String) -> WalletImportResult:
-		if not (thread == null) and thread.is_alive():
-			push_warning("Import in progress, ignoring latest call...")
-			await(import_completed)
-		
+		if not (thread == null):
+			if thread.is_alive():
+				push_warning("Import in progress, ignoring latest call...")
+				var old_res: WalletImportResult = await(import_completed)
+				return old_res
+			elif thread.is_started():
+				thread.wait_to_finish() # the thread should have stopped working by now
+			else:
+				push_warning("thread object is initialized but not started")
 		thread = Thread.new()
 		thread.start(
 			_wrap_import_from_seedphrase.bind(
