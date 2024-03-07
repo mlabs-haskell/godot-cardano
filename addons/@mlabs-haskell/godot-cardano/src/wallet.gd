@@ -19,12 +19,12 @@ func total_lovelace() -> BigInt:
 		BigInt.zero()
 	)
 
-func _sign_transaction(_transaction: Transaction) -> Signature:
+func _sign_transaction(password: String, _transaction: Transaction) -> Signature:
 	return null
 	
 class MnemonicWallet extends Wallet:
 	var provider: Provider
-	var private_key_account: PrivateKeyAccount
+	var single_address_wallet: SingleAddressWallet
 
 	@export
 	var utxos_update_age: float = 30
@@ -37,14 +37,14 @@ class MnemonicWallet extends Wallet:
 		get: return timer.time_left
 	
 	var timer: Timer
-	
+
 	## Cached utxos, these can and _will_ be outdated. To get the latest utxos,
 	## call [MnemonicWallet.get_utxos].
 	var utxos: Array[Utxo] = []
 		
-	func _init(account: PrivateKeyAccount, provider_: Provider) -> void:
+	func _init(single_address_wallet_: SingleAddressWallet, provider_: Provider) -> void:
 		self.provider = provider_
-		self.private_key_account = account
+		self.single_address_wallet = single_address_wallet_
 		self.active = true
 		# Connect and start the timer
 		timer = Timer.new()
@@ -78,29 +78,21 @@ class MnemonicWallet extends Wallet:
 	##
 	## It will also update the cached utxos and reset the timer.
 	func _get_updated_utxos() -> Array[Utxo]:
-		print_debug("get_updated_utxos called")
 		self.timer.stop()
-		var result := private_key_account.get_address_bech32()
-		if result.is_ok():
-			var address := result.value
-			self.utxos = await self.provider._get_utxos_at_address(address)
-		else:
-			push_error("An error was found while getting the address of an account", result.error)
+		var address_bech32 = single_address_wallet.get_address_bech32()
+		self.utxos = await self.provider._get_utxos_at_address(address_bech32)
 		got_updated_utxos.emit(self.utxos)
 		self.timer.start()
 		return self.utxos
 		
 	func _get_change_address() -> Address:
-		return private_key_account.get_address()
-	
-	func get_change_address_bech32() -> String:
-		var result = private_key_account.get_address_bech32()
-		match result.tag():
-			PrivateKeyAccount.Status.SUCCESS:
-				return result.value
-			_:
-				push_error("An error was found while getting the address of an account", result.error)
-				return ""
+		return single_address_wallet.get_address()
 		
-	func _sign_transaction(transaction: Transaction) -> Signature:
-		return private_key_account.sign_transaction(transaction)
+	func _sign_transaction(password: String, transaction: Transaction) -> Signature:
+		var res := single_address_wallet._sign_transaction(password, transaction)
+		if res.is_ok():
+			return res.value
+		else:
+			# TODO: Do not fail, return error
+			push_error("Could not sign transaction, found error", res.error)
+			return

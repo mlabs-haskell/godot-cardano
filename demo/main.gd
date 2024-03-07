@@ -1,7 +1,9 @@
 extends Node2D
 
-var cardano: Cardano
-var wallet: Wallet.MnemonicWallet
+var provider: Provider
+var cardano: Cardano = null
+var wallet: Wallet.MnemonicWallet = null
+var loader := SingleAddressWalletLoader.new()
 
 @onready
 var wallet_details: RichTextLabel = %WalletDetails
@@ -17,35 +19,28 @@ var timers_details: Label = %WalletTimers
 var send_ada_button: Button = %SendAdaButton
 @onready
 var mint_token_button: Button = %MintTokenButton
+@onready
+var set_button: Button = %SetButton
 
 func _ready() -> void:
 	var token : String = FileAccess\
 		.open("./preview_token.txt", FileAccess.READ)\
 		.get_as_text(true)\
 		.replace("\n", "")
-	var provider: Provider = BlockfrostProvider.new(
+		
+	provider = BlockfrostProvider.new(
 		Provider.Network.NETWORK_PREVIEW,
 		token
 	)
-	var seed_phrase_file := FileAccess.open("./seed_phrase.txt", FileAccess.READ)
+	add_child(provider)
+	add_child(loader)
+	wallet_details.text = "No wallet set"
 	
+	# if a seed phrase file is available, we load the seed phrase from there
+	var seed_phrase_file := FileAccess.open("./seed_phrase.txt", FileAccess.READ)
 	if seed_phrase_file != null:
 		phrase_input.text = seed_phrase_file.get_as_text(true)
-		
-		var account_result := PrivateKeyAccount.from_mnemonic(phrase_input.text)
-		
-		if account_result.is_ok():
-			var address_result := account_result.value.get_address_bech32()
-			
-			if address_result.is_ok():
-				address_input.text = address_result.value
-		
-	cardano = Cardano.new(provider)
-	add_child(cardano)
-	
-	# Connect signals to wallet details functions
-	wallet_details.text = "No wallet set"
-	var _ret := self.cardano.got_wallet.connect(_on_wallet_set)
+		_create_wallet_from_seedphrase(phrase_input.text)
 	
 	# basic check for invertibility
 	var strict := true
@@ -80,12 +75,13 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 		mint_token_button.disabled = false
 
 func _on_set_wallet_button_pressed() -> void:
-	wallet = cardano.set_wallet_from_mnemonic(phrase_input.text)
+	_create_wallet_from_seedphrase(phrase_input.text)
 
 func _on_send_ada_button_pressed() -> void:
 	var res: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
 	var amount := BigInt.zero()
 	if res.is_ok():
+		cardano.send_lovelace_to("1234", address_input.text, res.value)
 		amount = res.value
 	else:
 		push_error("There was an error while parsing the amount as a BigInt", res.error)
@@ -94,11 +90,10 @@ func _on_send_ada_button_pressed() -> void:
 	var tx: TxBuilder = cardano.new_tx()
 	tx.pay_to_address(address, amount, {})
 	var tx_complete: TxComplete = tx.complete()
-	tx_complete.sign()
+	tx_complete.sign("1234")
 	tx_complete.submit()
 
 func _on_mint_token_button_pressed() -> void:
-	var address := Address.from_bech32(address_input.text)
 	var tx: TxBuilder = cardano.new_tx()
 	tx.mint_assets(
 		PlutusScript.create("46010000222499".hex_decode()), 
@@ -106,5 +101,29 @@ func _on_mint_token_button_pressed() -> void:
 		VoidData.new()
 	)
 	var tx_complete: TxComplete = tx.complete()
-	tx_complete.sign()
+	tx_complete.sign("1234")
 	tx_complete.submit()
+	
+# Asynchronously load the wallet from a seedphrase
+func _create_wallet_from_seedphrase(seedphrase: String) -> void:
+	var old_text := set_button.text
+	set_button.text = "Loading wallet..."
+	set_button.disabled = true
+	var res := await loader.import_from_seedphrase(
+		seedphrase,
+		"",
+		"1234",
+		0,
+		"First account",
+		"The first account created")
+	if res.is_ok():
+		var key_ring := res.value.wallet
+		wallet = Wallet.MnemonicWallet.new(key_ring, provider)
+		add_child(wallet)
+		cardano = Cardano.new(wallet, provider)
+		add_child(cardano)
+		_on_wallet_set()
+	else:
+		push_error("Could not set wallet, found error", res.error)
+	set_button.text = old_text
+	set_button.disabled = false

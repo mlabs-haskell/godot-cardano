@@ -6,19 +6,15 @@ class_name Cardano
 ## blockchain, after object initialization.
 signal got_tx_builder(initialized: bool)
 
-## This signal is emitted after a wallet is set
-signal got_wallet
-
 var provider: Provider
 var wallet: Wallet
 var _protocol_params: ProtocolParameters
 var _era_summaries: Array[Provider.EraSummary]
 var _cost_models: CostModels
 
-func _init(provider_: Provider) -> void:
+func _init(wallet_: Wallet, provider_: Provider) -> void:
 	self.provider = provider_
-	self.wallet = null
-	add_child(provider)
+	self.wallet = wallet_
 	if provider.got_protocol_parameters.connect(_on_got_protocol_parameters) == ERR_INVALID_PARAMETER:
 		push_error("Failed to connect provider's 'got_protocol_parameters' signal ")
 	if provider.got_era_summaries.connect(_on_got_era_summaries) == ERR_INVALID_PARAMETER:
@@ -50,7 +46,7 @@ func new_tx() -> TxBuilder:
 func _on_got_era_summaries(summaries: Array[Provider.EraSummary]) -> void:
 	_era_summaries = summaries
 
-func send_lovelace_to(recipient: String, amount: BigInt) -> void:
+func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
 	@warning_ignore("redundant_await")
 	var change_address := await wallet._get_change_address()
 	@warning_ignore("redundant_await")
@@ -61,23 +57,8 @@ func send_lovelace_to(recipient: String, amount: BigInt) -> void:
 		print("Error: not enough lovelace in wallet")
 		return
 		
-	var builder = new_tx()
+	var builder := new_tx()
 	builder.pay_to_address(Address.from_bech32(recipient), amount, {})
-	var transaction = builder.complete()
-	transaction.sign()
-	print(transaction.bytes().hex_encode())
-	provider.submit_transaction(transaction.bytes())
-
-# FIXME: Return a Result
-func set_wallet_from_mnemonic(phrase_str: String) -> Wallet.MnemonicWallet:
-	var result := PrivateKeyAccount.from_mnemonic(phrase_str)
-	match result.tag():
-		PrivateKeyAccount.Status.SUCCESS:
-			var account := result.value
-			self.wallet = Wallet.MnemonicWallet.new(account, self.provider)
-			add_child(self.wallet)
-			got_wallet.emit()
-			return self.wallet
-		_:
-			push_error("Error found while creating wallet from mnemonic", result.error)
-			return null
+	var transaction := builder.complete()
+	transaction.sign(password)
+	transaction.submit()
