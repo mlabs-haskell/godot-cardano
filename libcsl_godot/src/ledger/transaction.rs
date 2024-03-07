@@ -89,6 +89,11 @@ impl MultiAsset {
     pub fn _from_dictionary(dict: Dictionary) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_dictionary(&dict))
     }
+
+    #[func]
+    pub fn empty() -> Gd<MultiAsset> {
+        Gd::from_object(MultiAsset { assets: CSL::MultiAsset::new() })
+    }
 }
 
 #[derive(GodotClass)]

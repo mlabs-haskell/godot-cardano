@@ -19,3 +19,6 @@ class FromDictionaryResult extends Result:
 		
 static func from_dictionary(assets: Dictionary) -> FromDictionaryResult:
 	return FromDictionaryResult.new(_MultiAsset._from_dictionary(assets))
+
+static func empty() -> MultiAsset:
+	return new(_MultiAsset.empty())

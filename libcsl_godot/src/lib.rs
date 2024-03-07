@@ -2,8 +2,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::ops::Deref;
 
 use cardano_serialization_lib as CSL;
-use CSL::address::{BaseAddress, NetworkInfo, StakeCredential};
-use CSL::crypto::{Bip32PrivateKey, Vkeywitnesses};
+use CSL::crypto::Vkeywitnesses;
 use CSL::error::JsError;
 use CSL::fees::LinearFee;
 use CSL::output_builder::*;
@@ -15,14 +14,13 @@ use CSL::tx_builder_constants::TxBuilderConstants;
 use CSL::utils::*;
 use CSL::{AssetName, TransactionWitnessSet};
 
-use bip32::{Language, Mnemonic};
-
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 
 pub mod bigint;
 pub mod gresult;
 pub mod plutus;
+pub mod wallet;
 pub mod ledger {
     pub mod transaction;
 }
@@ -30,7 +28,7 @@ pub mod ledger {
 use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 use crate::ledger::transaction::{
-    Address, CostModels, Datum, DatumValue, EvaluationResult, MultiAsset, PlutusScript, Signature,
+    Address, CostModels, Datum, DatumValue, EvaluationResult, MultiAsset, PlutusScript,
     Transaction, Utxo,
 };
 
@@ -84,123 +82,6 @@ impl ProtocolParameters {
             max_cpu_units,
             max_mem_units,
         });
-    }
-}
-
-fn harden(index: u32) -> u32 {
-    return index | 0x80000000;
-}
-
-#[derive(GodotClass)]
-#[class(base=RefCounted, rename=_PrivateKeyAccount)]
-struct PrivateKeyAccount {
-    #[var]
-    account_index: u32,
-    master_private_key: Bip32PrivateKey,
-}
-
-#[derive(Debug)]
-pub enum PrivateKeyAccountError {
-    BadPhrase(bip32::Error),
-    Bech32Error(JsError),
-}
-
-impl GodotConvert for PrivateKeyAccountError {
-    type Via = i64;
-}
-
-impl ToGodot for PrivateKeyAccountError {
-    fn to_godot(&self) -> Self::Via {
-        use PrivateKeyAccountError::*;
-        match self {
-            BadPhrase(_) => 1,
-            Bech32Error(_) => 2,
-        }
-    }
-}
-
-impl FailsWith for PrivateKeyAccount {
-    type E = PrivateKeyAccountError;
-}
-
-#[godot_api]
-impl PrivateKeyAccount {
-    fn from_mnemonic(phrase: String) -> Result<PrivateKeyAccount, PrivateKeyAccountError> {
-        let mnemonic = Mnemonic::new(
-            phrase
-                .to_lowercase()
-                .split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" "),
-            Language::English,
-        )
-        .map_err(|e| PrivateKeyAccountError::BadPhrase(e))?;
-
-        Ok(Self {
-            master_private_key: Bip32PrivateKey::from_bip39_entropy(mnemonic.entropy(), &[]),
-            account_index: 0,
-        })
-    }
-
-    #[func]
-    fn _from_mnemonic(phrase: String) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_mnemonic(phrase))
-    }
-
-    fn get_account_root(&self) -> Bip32PrivateKey {
-        self.master_private_key
-            .derive(harden(1852))
-            .derive(harden(1815))
-            .derive(harden(self.account_index))
-    }
-
-    fn get_address(&self) -> CSL::address::Address {
-        let account_root = self.get_account_root();
-        let spend = account_root.derive(0).derive(0).to_public();
-        let stake = account_root.derive(2).derive(0).to_public();
-        let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
-        let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
-
-        BaseAddress::new(
-            NetworkInfo::testnet_preview().network_id(),
-            &spend_cred,
-            &stake_cred,
-        )
-        .to_address()
-    }
-
-    #[func]
-    fn _get_address(&self) -> Gd<Address> {
-        Gd::from_object(Address {
-            address: self.get_address(),
-        })
-    }
-
-    /// It may fail due to a conversion error to Bech32.
-    // FIXME: We should be using a prefix that depends on the network we are connecting to.
-    fn get_address_bech32(&self) -> Result<String, PrivateKeyAccountError> {
-        let addr = self.get_address();
-        addr.to_bech32(None)
-            .map_err(|e| PrivateKeyAccountError::Bech32Error(e))
-    }
-
-    #[func]
-    fn _get_address_bech32(&self) -> Gd<GResult> {
-        Self::to_gresult(self.get_address_bech32())
-    }
-
-    fn sign_transaction(&self, gtx: &Transaction) -> Signature {
-        let account_root = self.get_account_root();
-        let spend_key = account_root.derive(0).derive(0).to_raw_key();
-        let tx_hash = hash_transaction(&gtx.transaction.body());
-        Signature {
-            signature: make_vkey_witness(&tx_hash, &spend_key),
-        }
-    }
-
-    #[func]
-    fn _sign_transaction(&self, gtx: Gd<Transaction>) -> Gd<Signature> {
-        Gd::from_object(self.sign_transaction(&gtx.bind()))
     }
 }
 
