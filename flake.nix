@@ -125,6 +125,7 @@
             self'.packages.steam-run
             pkgs.cargo
             pkgs.rustc
+            pkgs.rust-analyzer
           ];
           shellHook = ''
             set -e

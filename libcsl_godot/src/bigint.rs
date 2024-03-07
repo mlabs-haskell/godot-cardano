@@ -6,7 +6,7 @@ use cardano_serialization_lib::utils as CSL;
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 
-#[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(GodotClass, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[class(init, base=RefCounted, rename=_BigInt)]
 pub struct BigInt {
     #[init(default = CSL::BigInt::from(0))]

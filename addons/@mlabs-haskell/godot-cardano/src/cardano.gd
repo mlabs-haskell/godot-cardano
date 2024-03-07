@@ -57,8 +57,14 @@ func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> vo
 		print("Error: not enough lovelace in wallet")
 		return
 		
+	var address_result = Address.from_bech32(recipient)
+
+	if address_result.is_err():
+		push_error("Failed to decode address bech32: %s" % address_result.error)
+		return
+
 	var builder := new_tx()
-	builder.pay_to_address(Address.from_bech32(recipient), amount, {})
+	builder.pay_to_address(address_result.value, amount, MultiAsset.empty())
 	var transaction := builder.complete()
 	transaction.sign(password)
 	transaction.submit()

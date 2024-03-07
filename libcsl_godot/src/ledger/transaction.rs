@@ -1,11 +1,11 @@
 use cardano_serialization_lib as CSL;
-use CSL::crypto::{ScriptHash, TransactionHash, Vkeywitness, Vkeywitnesses};
+use CSL::crypto::{ScriptHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
 use CSL::plutus::{ExUnits, PlutusData, RedeemerTag};
-use CSL::tx_builder::tx_inputs_builder::TxInputsBuilder;
 use CSL::utils::*;
-use CSL::{AssetName, MultiAsset, TransactionInput, TransactionOutput};
+use CSL::{AssetName, TransactionInput, TransactionOutput};
 
+use uplc::tx::error::Error as UplcError;
 use uplc::tx::eval_phase_two_raw;
 
 use godot::builtin::meta::GodotConvert;
@@ -14,33 +14,139 @@ use godot::prelude::*;
 use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 
-pub fn multiasset_from_dictionary(dict: &Dictionary) -> MultiAsset {
-    let mut assets: MultiAsset = MultiAsset::new();
-    dict.iter_shared()
-        .typed()
-        .for_each(|(unit, amount): (GString, Gd<BigInt>)| {
+#[derive(GodotClass)]
+#[class(base=RefCounted, rename=_MultiAsset)]
+pub struct MultiAsset {
+    pub assets: CSL::MultiAsset,
+}
+
+#[derive(Debug)]
+pub enum MultiAssetError {
+    CouldNotExtractPolicyId(String),
+    CouldNotExtractAssetName(String),
+    CouldNotDecodeHex(String),
+    InvalidAssetName(String),
+    OtherError(JsError),
+}
+
+impl GodotConvert for MultiAssetError {
+    type Via = i64;
+}
+
+impl ToGodot for MultiAssetError {
+    fn to_godot(&self) -> Self::Via {
+        use MultiAssetError::*;
+        match self {
+            CouldNotExtractPolicyId(_) => 1,
+            CouldNotExtractAssetName(_) => 2,
+            CouldNotDecodeHex(_) => 3,
+            InvalidAssetName(_) => 4,
+            OtherError(_) => 5,
+        }
+    }
+}
+
+impl FailsWith for MultiAsset {
+    type E = MultiAssetError;
+}
+
+impl From<JsError> for MultiAssetError {
+    fn from(error: JsError) -> MultiAssetError {
+        MultiAssetError::OtherError(error)
+    }
+}
+
+#[godot_api]
+impl MultiAsset {
+    pub fn from_dictionary(dict: &Dictionary) -> Result<Self, MultiAssetError> {
+        let mut assets: CSL::MultiAsset = CSL::MultiAsset::new();
+        for (unit, amount) in dict.iter_shared().typed::<GString, Gd<BigInt>>() {
             assets.set_asset(
                 &ScriptHash::from_hex(
                     &unit
                         .to_string()
                         .get(0..56)
-                        .expect("Could not extract policy ID"),
+                        .ok_or(MultiAssetError::CouldNotExtractPolicyId(unit.to_string()))?,
                 )
-                .expect("Could not decode policy ID"),
+                .map_err(|_| MultiAssetError::CouldNotDecodeHex(unit.to_string()))?,
                 &AssetName::new(
                     hex::decode(
                         unit.to_string()
                             .get(56..)
-                            .expect("Could not extract asset name"),
+                            .ok_or(MultiAssetError::CouldNotExtractAssetName(unit.to_string()))?,
                     )
-                    .unwrap()
+                    .map_err(|_| MultiAssetError::CouldNotDecodeHex(unit.to_string()))?
                     .into(),
                 )
-                .expect("Could not decode asset name"),
-                BigNum::from_str(&amount.bind().to_str()).unwrap(),
+                .map_err(|_| MultiAssetError::InvalidAssetName(unit.to_string()))?,
+                BigNum::from_str(&amount.bind().to_str())?,
             );
-        });
-    return assets;
+        }
+        return Ok(MultiAsset { assets });
+    }
+
+    #[func]
+    pub fn _from_dictionary(dict: Dictionary) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_dictionary(&dict))
+    }
+
+    #[func]
+    pub fn empty() -> Gd<MultiAsset> {
+        Gd::from_object(MultiAsset { assets: CSL::MultiAsset::new() })
+    }
+}
+
+#[derive(GodotClass)]
+#[class(base=RefCounted, rename=_TransactionHash)]
+pub struct TransactionHash {
+    pub hash: CSL::crypto::TransactionHash,
+}
+
+#[derive(Debug)]
+pub enum TransactionHashError {
+    InvalidHash(JsError),
+}
+
+impl GodotConvert for TransactionHashError {
+    type Via = i64;
+}
+
+impl ToGodot for TransactionHashError {
+    fn to_godot(&self) -> Self::Via {
+        use TransactionHashError::*;
+        match self {
+            InvalidHash(_) => 1,
+        }
+    }
+}
+
+impl FailsWith for TransactionHash {
+    type E = TransactionHashError;
+}
+
+impl From<JsError> for TransactionHashError {
+    fn from(error: JsError) -> TransactionHashError {
+        TransactionHashError::InvalidHash(error)
+    }
+}
+
+#[godot_api]
+impl TransactionHash {
+    fn from_hex(hash: GString) -> Result<Self, TransactionHashError> {
+        Ok(Self {
+            hash: CSL::crypto::TransactionHash::from_hex(&hash.to_string())?,
+        })
+    }
+
+    #[func]
+    fn _from_hex(hash: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(hash))
+    }
+
+    #[func]
+    fn to_hex(&self) -> GString {
+        self.hash.to_hex().into()
+    }
 }
 
 #[derive(GodotClass)]
@@ -50,7 +156,7 @@ pub struct Signature {
 }
 
 #[derive(GodotClass)]
-#[class(base=Node, rename=_Address)]
+#[class(base=RefCounted, rename=_Address)]
 pub struct Address {
     pub address: CSL::address::Address,
 }
@@ -79,12 +185,16 @@ impl FailsWith for Address {
 
 #[godot_api]
 impl Address {
-    #[func]
-    pub fn from_bech32(address: String) -> Gd<Address> {
-        return Gd::from_object(Self {
+    pub fn from_bech32(address: String) -> Result<Address, AddressError> {
+        Ok(Self {
             address: CSL::address::Address::from_bech32(&address)
-                .expect("Could not parse address bech32"),
-        });
+                .map_err(|e| AddressError::Bech32Error(e))?,
+        })
+    }
+
+    #[func]
+    pub fn _from_bech32(address: String) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_bech32(address))
     }
 
     pub fn to_bech32(&self) -> Result<String, AddressError> {
@@ -142,31 +252,78 @@ pub struct Redeemer {
     pub redeemer: CSL::plutus::Redeemer,
 }
 
+#[derive(Debug)]
+pub enum RedeemerError {
+    DecodeRedeemerError(CSL::error::DeserializeError),
+    UnknownRedeemerTag(u64),
+}
+
+impl GodotConvert for RedeemerError {
+    type Via = i64;
+}
+
+impl ToGodot for RedeemerError {
+    fn to_godot(&self) -> Self::Via {
+        use RedeemerError::*;
+        match self {
+            DecodeRedeemerError(_) => 1,
+            UnknownRedeemerTag(_) => 2,
+        }
+    }
+}
+
+impl FailsWith for Redeemer {
+    type E = RedeemerError;
+}
+
+impl From<CSL::error::DeserializeError> for RedeemerError {
+    fn from(error: CSL::error::DeserializeError) -> RedeemerError {
+        RedeemerError::DecodeRedeemerError(error)
+    }
+}
+
 #[godot_api]
 impl Redeemer {
-    #[func]
     fn create(
         tag: u64,
         index: u64,
         data: PackedByteArray,
         ex_units_mem: u64,
         ex_units_steps: u64,
-    ) -> Gd<Redeemer> {
+    ) -> Result<Redeemer, RedeemerError> {
         let redeemer_tag: RedeemerTag = match tag {
-            0 => RedeemerTag::new_spend(),
-            1 => RedeemerTag::new_mint(),
-            2 => RedeemerTag::new_cert(),
-            3 => RedeemerTag::new_reward(),
-            _ => RedeemerTag::new_mint(),
-        };
-        return Gd::from_object(Redeemer {
+            0 => Ok(RedeemerTag::new_spend()),
+            1 => Ok(RedeemerTag::new_mint()),
+            2 => Ok(RedeemerTag::new_cert()),
+            3 => Ok(RedeemerTag::new_reward()),
+            _ => Err(RedeemerError::UnknownRedeemerTag(tag)),
+        }?;
+        let data = &PlutusData::from_bytes(data.to_vec())?;
+        Ok(Redeemer {
             redeemer: CSL::plutus::Redeemer::new(
                 &redeemer_tag,
                 &BigNum::from(index),
-                &PlutusData::from_bytes(data.to_vec()).unwrap(),
+                data,
                 &ExUnits::new(&BigNum::from(ex_units_mem), &BigNum::from(ex_units_steps)),
             ),
-        });
+        })
+    }
+
+    #[func]
+    fn _create(
+        tag: u64,
+        index: u64,
+        data: PackedByteArray,
+        ex_units_mem: u64,
+        ex_units_steps: u64,
+    ) -> Gd<GResult> {
+        return Self::to_gresult_class(Self::create(
+            tag,
+            index,
+            data,
+            ex_units_mem,
+            ex_units_steps,
+        ));
     }
 
     #[func]
@@ -205,87 +362,55 @@ impl PlutusScript {
 #[class(base=RefCounted, rename=_Utxo)]
 pub struct Utxo {
     #[var(get)]
-    pub tx_hash: GString,
+    pub tx_hash: Gd<TransactionHash>,
     #[var(get)]
     pub output_index: u32,
     #[var(get)]
-    pub address: GString,
+    pub address: Gd<Address>,
     #[var(get)]
     pub coin: Gd<BigInt>,
     #[var(get)]
-    pub assets: Dictionary,
+    pub assets: Gd<MultiAsset>,
 }
 
 #[godot_api]
 impl Utxo {
     #[func]
     pub fn create(
-        tx_hash: GString,
+        tx_hash: Gd<TransactionHash>,
         output_index: u32,
-        address: GString,
+        address: Gd<Address>,
         coin: Gd<BigInt>,
-        assets: Dictionary,
+        assets: Gd<MultiAsset>,
     ) -> Gd<Utxo> {
-        return Gd::from_object(Self {
+        Gd::from_object(Self {
             tx_hash,
             output_index,
             address,
             coin,
             assets,
-        });
+        })
     }
 
     pub fn to_transaction_unspent_output(&self) -> TransactionUnspentOutput {
         TransactionUnspentOutput::new(
-            &TransactionInput::new(
-                &TransactionHash::from_hex(&self.tx_hash.to_string())
-                    .expect("Could not decode transaction hash"),
-                self.output_index,
-            ),
+            &TransactionInput::new(&self.tx_hash.bind().hash, self.output_index),
             &TransactionOutput::new(
-                &CSL::address::Address::from_bech32(&self.address.to_string())
-                    .expect("Could not decode address bech32"),
+                &self.address.bind().address,
                 &Value::new_with_assets(
                     &to_bignum(
                         self.coin
                             .bind()
                             .b
                             .as_u64()
-                            .expect("UTxO Lovelace exceeds maximum")
+                            .or(Some(BigNum::from(std::u64::MAX)))
+                            .unwrap()
                             .into(),
                     ),
-                    &multiasset_from_dictionary(&self.assets),
+                    &self.assets.bind().assets,
                 ),
             ),
         )
-    }
-
-    pub fn add_to_inputs_builder(&self, inputs_builder: &mut TxInputsBuilder) {
-        inputs_builder.add_key_input(
-            &CSL::address::BaseAddress::from_address(
-                &CSL::address::Address::from_bech32(&self.address.to_string()).unwrap(),
-            )
-            .unwrap()
-            .stake_cred()
-            .to_keyhash()
-            .unwrap(),
-            &CSL::TransactionInput::new(
-                &CSL::crypto::TransactionHash::from_hex(&self.tx_hash.to_string())
-                    .expect("Could not decode transaction hash"),
-                self.output_index,
-            ),
-            &Value::new_with_assets(
-                &to_bignum(
-                    self.coin
-                        .bind()
-                        .b
-                        .as_u64()
-                        .expect("UTxO Lovelace exceeds maximum")
-                        .into(),
-                ),
-                &multiasset_from_dictionary(&self.assets),
-            ),
-        );
     }
 }
 
@@ -307,6 +432,7 @@ impl CostModels {
     fn build_model(ops: Array<u64>) -> CSL::plutus::CostModel {
         let mut model = CSL::plutus::CostModel::new();
         for (i, op) in ops.iter_shared().enumerate() {
+            // NOTE: `model.set` never seems to actually fail?
             model.set(i, &Int::new(&BigNum::from(op))).unwrap();
         }
         model
@@ -349,6 +475,42 @@ pub struct Transaction {
     pub cost_models: CSL::plutus::Costmdls,
 }
 
+#[derive(Debug)]
+pub enum TransactionError {
+    EvaluationError(UplcError),
+    DeserializeError(CSL::error::DeserializeError),
+}
+
+impl GodotConvert for TransactionError {
+    type Via = i64;
+}
+
+impl ToGodot for TransactionError {
+    fn to_godot(&self) -> Self::Via {
+        use TransactionError::*;
+        match self {
+            EvaluationError(_) => 1,
+            DeserializeError(_) => 2,
+        }
+    }
+}
+
+impl FailsWith for Transaction {
+    type E = TransactionError;
+}
+
+impl From<UplcError> for TransactionError {
+    fn from(error: UplcError) -> TransactionError {
+        TransactionError::EvaluationError(error)
+    }
+}
+
+impl From<CSL::error::DeserializeError> for TransactionError {
+    fn from(error: CSL::error::DeserializeError) -> TransactionError {
+        TransactionError::DeserializeError(error)
+    }
+}
+
 #[godot_api]
 impl Transaction {
     #[func]
@@ -373,15 +535,14 @@ impl Transaction {
         );
     }
 
-    #[func]
-    fn evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<EvaluationResult> {
+    fn evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Result<EvaluationResult, TransactionError> {
         let mut utxos: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-        gutxos.iter_shared().for_each(|gutxo| {
+        for gutxo in gutxos.iter_shared() {
             let utxo = gutxo.bind().to_transaction_unspent_output();
             utxos.push((utxo.input().to_bytes(), utxo.output().to_bytes()))
-        });
+        }
 
-        let eval_result = eval_phase_two_raw(
+        let redeemers = eval_phase_two_raw(
             &self.transaction.to_bytes(),
             &utxos,
             &self.cost_models.to_bytes(),
@@ -389,25 +550,22 @@ impl Transaction {
             self.slot_config,
             false,
             |_| {},
-        );
+        )?;
 
-        match eval_result {
-            Ok(redeemers) => {
-                let mut actual_redeemers: Array<Gd<Redeemer>> = Array::new();
-                redeemers.iter().for_each(|redeemer| {
-                    actual_redeemers.push(Gd::from_object(Redeemer {
-                        redeemer: CSL::plutus::Redeemer::from_bytes(redeemer.to_vec()).unwrap(),
-                    }))
-                });
-                Gd::from_object(EvaluationResult {
-                    redeemers: actual_redeemers,
-                    fee: self.transaction.body().fee().into(),
-                })
-            }
-            Err(_err) => Gd::from_object(EvaluationResult {
-                redeemers: Array::new(),
-                fee: 0,
-            }),
+        let mut actual_redeemers: Array<Gd<Redeemer>> = Array::new();
+        for redeemer in redeemers.iter() {
+            actual_redeemers.push(Gd::from_object(Redeemer {
+                redeemer: CSL::plutus::Redeemer::from_bytes(redeemer.to_vec())?,
+            }))
         }
+        Ok(EvaluationResult {
+            redeemers: actual_redeemers,
+            fee: self.transaction.body().fee().into(),
+        })
+    }
+
+    #[func]
+    fn _evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<GResult> {
+        Self::to_gresult_class(self.evaluate(gutxos))
     }
 }

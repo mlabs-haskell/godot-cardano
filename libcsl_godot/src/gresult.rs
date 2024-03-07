@@ -36,12 +36,42 @@ impl GResult {
         self.tag
     }
     #[func]
+    pub fn ok(value: Variant) -> Gd<GResult> {
+        Gd::from_object(GResult {
+            result: Ok(value),
+            tag: 0,
+        })
+    }
+    #[func]
+    pub fn err(err: GString, tag: i64) -> Gd<GResult> {
+        Gd::from_object(GResult {
+            result: Err(err),
+            tag,
+        })
+    }
+
+    #[func]
     pub fn unsafe_value(&self) -> Variant {
         self.result.clone().unwrap()
     }
     #[func]
     pub fn unsafe_error(&self) -> GString {
         self.result.clone().unwrap_err()
+    }
+    #[func]
+    fn sequence(results: Array<Gd<GResult>>) -> Gd<GResult> {
+        let mut sequenced: Array<Variant> = Array::new();
+        for result in results.iter_shared() {
+            if result.bind().is_err() {
+                return result;
+            }
+            sequenced.push(result.bind().unsafe_value())
+        }
+
+        return Gd::from_object(GResult {
+            result: Ok(sequenced.to_variant()),
+            tag: 0,
+        });
     }
 
     // #[func]
