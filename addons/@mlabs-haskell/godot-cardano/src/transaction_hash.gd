@@ -21,4 +21,4 @@ static func from_hex(hash: String) -> FromHexResult:
 	return FromHexResult.new(_TransactionHash._from_hex(hash))
 	
 func to_hex() -> String:
-	return ""
+	return _transaction_hash.to_hex()
