@@ -398,7 +398,8 @@ impl Utxo {
                             .bind()
                             .b
                             .as_u64()
-                            .expect("UTxO Lovelace exceeds maximum")
+                            .or(Some(BigNum::from(std::u64::MAX)))
+                            .unwrap()
                             .into(),
                     ),
                     &self.assets.bind().assets,

@@ -34,8 +34,8 @@ class Err extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 		
-	func _init(err: String):
-		super(_Result.err(err, 1))
+	func _init(err: String, tag: int):
+		super(_Result.err(err, tag))
 
 class VariantResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].

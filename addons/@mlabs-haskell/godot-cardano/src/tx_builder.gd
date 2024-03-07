@@ -13,7 +13,10 @@ enum TxBuilderStatus {
 	BYRON_ADDRESS_UNSUPPORTED = 4,
 	COULD_NOT_GET_KEY_HASH = 5,
 	UNKNOWN_REDEEMER_INDEX = 6,
-	OTHER_ERROR = 7,
+	UNEXPECTED_COLLATERAL_AMOUNT = 7,
+	OTHER_ERROR = 8,
+	CREATE_ERROR = 9,
+	INVALID_DATA = 10,
 }
 
 var _builder: _TxBuilder
@@ -95,7 +98,12 @@ func pay_to_address_with_datum(
 	datum: Object
 ) -> TxBuilder:
 	if !datum.has_method("to_data"):
-		_results.push_back(Result.Err.new("Provided datum does not implement `to_data`"))
+		_results.push_back(
+			Result.Err.new(
+				"Provided datum does not implement `to_data`",
+				TxBuilderStatus.INVALID_DATA
+			)
+		)
 
 	var serialize_result := Cbor.serialize(datum.to_data(true), true)
 
@@ -118,7 +126,10 @@ func mint_assets(
 ) -> TxBuilder:
 	if !redeemer.has_method("to_data"):
 		_results.push_back(
-			Result.Err.new("Provided redeemer does not implement `to_data`")
+			Result.Err.new(
+				"Provided redeemer does not implement `to_data`",
+				TxBuilderStatus.INVALID_DATA
+			)
 		)
 		return self
 
@@ -188,5 +199,8 @@ func complete() -> Result:
 			
 	return CompleteResult.new(
 		_cardano,
-		_Result.err("Failed to complete transaction; errors logged to output", 1)
+		_Result.err(
+			"Failed to complete transaction; errors logged to output",
+			TxBuilderStatus.CREATE_ERROR
+		)
 	)

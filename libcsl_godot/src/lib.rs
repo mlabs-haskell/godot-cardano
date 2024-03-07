@@ -230,6 +230,7 @@ pub enum TxBuilderError {
     ByronAddressUnsupported(),
     CouldNotGetKeyHash(),
     UnknownRedeemerIndex(CSL::plutus::Redeemer),
+    UnexpectedCollateralAmount(),
     OtherError(JsError),
 }
 
@@ -247,7 +248,8 @@ impl ToGodot for TxBuilderError {
             ByronAddressUnsupported() => 4,
             CouldNotGetKeyHash() => 5,
             UnknownRedeemerIndex(_) => 6,
-            OtherError(_) => 7,
+            UnexpectedCollateralAmount() => 7,
+            OtherError(_) => 8,
         }
     }
 }
@@ -524,7 +526,7 @@ impl GTxBuilder {
             let collateral_amount = Gd::from_object(BigInt::from_int(
                 min_collateral
                     .try_into()
-                    .expect("Collateral amount exceeds expected limits"),
+                    .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?
             ));
             for gutxo in gutxos.iter_shared() {
                 let utxo = gutxo.bind();
