@@ -78,6 +78,9 @@ func _get_utxos_at_address(_address: Address) -> Array[Utxo]:
 func _submit_transaction(tx: Transaction) -> TransactionHash:
 	return tx.hash()
 
+func _get_datum_cbor(_datum_hash: String) -> Cbor:
+	return null
+
 func _get_era_summaries() -> Array[EraSummary]:
 	await _empty
 	return []

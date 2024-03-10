@@ -1,7 +1,9 @@
 use cardano_serialization_lib as CSL;
 use CSL::crypto::{ScriptHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
-use CSL::plutus::{ExUnits, PlutusData, RedeemerTag};
+use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
+use CSL::tx_builder::tx_inputs_builder::PlutusWitness;
+use CSL::tx_builder::tx_inputs_builder::{self, DatumSource};
 use CSL::utils::*;
 use CSL::{AssetName, TransactionInput, TransactionOutput};
 
@@ -361,6 +363,36 @@ impl PlutusScript {
 }
 
 #[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=PlutusScriptSource)]
+pub struct PlutusScriptSource {
+    pub source: CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
+}
+
+#[godot_api]
+impl PlutusScriptSource {
+    #[func]
+    fn from_script(script: Gd<PlutusScript>) -> Gd<PlutusScriptSource> {
+        Gd::from_object(Self {
+            source: tx_inputs_builder::PlutusScriptSource::new(&script.bind().script),
+        })
+    }
+
+    // TODO: Add a version that picks up the script hash from the Utxo automatically
+    #[func]
+    fn from_ref(script_hash: GString, input: Gd<Utxo>) -> Gd<PlutusScriptSource> {
+        let hash =
+            ScriptHash::from_hex(&script_hash.to_string()).expect("Could not parse script hash");
+        Gd::from_object(Self {
+            source: tx_inputs_builder::PlutusScriptSource::new_ref_input_with_lang_ver(
+                &hash,
+                &input.bind().to_transaction_input(),
+                &Language::new_plutus_v2(),
+            ),
+        })
+    }
+}
+
+#[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=_Utxo)]
 pub struct Utxo {
     #[var(get)]
@@ -373,6 +405,8 @@ pub struct Utxo {
     pub coin: Gd<BigInt>,
     #[var(get)]
     pub assets: Gd<MultiAsset>,
+    #[var(get)]
+    pub datum_info: Gd<UtxoDatumInfo>,
 }
 
 #[godot_api]
@@ -384,6 +418,7 @@ impl Utxo {
         address: Gd<Address>,
         coin: Gd<BigInt>,
         assets: Gd<MultiAsset>,
+        datum_info: Gd<UtxoDatumInfo>,
     ) -> Gd<Utxo> {
         Gd::from_object(Self {
             tx_hash,
@@ -391,12 +426,13 @@ impl Utxo {
             address,
             coin,
             assets,
+            datum_info,
         })
     }
 
     pub fn to_transaction_unspent_output(&self) -> TransactionUnspentOutput {
         TransactionUnspentOutput::new(
-            &TransactionInput::new(&self.tx_hash.bind().hash, self.output_index),
+            &self.to_transaction_input(),
             &TransactionOutput::new(
                 &self.address.bind().address,
                 &Value::new_with_assets(
@@ -412,6 +448,121 @@ impl Utxo {
                     &self.assets.bind().assets,
                 ),
             ),
+        )
+    }
+
+    pub fn to_transaction_input(&self) -> TransactionInput {
+        TransactionInput::new(&self.tx_hash.bind().hash, self.output_index)
+    }
+
+    // TODO: Add error handling
+    pub fn to_plutus_witness(
+        &self,
+        script_source: Gd<PlutusScriptSource>,
+        redeemer_bytes: PackedByteArray,
+    ) -> PlutusWitness {
+        let datum_info = self.datum_info.bind();
+        let script = &script_source.bind().source;
+        let redeemer = CSL::plutus::Redeemer::from_bytes(redeemer_bytes.to_vec())
+            .expect("Could not parse redeemer");
+        match (&datum_info.data_hash, &datum_info.inline_datum) {
+            // no datum is needed nor provided
+            (None, None) => PlutusWitness::new_with_ref_without_datum(&script, &redeemer),
+            // a datum is needed and easily provided since it is inline
+            (_, Some(d)) => {
+                let datum = DatumSource::new(
+                    &CSL::plutus::PlutusData::from_hex(&d.to_string())
+                        .expect("Could not parse datum as PlutusData"),
+                );
+                PlutusWitness::new_with_ref(&script, &datum, &redeemer)
+            }
+            // a datum is needed but we only have the hash, we need to retrieve it
+            // using the provider
+            // TODO
+            (Some(h), None) => {
+                todo!()
+            }
+        }
+    }
+}
+
+#[derive(GodotClass)]
+#[class(base=RefCounted)]
+pub struct UtxoDatumInfo {
+    pub data_hash: Option<GString>,
+    pub inline_datum: Option<GString>,
+}
+
+#[derive(Debug)]
+pub enum DatumInfoError {
+    NoDatum,
+    DatumNotInline,
+}
+
+impl GodotConvert for DatumInfoError {
+    type Via = i64;
+}
+
+impl ToGodot for DatumInfoError {
+    fn to_godot(&self) -> Self::Via {
+        use DatumInfoError::*;
+        match self {
+            NoDatum => 1,
+            DatumNotInline => 2,
+        }
+    }
+}
+
+impl FailsWith for UtxoDatumInfo {
+    type E = DatumInfoError;
+}
+
+#[godot_api]
+impl UtxoDatumInfo {
+    #[func]
+    pub fn empty() -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: None,
+            inline_datum: None,
+        })
+    }
+    #[func]
+    pub fn create_with_hash(data_hash: GString) -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: Some(data_hash),
+            inline_datum: None,
+        })
+    }
+
+    #[func]
+    pub fn create_with_datum(data_hash: GString, inline_datum: GString) -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: Some(data_hash),
+            inline_datum: Some(inline_datum),
+        })
+    }
+
+    #[func]
+    pub fn has_datum(&self) -> bool {
+        self.data_hash.is_some()
+    }
+
+    #[func]
+    pub fn has_datum_inline(&self) -> bool {
+        self.inline_datum.is_some()
+    }
+
+    #[func]
+    pub fn datum_hash(&self) -> Gd<GResult> {
+        Self::to_gresult(self.data_hash.clone().ok_or(DatumInfoError::NoDatum))
+    }
+
+    #[func]
+    pub fn inline_datum(&self) -> Gd<GResult> {
+        Self::to_gresult(
+            self.inline_datum
+                .clone()
+                .ok_or(DatumInfoError::DatumNotInline),
         )
     }
 }

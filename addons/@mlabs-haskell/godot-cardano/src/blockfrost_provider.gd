@@ -78,6 +78,15 @@ class UtxosAtAddressRequest extends Request:
 		
 	func _url() -> String:
 		return "addresses/%s/utxos?page=%d" % [self._address, self._page]
+
+class DatumCborFromHash extends Request:
+	var _hash: String
+
+	func _init(datum_hash: String) -> void:
+		self._hash = datum_hash
+
+	func _url() -> String:
+		return "scripts/datum/%s/cbor" % self._hash
 		
 class SubmitTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
@@ -242,13 +251,17 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 				var tx_hash: String = utxo.tx_hash
 				var tx_index: int = utxo.tx_index
 				var utxo_address: String = utxo.address
+				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
+				var inline_datum_str: String = "" if utxo.inline_datum == null else utxo.data_hash
+				var datum_info := self._build_datum_info(data_hash, inline_datum_str)
 				
 				var result = Utxo.create(
 					tx_hash,
 					tx_index,
 					utxo_address,
 					coin.to_str(),
-					assets
+					assets,
+					datum_info
 				)
 				
 				if result.is_err():
@@ -259,6 +272,20 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 	))
 	utxo_result.emit(UtxoResult.new(address, utxos))
 	return utxos
+	
+func _build_datum_info(datum_hash: String, datum_inline_str: String) -> UtxoDatumInfo:
+	if datum_hash == "":
+		return UtxoDatumInfo.empty()
+	elif datum_inline_str == "":
+		return UtxoDatumInfo.create_with_hash(datum_hash)
+	else:
+		return UtxoDatumInfo.create_with_datum(datum_hash, datum_inline_str)
+
+func _get_datum_cbor(_datum_hash: String) -> Cbor:
+	var cbor_resp : Dictionary = await blockfrost_request(DatumCborFromHash.new(_datum_hash))
+	var cbor_hex : String = cbor_resp.cbor
+	var res := Cbor.deserialize(cbor_hex.hex_decode())
+	return null
 
 func _get_era_summaries() -> Array[EraSummary]:
 	var summaries_json: Array = await blockfrost_request(EraSummariesRequest.new())
