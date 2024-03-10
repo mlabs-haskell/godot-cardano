@@ -20,12 +20,16 @@ class CreateResult extends Result:
 			(results.value[2] as Address)._address,
 			(results.value[3] as BigInt)._b,
 			(results.value[4] as MultiAsset)._multi_asset,
+			(results.value[5])
 		)
 		
 var _utxo : _Utxo
 
 func tx_hash() -> TransactionHash:
 	return TransactionHash.new(_utxo.tx_hash)
+
+func datum_info() -> UtxoDatumInfo:
+	return _utxo.datum_info
 
 func output_index() -> int:
 	return _utxo.output_index
@@ -44,14 +48,16 @@ static func create(
 	output_index: int,
 	address: String,
 	coin: String,
-	assets: Dictionary
+	assets: Dictionary,
+	datum_info: UtxoDatumInfo
 ) -> CreateResult:
 	var results = Result.sequence([
 		TransactionHash.from_hex(tx_hash),
 		Result.Ok.new(output_index),
 		Address.from_bech32(address),
 		BigInt.from_str(coin),
-		MultiAsset.from_dictionary(assets)
+		MultiAsset.from_dictionary(assets),
+		Result.Ok.new(datum_info)
 	])
 	
 	return CreateResult.new(results)
