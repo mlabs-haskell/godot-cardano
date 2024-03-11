@@ -54,6 +54,9 @@ func _get_protocol_parameters() -> ProtocolParameters:
 func _get_utxos_at_address(_address: String) -> Array[Utxo]:
 	return []
 
+func _get_datum_cbor(_datum_hash: String) -> Cbor:
+	return null
+
 func _submit_transaction(_tx: Transaction) -> void:
 	pass
 
