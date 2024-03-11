@@ -11,7 +11,7 @@ class TestWallets extends GutTest:
 	var _wallets: Array
 	
 	func before_all() -> void:
-		assert_file_exists("res://test_data.json")
+		assert(FileAccess.file_exists("res://test_data.json"))
 		var data_json = FileAccess.get_file_as_string("res://test_data.json")
 		var data = JSON.parse_string(data_json)
 		_wallets = data.wallets
@@ -90,8 +90,8 @@ class TestSdk extends GutTest:
 	var _wallets: Array[Wallet.MnemonicWallet] = []
 	
 	func before_all():
-		assert_file_exists("res://preview_token.txt")
-		assert_file_exists("res://seed_phrase.txt")
+		assert(FileAccess.file_exists("res://preview_token.txt"))
+		assert(FileAccess.file_exists("res://seed_phrase.txt"))
 		var preview_token = FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		var funding_wallet_phrase = FileAccess.get_file_as_string("res://seed_phrase.txt")
 		
@@ -214,7 +214,7 @@ class TestSdk extends GutTest:
 		else:
 			gut.p('Failed to create transaction: %s' % create_tx_result.error)
 		
-	func test_one(test=use_parameters(blockfrost_tests)):
+	func test_blockfrost(test=use_parameters(blockfrost_tests)):
 		var wallet := _wallets[blockfrost_tests.find(test)]
 		var cardano := Cardano.new(wallet, _provider)
 		add_child(wallet)
