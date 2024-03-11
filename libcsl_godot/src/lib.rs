@@ -255,9 +255,26 @@ impl GTxBuilder {
         Ok(())
     }
 
-    #[func]
-    fn _collect_from(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<GResult> {
-        Self::to_gresult(self.collect_from(gutxos))
+    fn collect_from_script(&mut self, gutxos: Array<Gd<Utxo>>, redeemer: PackedByteArray) {
+        let inputs_builder = &mut self.inputs_builder;
+        let mut address: Option<Address> = None;
+        for gutxo in gutxos.iter_shared() {
+            let utxo = gutxo.bind();
+            let addr = utxo.get_address();
+            match &address {
+                Some(addr_) => {
+                    if addr != *addr_ {
+                        godot_warn!("collect_from_script: input was not added because its address did not match previous inputs: {:?}", utxo);
+                    } else {
+                        utxo.add_as_plutus_script_input(inputs_builder);
+                    }
+                }
+                None => {
+                    address = Some(*utxo.get_address().bind());
+                    utxo.add_as_plutus_script_input(inputs_builder);
+                }
+            }
+        }
     }
 
     #[func]
@@ -407,7 +424,7 @@ impl GTxBuilder {
             let collateral_amount = Gd::from_object(BigInt::from_int(
                 min_collateral
                     .try_into()
-                    .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?
+                    .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?,
             ));
             for gutxo in gutxos.iter_shared() {
                 let utxo = gutxo.bind();
