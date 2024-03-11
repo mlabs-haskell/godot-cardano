@@ -23,9 +23,12 @@ var _builder: _TxBuilder
 var _cardano: Cardano
 var _results: Array[Result]
 
+var _change_address: Address
+
 func _init(cardano: Cardano, builder: _TxBuilder) -> void:
 	_cardano = cardano
 	_builder = builder
+	_change_address = cardano.wallet._get_change_address()
 
 class CreateResult extends Result:
 	var _cardano: Cardano
@@ -76,6 +79,11 @@ class MintToken:
 		
 ## Create a TxBuilder object from a ProtocolParameters. This action may fail.
 static func create(cardano: Cardano, params: ProtocolParameters) -> CreateResult:
+	if params == null:
+		return CreateResult.new(
+			cardano,
+			_Result.err("Tried to create transaction with null protocol parameters", 1)
+		)
 	var res := CreateResult.new(cardano, _TxBuilder._create(params))
 	return res
 
@@ -158,13 +166,21 @@ func mint_assets(
 	
 	return self
 
-func collect_from(utxos: Array[Utxo]) -> void:
-	_builder.collect_from(utxos)
+func collect_from(utxos: Array[Utxo]) -> TxBuilder:
+	var _utxos: Array[_Utxo] = []
+	_utxos.assign(
+		utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+	)
+	_builder._collect_from(_utxos)
+	return self
+
+func set_change_address(change_address: Address) -> TxBuilder:
+	_change_address = change_address
+	return self
 	
-func complete() -> Result:
+func complete() -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = _cardano.wallet._get_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
-	var change_address := _cardano.wallet._get_change_address()
 	_wallet_utxos.assign(
 		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
@@ -173,7 +189,7 @@ func complete() -> Result:
 	
 	var balance_result := \
 		BalanceResult.new(
-			_builder._balance_and_assemble(_wallet_utxos, change_address._address)
+			_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
 		)
 	
 	var error = _results.any(func (result: Result) -> bool: return result.is_err())
@@ -188,7 +204,7 @@ func complete() -> Result:
 				_cardano,
 				_builder._complete(
 					_wallet_utxos,
-					change_address._address,
+					_change_address._address,
 					eval_result.value
 				)
 			)

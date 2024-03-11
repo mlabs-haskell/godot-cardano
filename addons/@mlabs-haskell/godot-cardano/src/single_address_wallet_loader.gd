@@ -22,21 +22,36 @@ var _wallet_store : _SingleAddressWalletStore
 # Used when importing
 var thread: Thread
 
-func _init() -> void:
+func _init(wallet_store: _SingleAddressWalletStore = null) -> void:
+	_wallet_store = wallet_store
 	pass
 
 class GetWalletError extends Result:
+	var _wallet_loader : SingleAddressWalletLoader
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: SingleAddressWallet:
-		get: return SingleAddressWallet.new(_res.unsafe_value() as _SingleAddressWallet)
+		get: return SingleAddressWallet.new(_res.unsafe_value() as _SingleAddressWallet, _wallet_loader)
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
+
+	func _init(wallet_loader: SingleAddressWalletLoader, res: _Result):
+		super(res)
+		_wallet_loader = wallet_loader
 		
+## Obtain a [SingleAddressWallet] that can be used for signing transactions.
+## The operation may fail in different ways if the store is malformed.
+func get_wallet(account_index: int) -> GetWalletError:
+	var get_wallet_result = _wallet_store._get_wallet(account_index)
+	return GetWalletError.new(self, get_wallet_result)
+
 class WalletImport extends RefCounted:
 	var _import_res: _SingleAddressWalletImportResult
 	var wallet: SingleAddressWallet:
-		get: return SingleAddressWallet.new(_import_res.wallet)
+		get: return SingleAddressWallet.new(
+			_import_res.wallet,
+			SingleAddressWalletLoader.new(_import_res.wallet_store)
+		)
 	
 	func _init(import_res: _SingleAddressWalletImportResult):
 		_import_res = import_res
@@ -44,7 +59,9 @@ class WalletImport extends RefCounted:
 class WalletImportResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: WalletImport:
-		get: return WalletImport.new(_res.unsafe_value() as _SingleAddressWalletImportResult)
+		get: return WalletImport.new(
+			_res.unsafe_value() as _SingleAddressWalletImportResult
+		)
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
@@ -100,14 +117,22 @@ func _wrap_import_from_seedphrase(
 	name: String,
 	account_description: String) -> void:
 		var res := WalletImportResult.new(
-		_SingleAddressWalletStore._import_from_seedphrase(
-			phrase, phrase_password.to_utf8_buffer(), wallet_password.to_utf8_buffer(), account_index, name, account_description))
+			_SingleAddressWalletStore._import_from_seedphrase(
+				phrase,
+				phrase_password.to_utf8_buffer(),
+				wallet_password.to_utf8_buffer(),
+				account_index,
+				name,
+				account_description))
 		call_deferred("emit_signal", "import_completed", res)
 			
 class WalletCreation extends RefCounted:
 	var _create_res: _SingleAddressWalletCreateResult
 	var wallet: SingleAddressWallet:
-		get: return SingleAddressWallet.new(_create_res.wallet)
+		get: return SingleAddressWallet.new(
+			_create_res.wallet,
+			SingleAddressWalletLoader.new(_create_res.wallet_store)
+		)
 	var seed_phrase: String:
 		get: return _create_res.seed_phrase
 	
@@ -143,3 +168,5 @@ func _exit_tree():
 	else:
 		pass # the thread was never started or it's still running
 		
+func add_account(account_index: int, password: String):
+	_wallet_store._add_account(account_index, "", "", password.to_utf8_buffer())

@@ -29,7 +29,7 @@ func _ready() -> void:
 		.replace("\n", "")
 		
 	provider = BlockfrostProvider.new(
-		Provider.Network.NETWORK_PREVIEW,
+		Provider.Network.PREVIEW,
 		token
 	)
 	add_child(provider)
@@ -60,7 +60,10 @@ func _process(_delta: float) -> void:
 
 func _on_wallet_set() -> void:
 	var _ret := self.cardano.wallet.got_updated_utxos.connect(_on_utxos_updated)
-	wallet_details.text = "Using wallet %s" % cardano.wallet._get_change_address().to_bech32()
+	var addr := cardano.wallet._get_change_address().to_bech32()
+	wallet_details.text = "Using wallet %s" % addr
+	address_input.text = addr
+	send_ada_button.disabled = false
 	
 func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 	var num_utxos := utxos.size()
@@ -87,10 +90,16 @@ func _on_send_ada_button_pressed() -> void:
 	var address_result := Address.from_bech32(address_input.text)
 	
 	if address_result.is_err():
-		push_error("There was an error while parsing the address", address_result.error)
+		push_error("There was an error while parsing the address: %s", address_result.error)
 		return
 		
-	var tx := cardano.new_tx()
+	var create_tx_result := cardano.new_tx()
+	
+	if create_tx_result.is_err():
+		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
+		return
+		
+	var tx := create_tx_result.value
 	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
@@ -100,11 +109,22 @@ func _on_send_ada_button_pressed() -> void:
 	
 	if result.is_ok():
 		result.value.sign("1234")
-		result.value.submit()
+		var tx_hash = await result.value.submit()
+		if tx_hash == null:
+			print('Failed to submit transaction')
+		else:
+			await provider.await_tx(tx_hash)
+			print('Tx confirmed: %s' % tx_hash.to_hex())
 
 func _on_mint_token_button_pressed() -> void:
 	var address := Address.from_bech32(address_input.text)
-	var tx := cardano.new_tx()
+	var create_tx_result := cardano.new_tx()
+	
+	if create_tx_result.is_err():
+		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
+		return
+		
+	var tx := create_tx_result.value
 	tx.mint_assets(
 		PlutusScript.create("46010000222499".hex_decode()), 
 		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],

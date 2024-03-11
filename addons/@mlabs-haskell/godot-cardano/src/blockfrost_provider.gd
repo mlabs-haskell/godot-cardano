@@ -37,6 +37,20 @@ class Request:
 	
 	func _body() -> PackedByteArray:
 		return PackedByteArray()
+	
+	func _to_string() -> String:
+		var method_to_string = {
+			HTTPClient.METHOD_GET: 'GET',
+			HTTPClient.METHOD_HEAD: 'HEAD',
+			HTTPClient.METHOD_POST: 'POST',
+			HTTPClient.METHOD_PUT: 'PUT',
+			HTTPClient.METHOD_DELETE: 'DELETE',
+			HTTPClient.METHOD_OPTIONS: 'OPTIONS',
+			HTTPClient.METHOD_TRACE: 'TRACE',
+			HTTPClient.METHOD_CONNECT: 'CONNECT',
+			HTTPClient.METHOD_PATCH: 'PATCH'
+		}
+		return "%s %s" % [method_to_string[_method()], _url()]
 		
 class ProtocolParametersRequest extends Request:
 	var _epoch: Epoch
@@ -99,25 +113,34 @@ class EvaluateTransactionRequest extends Request:
 	func _body() -> PackedByteArray:
 		return _tx_cbor.hex_encode().to_ascii_buffer()
 
+class TransactionRequest extends Request:
+	var _tx_hash: String
+	
+	func _init(tx_hash: String) -> void:
+		self._tx_hash = tx_hash
+
+	func _url() -> String:
+		return "txs/%s" % _tx_hash
+	
 var network: Network
 var api_key: String
 
 const network_endpoints: Dictionary = {
-	Network.NETWORK_MAINNET: "https://cardano-mainnet.blockfrost.io/api/v0",
-	Network.NETWORK_PREVIEW: "https://cardano-preview.blockfrost.io/api/v0",
-	Network.NETWORK_PREPROD: "https://cardano-preprod.blockfrost.io/api/v0"
+	Network.MAINNET: "https://cardano-mainnet.blockfrost.io/api/v0",
+	Network.PREVIEW: "https://cardano-preview.blockfrost.io/api/v0",
+	Network.PREPROD: "https://cardano-preprod.blockfrost.io/api/v0"
 }
 
 func _init(network_: Network, api_key_: String) -> void:
 	self.network = network_
 	self.api_key = api_key_
-		
+
 func blockfrost_request(request: Request) -> Variant:
 	var http_request := HTTPRequest.new()
 	add_child(http_request)
 	
 	var url := "%s/%s" % [network_endpoints[self.network], request._url()]
-	
+
 	var status := http_request.request_raw(
 		url,
 		[ "project_id: %s" % self.api_key ] + request._headers(),
@@ -126,9 +149,9 @@ func blockfrost_request(request: Request) -> Variant:
 	)
 	
 	if status != OK:
-		print("Creating Blockfrost request failed: ", status, request)
+		print("Creating Blockfrost request failed: %s, %s" % [status, request])
 		remove_child(http_request)
-		return {}
+		return null
 
 	var result : Array = await http_request.request_completed
 	var status_code : int = result[1]
@@ -138,8 +161,11 @@ func blockfrost_request(request: Request) -> Variant:
 	
 	# TODO: handle error responses properly
 	if status_code != 200:
-		print("Blockfrost request failed with status code ", status, ". Response content: ")
+		if status_code == 404:
+			return JSON.parse_string(content)
+		print("Blockfrost request failed with status code ", status_code, ". Response content: ")
 		print(content)
+		return null
 
 	return JSON.parse_string(content)
 
@@ -188,7 +214,11 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 	return assets
 
 func _get_utxos_at_address(address: String) -> Array[Utxo]:
-	var utxos_json: Array = await blockfrost_request(UtxosAtAddressRequest.new(address))
+	var utxos_response := await blockfrost_request(UtxosAtAddressRequest.new(address))
+	if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
+		return []
+		
+	var utxos_json: Array = utxos_response
 	var utxos: Array[Utxo] = []
 	
 	utxos.assign(
@@ -245,5 +275,16 @@ func _get_era_summaries() -> Array[EraSummary]:
 	got_era_summaries.emit(summaries)
 	return summaries
 	
-func _submit_transaction(tx: Transaction) -> void:
-	blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
+func _submit_transaction(tx: Transaction) -> TransactionHash:
+	var result = await blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
+	if typeof(result) == TYPE_DICTIONARY or result == null:
+		return null
+	return TransactionHash.from_hex(result).value
+
+func _get_tx_status(tx_hash: TransactionHash) -> bool:
+	var tx_response: Dictionary = await blockfrost_request(TransactionRequest.new(tx_hash.to_hex()))
+	var status := TransactionStatus.new(tx_hash, false)
+	if tx_response.get('status_code', 200) == 200:
+		status.set_confirmed(true)
+	tx_status.emit(status)
+	return status._confirmed

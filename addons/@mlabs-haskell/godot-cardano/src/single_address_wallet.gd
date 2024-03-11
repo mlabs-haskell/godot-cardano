@@ -13,11 +13,12 @@ enum Status {
 	BECH32_ERROR = 3,
 	NON_EXISTENT_ACCOUNT = 4
 }
-
+var _wallet_loader: SingleAddressWalletLoader
 var _wallet : _SingleAddressWallet
 
-func _init(wallet: _SingleAddressWallet) -> void:
+func _init(wallet: _SingleAddressWallet, wallet_loader: SingleAddressWalletLoader) -> void:
 	self._wallet = wallet
+	self._wallet_loader = wallet_loader
 	
 ## Get the account's [Address]
 func get_address() -> Address:
@@ -38,8 +39,18 @@ class SingleAddressWalletError extends Result:
 	
 ## Sign the given [Transaction] and obtain a [Signature]
 func _sign_transaction(password: String, tx: Transaction) -> SingleAddressWalletError:
-	return SingleAddressWalletError.new(_wallet._sign_transaction(password, tx._tx))
-	
+	return SingleAddressWalletError.new(
+		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
+	)
+
+## Adds an account to this wallet's store with the given index
+func add_account(account_index: int, password: String):
+	_wallet_loader.add_account(account_index, password)
+	var get_wallet_result = _wallet_loader.get_wallet(account_index)
+	if get_wallet_result.is_err():
+		push_error("Could not add account")
+	_wallet = get_wallet_result.value._wallet
+
 ## Switch to the account with the given `account_index`. It may fail if no such account
 ## exists. It returns the account index when it succeeds.
 func switch_account(account_index: int) -> SingleAddressWalletError:
