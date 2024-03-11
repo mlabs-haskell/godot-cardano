@@ -521,6 +521,13 @@ impl Transaction {
     }
 
     #[func]
+    fn hash(&self) -> Gd<TransactionHash> {
+        Gd::from_object(TransactionHash {
+            hash: hash_transaction(&self.transaction.body())
+        })
+    }
+
+    #[func]
     fn add_signature(&mut self, signature: Gd<Signature>) {
         // NOTE: destroys? transaction and replaces with a new one. might be better to add
         // signatures to the witness set before the transaction is actually built

@@ -42,19 +42,24 @@ class MnemonicWallet extends Wallet:
 	## call [MnemonicWallet.get_utxos].
 	var utxos: Array[Utxo] = []
 		
-	func _init(single_address_wallet_: SingleAddressWallet, provider_: Provider) -> void:
+	func _init(
+		single_address_wallet_: SingleAddressWallet, 
+		provider_: Provider,
+		auto_update_utxos: bool = true
+	) -> void:
 		self.provider = provider_
 		self.single_address_wallet = single_address_wallet_
 		self.active = true
 		# Connect and start the timer
 		timer = Timer.new()
 		timer.one_shot = false
-		timer.autostart = true
 		var _status := timer.timeout.connect(update_utxos)
 		timer.wait_time = utxos_update_age
 		add_child(timer)
-		# Initialize UTxOs immediately
-		update_utxos()
+		if auto_update_utxos:
+			timer.autostart = true
+			# Initialize UTxOs immediately
+			update_utxos()
 		
 	## Update the cached utxos. The same as [MnemonicWallet.get_utxos], but
 	## without returning the updated utxos.
@@ -96,3 +101,9 @@ class MnemonicWallet extends Wallet:
 			# TODO: Do not fail, return error
 			push_error("Could not sign transaction, found error", res.error)
 			return
+
+	func add_account(account_index: int, password: String):
+		single_address_wallet.add_account(account_index, password)
+		
+	func switch_account(account_index: int):
+		single_address_wallet.switch_account(account_index)

@@ -11,8 +11,8 @@ func _init(cardano: Cardano, transaction: Transaction) -> void:
 func sign(password: String) -> void:
 	_transaction.add_signature(_cardano.wallet._sign_transaction(password, _transaction))
 
-func submit() -> void:
-	_cardano.provider._submit_transaction(_transaction)
+func submit() -> TransactionHash:
+	return await _cardano.provider._submit_transaction(_transaction)
 	
 func bytes() -> PackedByteArray:
 	return _transaction.bytes()

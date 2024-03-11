@@ -97,14 +97,14 @@ impl SingleAddressWallet {
     // the wallet password.
     pub fn sign_transaction(
         &self,
-        password: String,
+        password: PackedByteArray,
         gtx: Gd<Transaction>,
     ) -> Result<Signature, SingleAddressWalletError> {
         let pbes2_params = self.get_pbes2_params();
         with_account_private_key(
             pbes2_params,
             self.encrypted_master_private_key.as_slice(),
-            password,
+            password.to_vec().as_slice(),
             self.account_info.index,
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0).to_raw_key();
@@ -117,7 +117,7 @@ impl SingleAddressWallet {
     }
 
     #[func]
-    fn _sign_transaction(&self, password: String, gtx: Gd<Transaction>) -> Gd<GResult> {
+    fn _sign_transaction(&self, password: PackedByteArray, gtx: Gd<Transaction>) -> Gd<GResult> {
         Self::to_gresult_class(self.sign_transaction(password, gtx))
     }
 
@@ -276,7 +276,7 @@ impl SingleAddressWalletStore {
     /// Create a `SingleAddressWalletStore` by using entropy to generate the
     /// private key.
     ///
-    /// The seed phrase is stred in the `wallet_seedphrase` parameter.
+    /// The seed phrase is stored in the `wallet_seedphrase` parameter.
     pub fn create(
         wallet_password: PackedByteArray,
         account_index: u32,
@@ -320,7 +320,7 @@ impl SingleAddressWalletStore {
                 .derive(harden(1815));
 
         let mut rng = rand::rngs::StdRng::from_entropy();
-        let salt: PackedByteArray = { 
+        let salt: PackedByteArray = {
             let mut bs: [u8; 64] = [0; 64];
             rng.fill_bytes(&mut bs);
             PackedByteArray::from(bs.as_slice())
@@ -331,9 +331,11 @@ impl SingleAddressWalletStore {
             bs
         };
         let aes_iv: PackedByteArray = PackedByteArray::from(aes_iv_array.as_slice());
-            
+
         // Create PBES2 params and encrypt the master key.
-        let scrypt_params = scrypt::Params::recommended();
+        //let scrypt_params = scrypt::Params::recommended();
+        // FIXME: find the right parameters to balance performance with security
+        let scrypt_params = scrypt::Params::new(12, 4, 1, 32).unwrap();
         let pbes2_params =
             pbes2::Parameters::scrypt_aes128cbc(scrypt_params, salt.as_slice(), &aes_iv_array)
                 .map_err(|e| SingleAddressWalletStoreError::Pkcs5Error(e))?;
@@ -511,7 +513,7 @@ impl SingleAddressWalletStore {
         accounts: &Array<Gd<Account>>,
     ) -> Result<BTreeMap<u32, AccountInfo>, SingleAddressWalletStoreError> {
         let mut account_infos = BTreeMap::new();
-        for (index, account) in accounts.iter_shared().enumerate() {
+        for account in accounts.iter_shared() {
             let account = account.bind();
             let public_key = Bip32PublicKey::from_bytes(account.public_key.as_slice())
                 .map_err(|e| SingleAddressWalletStoreError::Bip32Error(e))?;
@@ -521,7 +523,7 @@ impl SingleAddressWalletStore {
                 .map_err(|e| SingleAddressWalletStoreError::Bip32Error(e))?
                 .to_godot();
             let account_info = AccountInfo {
-                index: index as u32,
+                index: account.index as u32,
                 name: account.name.to_owned(),
                 description: account.description.to_owned(),
                 public_key,
@@ -551,44 +553,54 @@ impl SingleAddressWalletStore {
             .map_err(|e| SingleAddressWalletStoreError::Pkcs5Error(e))
     }
 
-    /// This just stores the public key of the new account. The new account's
-    /// index will be equal to the largest stored index + 1.
-    pub fn add_account(
+    #[func]
+    pub fn _add_account(
         &mut self,
+        account: u32,
         name: GString,
         description: GString,
-        password: String,
+        password: PackedByteArray,
+    ) -> Gd<GResult> {
+        Self::to_gresult(
+            self.add_account(account, name, description, password).map(|_| ())
+        )
+    }
+
+    /// This just stores the public key of the new account
+    pub fn add_account(
+        &mut self,
+        account: u32,
+        name: GString,
+        description: GString,
+        password: PackedByteArray,
     ) -> Result<Bip32PublicKey, SingleAddressWalletStoreError> {
-        let max_index = self.accounts.iter_shared().map(|a| a.bind().index).max();
-        // if there are no accounts stored, we just use 0 as index
-        let new_account_index = max_index.map_or(0, |i| i + 1);
         let pbes2_params = self.get_pbes2_params()?;
         let encrypted_master_private_key = self.encrypted_master_private_key.to_vec();
-        Self::add_account_helper(
+        let (account, private_key) = Self::add_account_helper(
             name,
             description,
             password,
-            new_account_index,
+            account,
             pbes2_params,
             encrypted_master_private_key.as_slice(),
-            &mut (self.accounts.duplicate_shallow()),
-        )
+        )?;
+        self.accounts.push(Gd::from_object(account));
+        Ok(private_key)
     }
 
     // This implementation avoids using &mut self to escape borrowing issues.
     fn add_account_helper(
         name: GString,
         description: GString,
-        password: String,
+        password: PackedByteArray,
         new_account_index: u32,
         pbes2_params: pbes2::Parameters,
         encrypted_master_private_key: &[u8],
-        accounts: &mut Array<Gd<Account>>,
-    ) -> Result<Bip32PublicKey, SingleAddressWalletStoreError> {
+    ) -> Result<(Account, Bip32PublicKey), SingleAddressWalletStoreError> {
         with_master_private_key(
             pbes2_params,
             encrypted_master_private_key.to_vec().as_slice(),
-            password,
+            password.to_vec().as_slice(),
             &mut |master_key| {
                 let new_account_key = master_key.derive(harden(new_account_index)).to_public();
                 let new_account = Account {
@@ -597,8 +609,7 @@ impl SingleAddressWalletStore {
                     description: description.clone(),
                     public_key: PackedByteArray::from(new_account_key.as_bytes().as_slice()),
                 };
-                accounts.push(Gd::from_object(new_account));
-                new_account_key
+                (new_account, new_account_key)
             },
         )
     }
@@ -673,7 +684,7 @@ fn harden(index: u32) -> u32 {
 fn with_master_private_key<F, O, E>(
     pbes2_params: pbes2::Parameters,
     encrypted_master_private_key: &[u8],
-    password: String,
+    password: &[u8],
     f: &mut F,
 ) -> Result<O, E>
 where
@@ -681,7 +692,7 @@ where
     E: From<Error> + From<JsError>,
 {
     let decrypted_bytes = pbes2_params.decrypt(
-        AsRef::<[u8]>::as_ref(&password),
+        password,
         encrypted_master_private_key,
     )?;
     let master_key = Bip32PrivateKey::from_bytes(decrypted_bytes.as_slice())?;
@@ -691,7 +702,7 @@ where
 fn with_account_private_key<F, O, E>(
     pbes2_params: pbes2::Parameters,
     encrypted_master_private_key: &[u8],
-    password: String,
+    password: &[u8],
     account_index: u32,
     f: &mut F,
 ) -> Result<O, E>

@@ -33,3 +33,6 @@ func evaluate(utxos: Array[Utxo]) -> EvaluationResult:
 		utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
 	return EvaluationResult.new(_tx._evaluate(_utxos))
+
+func hash() -> TransactionHash:
+	return TransactionHash.new(_tx.hash())
