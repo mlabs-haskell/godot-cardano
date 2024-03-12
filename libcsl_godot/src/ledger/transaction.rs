@@ -92,7 +92,9 @@ impl MultiAsset {
 
     #[func]
     pub fn empty() -> Gd<MultiAsset> {
-        Gd::from_object(MultiAsset { assets: CSL::MultiAsset::new() })
+        Gd::from_object(MultiAsset {
+            assets: CSL::MultiAsset::new(),
+        })
     }
 }
 
@@ -523,7 +525,7 @@ impl Transaction {
     #[func]
     fn hash(&self) -> Gd<TransactionHash> {
         Gd::from_object(TransactionHash {
-            hash: hash_transaction(&self.transaction.body())
+            hash: hash_transaction(&self.transaction.body()),
         })
     }
 
