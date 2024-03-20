@@ -562,7 +562,8 @@ impl SingleAddressWalletStore {
         password: PackedByteArray,
     ) -> Gd<GResult> {
         Self::to_gresult(
-            self.add_account(account, name, description, password).map(|_| ())
+            self.add_account(account, name, description, password)
+                .map(|_| ()),
         )
     }
 
@@ -691,10 +692,7 @@ where
     F: FnMut(Bip32PrivateKey) -> O,
     E: From<Error> + From<JsError>,
 {
-    let decrypted_bytes = pbes2_params.decrypt(
-        password,
-        encrypted_master_private_key,
-    )?;
+    let decrypted_bytes = pbes2_params.decrypt(password, encrypted_master_private_key)?;
     let master_key = Bip32PrivateKey::from_bytes(decrypted_bytes.as_slice())?;
     Ok(f(master_key))
 }
