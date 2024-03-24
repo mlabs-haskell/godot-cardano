@@ -46,6 +46,14 @@ class TransactionStatus:
 	
 	func set_confirmed(confirmed: bool) -> void:
 		_confirmed = confirmed
+
+class UtxoResult:
+	var _address: String
+	var _utxos: Array[Utxo]
+	
+	func _init(address: String, utxos: Array[Utxo]) -> void:
+		_address = address
+		_utxos = utxos
 	
 signal got_protocol_parameters(
 	parameters: ProtocolParameters,
@@ -53,6 +61,7 @@ signal got_protocol_parameters(
 )
 signal got_era_summaries(summaries: Array[EraSummary])
 signal tx_status(status: TransactionStatus)
+signal utxo_result(result: UtxoResult)
 signal _empty()
 
 enum Network {MAINNET, PREVIEW, PREPROD}
@@ -75,18 +84,49 @@ func _get_era_summaries() -> Array[EraSummary]:
 
 func _get_tx_status(tx_hash: TransactionHash) -> bool:
 	return false
-		
-func await_tx(tx_hash: TransactionHash) -> void:
-	var timer = Timer.new()
+	
+func await_response(f: Callable, check: Callable, s: Signal, interval: float = 2.5):	
+	var timer := Timer.new()
 	timer.one_shot = false
-	timer.wait_time = 2.5
-	timer.timeout.connect(func () -> void: _get_tx_status(tx_hash))
+	timer.wait_time = interval
+	timer.timeout.connect(f)
 	add_child(timer)
 	timer.start()
-	print("Waiting for transaction %s..." % tx_hash.to_hex())
 	while true:
-		var result: TransactionStatus = await tx_status
-		if result._tx_hash == tx_hash and result._confirmed:
+		var r = await s
+		if check.call(r):
+			var connections: Array = timer.timeout.get_connections() 
+			for c in connections:
+				timer.timeout.disconnect(c['callable'])
 			timer.stop()
+			timer.start()
+			await timer.timeout
 			remove_child(timer)
 			return
+	
+func await_tx(tx_hash: TransactionHash) -> void:
+	print("Waiting for transaction %s..." % tx_hash.to_hex())
+	await await_response(
+		func () -> void: _get_tx_status(tx_hash),
+		func (result: TransactionStatus) -> bool:
+			return result._tx_hash == tx_hash and result._confirmed,
+		tx_status
+	)
+
+func await_utxos_at(address: Address, from_tx: TransactionHash = null) -> void:
+	var address_bech32 = address.to_bech32()
+	await await_response(
+		func () -> void: _get_utxos_at_address(address_bech32),
+		func (result: UtxoResult) -> bool:
+			var found_utxos = false
+			if from_tx == null:
+				found_utxos = result._utxos != []
+			else:
+				found_utxos = result._utxos.any(
+					func (utxo: Utxo) -> bool:
+						return utxo.tx_hash().to_hex() == from_tx.to_hex()
+				)
+			return result._address == address_bech32 and found_utxos,
+		utxo_result,
+		5
+	)

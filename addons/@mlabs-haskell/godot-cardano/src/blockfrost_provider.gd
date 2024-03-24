@@ -216,8 +216,9 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 func _get_utxos_at_address(address: String) -> Array[Utxo]:
 	var utxos_response := await blockfrost_request(UtxosAtAddressRequest.new(address))
 	if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
+		utxo_result.emit(UtxoResult.new(address, []))
 		return []
-		
+
 	var utxos_json: Array = utxos_response
 	var utxos: Array[Utxo] = []
 	
@@ -245,7 +246,7 @@ func _get_utxos_at_address(address: String) -> Array[Utxo]:
 					
 				return result.value
 	))
-	
+	utxo_result.emit(UtxoResult.new(address, utxos))
 	return utxos
 
 func _get_era_summaries() -> Array[EraSummary]:
@@ -282,9 +283,12 @@ func _submit_transaction(tx: Transaction) -> TransactionHash:
 	return TransactionHash.from_hex(result).value
 
 func _get_tx_status(tx_hash: TransactionHash) -> bool:
-	var tx_response: Dictionary = await blockfrost_request(TransactionRequest.new(tx_hash.to_hex()))
-	var status := TransactionStatus.new(tx_hash, false)
-	if tx_response.get('status_code', 200) == 200:
-		status.set_confirmed(true)
+	var tx_response: Dictionary = await blockfrost_request(
+		TransactionRequest.new(tx_hash.to_hex())
+	)
+	var status := TransactionStatus.new(
+		tx_hash,
+		tx_response.get('status_code', 200) == 200
+	)
 	tx_status.emit(status)
 	return status._confirmed
