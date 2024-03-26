@@ -100,7 +100,7 @@
         };
         make_demo = { name ? "demo", src ? ./demo, ... }@args:
           make_gd_project (args // { inherit name src; });
-        run_gut_test = { name ? "godot-cardano-test", src ? ./test }: pkgs.stdenv.mkDerivation {
+        gut_check = { name ? "godot-cardano-test", src ? ./test }: pkgs.stdenv.mkDerivation {
           inherit name src;
           configurePhase = ''
             rm -rf ./addons/gut
@@ -113,16 +113,27 @@
           '';
           buildPhase = ''
             mkdir -p .home
-            export HOME=$(pwd)/.home
+            HOME="$(pwd)/.home"
+            export HOME
             echo "Reimporting resources..."
             timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
             echo "Reimporting resources done."
+            echo
             RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd)
             echo -e "$RESULT"
-            [[ $RESULT =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
+            [[ "$RESULT" =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
           '';
           installPhase = "touch $out";
           dontFixup = true;
+        };
+        run_gut_test = { name ? "godot-cardano-test", src ? ./test }: pkgs.writeShellApplication {
+          inherit name;
+          text = ''
+            cd test
+            [ ! -f test.gd ] && echo "Could not find 'test.gd'. Please run this script from the repository root." && exit 1
+            ${(gut_check {inherit name src; }).configurePhase}
+            ${(gut_check {inherit name src; }).buildPhase}
+          '';
         };
         devShell = pkgs.mkShell {
           buildInputs = [
@@ -146,8 +157,8 @@
               rm -rf ./addons/@mlabs-haskell/godot-cardano
               ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
             }
-            (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
-            (cd test && (${self'.packages.test.configurePhase}) && link-addon)
+            (cd demo &&  (${(make_demo {}).configurePhase}) && link-addon)
+            (cd test && (${(gut_check {}).configurePhase}) && link-addon)
 
             ${config.pre-commit.installationScript}
 
@@ -164,9 +175,6 @@
         };
       in
       {
-        checks = {
-          test = run_gut_test { };
-        };
         packages = rec {
           default = godot-cardano;
           steam-run = pkgs.steamPackages.steam-fhsenv-without-steam.run;
