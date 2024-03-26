@@ -99,7 +99,6 @@ struct GTxBuilder {
     cost_models: Costmdls,
     fee: u64,
     used_langs: BTreeSet<CSL::plutus::Language>,
-
     minted_assets: HashMap<u32, (CSL::plutus::PlutusScript, Dictionary)>,
 }
 
@@ -407,7 +406,7 @@ impl GTxBuilder {
             let collateral_amount = Gd::from_object(BigInt::from_int(
                 min_collateral
                     .try_into()
-                    .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?
+                    .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?,
             ));
             for gutxo in gutxos.iter_shared() {
                 let utxo = gutxo.bind();

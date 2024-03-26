@@ -48,10 +48,10 @@ class TransactionStatus:
 		_confirmed = confirmed
 
 class UtxoResult:
-	var _address: String
+	var _address: Address
 	var _utxos: Array[Utxo]
 	
-	func _init(address: String, utxos: Array[Utxo]) -> void:
+	func _init(address: Address, utxos: Array[Utxo]) -> void:
 		_address = address
 		_utxos = utxos
 	
@@ -72,7 +72,7 @@ func _init() -> void:
 func _get_protocol_parameters() -> ProtocolParameters:
 	return null
 
-func _get_utxos_at_address(_address: String) -> Array[Utxo]:
+func _get_utxos_at_address(_address: Address) -> Array[Utxo]:
 	return []
 
 func _submit_transaction(tx: Transaction) -> TransactionHash:
@@ -114,9 +114,8 @@ func await_tx(tx_hash: TransactionHash) -> void:
 	)
 
 func await_utxos_at(address: Address, from_tx: TransactionHash = null) -> void:
-	var address_bech32 = address.to_bech32()
 	await await_response(
-		func () -> void: _get_utxos_at_address(address_bech32),
+		func () -> void: _get_utxos_at_address(address),
 		func (result: UtxoResult) -> bool:
 			var found_utxos = false
 			if from_tx == null:
@@ -126,7 +125,7 @@ func await_utxos_at(address: Address, from_tx: TransactionHash = null) -> void:
 					func (utxo: Utxo) -> bool:
 						return utxo.tx_hash().to_hex() == from_tx.to_hex()
 				)
-			return result._address == address_bech32 and found_utxos,
+			return result._address.to_bech32() == address.to_bech32() and found_utxos,
 		utxo_result,
 		5
 	)

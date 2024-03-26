@@ -213,8 +213,8 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 	)
 	return assets
 
-func _get_utxos_at_address(address: String) -> Array[Utxo]:
-	var utxos_response := await blockfrost_request(UtxosAtAddressRequest.new(address))
+func _get_utxos_at_address(address: Address) -> Array[Utxo]:
+	var utxos_response := await blockfrost_request(UtxosAtAddressRequest.new(address.to_bech32()))
 	if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
 		utxo_result.emit(UtxoResult.new(address, []))
 		return []

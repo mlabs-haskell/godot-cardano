@@ -92,8 +92,7 @@ class MnemonicWallet extends Wallet:
 	## It will also update the cached utxos and reset the timer.
 	func _get_updated_utxos() -> Array[Utxo]:
 		self.timer.stop()
-		var address_bech32 = single_address_wallet.get_address_bech32()
-		self.utxos = await self.provider._get_utxos_at_address(address_bech32)
+		self.utxos = await self.provider._get_utxos_at_address(single_address_wallet.get_address())
 		got_updated_utxos.emit(self.utxos)
 		self.timer.start()
 		return self.utxos

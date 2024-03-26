@@ -5,7 +5,7 @@ class_name TxBuilder
 ## You should not create a [TxBuilder] with [TxBuilder.new], instead
 ## you should use [Cardano.new_tx].
 
-enum TxBuilderStatus { 
+enum TxBuilderStatus {
 	SUCCESS = 0,
 	BAD_PROTOCOL_PARAMETERS = 1,
 	QUANTITY_EXCEEDS_MAXIMUM = 2,

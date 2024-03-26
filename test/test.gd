@@ -93,9 +93,8 @@ class TestSdk extends GutTest:
 	
 	func or_quit(test: bool, msg: String = "") -> void:
 		if not test:
-			assert_true(test)
 			push_error(msg)
-			get_tree().quit()
+			get_tree().quit(1)
 		
 	func load_funding_wallet() -> SingleAddressWallet:
 		var funding_wallet_phrase := OS.get_environment("TESTNET_SEED_PHRASE")
@@ -204,7 +203,7 @@ class TestSdk extends GutTest:
 		remove_child(cardano)
 		
 	func test_invalid_signature() -> void:
-		assert(FileAccess.file_exists("res://preview_token.txt"))
+		or_quit(FileAccess.file_exists("res://preview_token.txt"), "No Blockfrost token available")
 		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		var funding_wallet := await load_funding_wallet()
 		
@@ -278,6 +277,5 @@ class TestSdk extends GutTest:
 				tx.set_change_address(_funding_address),
 			"funding return"
 		)
-
 		remove_child(wallet)
 		remove_child(cardano)

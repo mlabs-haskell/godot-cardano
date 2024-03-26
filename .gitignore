@@ -9,3 +9,5 @@
 seed_phrase.txt
 preview_token.txt
 result*
+*/.godot/
+.pre-commit-config.yaml
