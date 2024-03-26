@@ -1,9 +1,9 @@
 extends GutTest
 
 func test_assert_bigint_eq() -> void:
-	var bigint_result := BigInt.from_str("1")
+	var bigint := BigInt.from_int(1)
 	assert_true(
-		bigint_result.is_ok() and bigint_result.value.eq(BigInt.one()),
+		bigint.eq(BigInt.one()),
 		"BigInt.from_int(1) should equal Bigint.one()"
 	)
 
@@ -19,8 +19,7 @@ class TestWallets extends GutTest:
 	func test_create_and_import(
 		account_index: int = use_parameters([0,12])
 	) -> void:
-		var loader := SingleAddressWalletLoader.new()
-		var create_result := loader.create(
+		var create_result := SingleAddressWalletLoader.create(
 			"1234",
 			account_index,
 			"",
@@ -31,6 +30,7 @@ class TestWallets extends GutTest:
 			"Create new wallet with account %d" % account_index
 		)
 		
+		var loader := SingleAddressWalletLoader.new()
 		var import_result := await loader.import_from_seedphrase(
 			create_result.value.seed_phrase,
 			"",
@@ -104,7 +104,7 @@ class TestSdk extends GutTest:
 				"No funding wallet available"
 			)
 			funding_wallet_phrase = FileAccess.get_file_as_string("res://seed_phrase.txt")
-		var loader = SingleAddressWalletLoader.new()
+		var loader := SingleAddressWalletLoader.new()
 		var import_result := await loader.import_from_seedphrase(
 			funding_wallet_phrase,
 			"",
@@ -122,15 +122,15 @@ class TestSdk extends GutTest:
 	func tx_with(
 		cardano: Cardano,
 		build: Callable,
-		name: String = "test"
+		test_name: String = "test"
 	) -> TransactionHash:
 		var create_tx_result := cardano.new_tx()
-		assert_true(create_tx_result.is_ok(), "Create %s tx" % name)
+		assert_true(create_tx_result.is_ok(), "Create %s tx" % test_name)
 		if create_tx_result.is_ok():
 			var tx := create_tx_result.value
 			build.call(tx)
-			var complete_tx_result := tx.complete()
-			assert_true(complete_tx_result.is_ok(), "Build %s tx" % name)
+			var complete_tx_result := await tx.complete()
+			assert_true(complete_tx_result.is_ok(), "Build %s tx" % test_name)
 			if complete_tx_result.is_ok():
 				complete_tx_result.value.sign("1234")
 				var submit_result := await complete_tx_result.value.submit()
@@ -155,8 +155,8 @@ class TestSdk extends GutTest:
 		)
 		add_child(_provider)
 		var wallet := Wallet.MnemonicWallet.new(funding_wallet, _provider)
-		_funding_address = wallet._get_change_address()
 		add_child(wallet)
+		_funding_address = wallet._get_change_address()
 		var cardano := Cardano.new(wallet, _provider)
 		add_child(cardano)
 		
@@ -184,7 +184,6 @@ class TestSdk extends GutTest:
 			file.store_string(create_result.value.seed_phrase + "\n")
 			file.close()
 
-		var utxos := await wallet._get_updated_utxos()
 		var fund_tx_hash := await tx_with(
 			cardano,
 			func (tx: TxBuilder) -> void:
@@ -224,7 +223,7 @@ class TestSdk extends GutTest:
 		assert_true(create_tx_result.is_ok(), "Create test wallet funding tx")
 		if create_tx_result.is_ok():
 			var fund_tx := create_tx_result.value
-			var complete_tx_result := fund_tx.complete()
+			var complete_tx_result := await fund_tx.complete()
 			assert_true(complete_tx_result.is_ok(), "Build test wallet funding tx")
 			if complete_tx_result.is_ok():
 				var complete_tx := complete_tx_result.value
@@ -255,27 +254,28 @@ class TestSdk extends GutTest:
 		return await tx_with(
 			cardano,
 			func(_tx: TxBuilder) -> void: pass,
-			"redundant payment"
+			"simple payment"
 		)
 
-	func test_blockfrost(test: Callable = use_parameters(blockfrost_tests)) -> void:
+	func test_blockfrost() -> void:
 		await init_blockfrost_tests()
 		
-		var wallet := _wallets[blockfrost_tests.find(test)]
-		var cardano := Cardano.new(wallet, _provider)
-		add_child(wallet)
-		add_child(cardano)
-		await _provider.got_protocol_parameters
-		await wallet.update_utxos()
-		var final_tx_hash: TransactionHash = await test.call(cardano)
-		await _provider.await_utxos_at(wallet._get_change_address(), final_tx_hash)
-		var utxos := await wallet._get_updated_utxos()
-		tx_with(
-			cardano,
-			func (tx: TxBuilder) -> void:
-				tx.collect_from(utxos)
-				tx.set_change_address(_funding_address),
-			"funding return"
-		)
-		remove_child(wallet)
-		remove_child(cardano)
+		for test in blockfrost_tests:
+			var wallet := _wallets[blockfrost_tests.find(test)]
+			var cardano := Cardano.new(wallet, _provider)
+			add_child(wallet)
+			add_child(cardano)
+			await _provider.got_protocol_parameters
+			await wallet.update_utxos()
+			var final_tx_hash: TransactionHash = await test.call(cardano)
+			await _provider.await_utxos_at(wallet._get_change_address(), final_tx_hash)
+			var utxos := await wallet._get_updated_utxos()
+			await tx_with(
+				cardano,
+				func (tx: TxBuilder) -> void:
+					tx.collect_from(utxos)
+					tx.set_change_address(_funding_address),
+				"funding return"
+			)
+			remove_child(wallet)
+			remove_child(cardano)

@@ -17,6 +17,7 @@ enum TxBuilderStatus {
 	OTHER_ERROR = 8,
 	CREATE_ERROR = 9,
 	INVALID_DATA = 10,
+	NO_UTXOS = 11,
 }
 
 var _builder: _TxBuilder
@@ -179,13 +180,24 @@ func set_change_address(change_address: Address) -> TxBuilder:
 	return self
 	
 func complete() -> CompleteResult:
-	var wallet_utxos: Array[Utxo] = _cardano.wallet._get_utxos()
+	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
 	var additional_utxos: Array[Utxo] = [] # TODO
 	additional_utxos.assign(wallet_utxos)
+	
+	if wallet_utxos.size() == 0:
+		_results.push_back(
+			CompleteResult.new(
+				_cardano,
+				_Result.err(
+					"",
+					TxBuilderStatus.NO_UTXOS
+				)
+			)
+		)
 	
 	var balance_result := \
 		BalanceResult.new(

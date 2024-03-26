@@ -94,7 +94,8 @@ class MnemonicWallet extends Wallet:
 		self.timer.stop()
 		self.utxos = await self.provider._get_utxos_at_address(single_address_wallet.get_address())
 		got_updated_utxos.emit(self.utxos)
-		self.timer.start()
+		if is_inside_tree():
+			self.timer.start()
 		return self.utxos
 		
 	func _get_change_address() -> Address:

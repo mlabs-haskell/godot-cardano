@@ -24,6 +24,6 @@ jobs:
       - name: Run Integration Test
         run: |
           [ -z "${{ secrets.TESTNET_SEED_PHRASE }}" ] && echo "Secret is available."
-          nix run .#test
+          nix run -L .#test
         env:
           TESTNET_SEED_PHRASE: '${{ secrets.TESTNET_SEED_PHRASE }}'

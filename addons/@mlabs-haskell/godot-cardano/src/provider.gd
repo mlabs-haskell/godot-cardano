@@ -112,6 +112,7 @@ func await_tx(tx_hash: TransactionHash) -> void:
 			return result._tx_hash == tx_hash and result._confirmed,
 		tx_status
 	)
+	print("Transaction confirmed")
 
 func await_utxos_at(address: Address, from_tx: TransactionHash = null) -> void:
 	await await_response(
