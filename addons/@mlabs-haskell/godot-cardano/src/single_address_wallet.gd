@@ -27,31 +27,22 @@ func get_address() -> Address:
 ## Get the account's address as a BECH32-encoded [String].
 func get_address_bech32() -> String:
 	return _wallet._get_address_bech32()
-	
-class SingleAddressWalletError extends Result:
-	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
-	var value: Signature:
-		get: return _res.unsafe_value() as Signature
-	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
-	var error: String:
-		get: return _res.unsafe_error()
-	
-	
+
 ## Sign the given [Transaction] and obtain a [Signature]
-func _sign_transaction(password: String, tx: Transaction) -> SingleAddressWalletError:
-	return SingleAddressWalletError.new(
+func _sign_transaction(password: String, tx: Transaction) -> Wallet.SignTxResult:
+	return Wallet.SignTxResult.new(
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
 	)
 
 ## Adds an account to this wallet's store with the given index
-func add_account(account_index: int, password: String):
+func add_account(account_index: int, password: String) -> SingleAddressWalletLoader.GetWalletError:
 	_wallet_loader.add_account(account_index, password)
-	var get_wallet_result = _wallet_loader.get_wallet(account_index)
-	if get_wallet_result.is_err():
-		push_error("Could not add account")
-	_wallet = get_wallet_result.value._wallet
+	var get_wallet_result := _wallet_loader.get_wallet(account_index)
+	if get_wallet_result.is_ok():
+		_wallet = get_wallet_result.value._wallet
+	return get_wallet_result
 
 ## Switch to the account with the given `account_index`. It may fail if no such account
 ## exists. It returns the account index when it succeeds.
-func switch_account(account_index: int) -> SingleAddressWalletError:
-	return SingleAddressWalletError.new(_wallet._switch_account(account_index))
+func switch_account(account_index: int) -> Result:
+	return Result.VariantResult.new(_wallet._switch_account(account_index))

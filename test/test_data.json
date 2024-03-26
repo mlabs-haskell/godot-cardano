@@ -1,0 +1,21 @@
+{
+  "wallets": [
+	{
+	  "seedPhrase": "zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra zebra",
+	  "accounts": [
+		{
+		  "index": 0,
+		  "address": "addr_test1qrnmrpa4jmnefdt9pg0ljmgzewmdtjkxty79nf3av62kuhe6l0r5at03w5jg59l906cvdg358rqrssry2am2hessu42slmqppm"
+		},
+		{
+		  "index": 1,
+		  "address": "addr_test1qzx37k9wtgfstwqmx9pud2dlq3c2gt5j3640m4etpp9szj74uhf204aksnff3tktm7kglg9pvywe7v8fs0ypyfuhhjysx4ptyl"
+		},
+		{
+		  "index": 14,
+		  "address": "addr_test1qqdqzk09lh30ahms9kwrc90t0g7es2wkp3chmucqk0l64semgjfdyj5j7hvtunug24p0lvye0gdd23zcgplfxwenlagshwxs8u"
+		}
+	  ]
+	}
+  ]
+}

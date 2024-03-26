@@ -31,7 +31,7 @@ use crate::ledger::transaction::{Address, Signature, Transaction};
 /// `SingleAddressWalletStore`, so mutating the wallet (by adding or removing
 /// accounts) is in that struct's scope.
 #[derive(GodotClass)]
-#[class(base=Object, rename=_SingleAddressWallet)]
+#[class(base=RefCounted, rename=_SingleAddressWallet)]
 pub struct SingleAddressWallet {
     encrypted_master_private_key: Vec<u8>,
     salt: Vec<u8>,

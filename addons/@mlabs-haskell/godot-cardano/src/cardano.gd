@@ -73,6 +73,6 @@ func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> vo
 	
 	var builder := create_result.value
 	builder.pay_to_address(address_result.value, amount, MultiAsset.empty())
-	var transaction := builder.complete()
+	var transaction := await builder.complete()
 	transaction.sign(password)
 	transaction.submit()
