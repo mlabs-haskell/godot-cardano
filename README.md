@@ -116,10 +116,10 @@ nix build .#demo
 nix run .#steam-run result/bin/demo
 ```
 
-### Test
+### Run Integration Test
 
 ```
-nix build .#test
+nix run .#test
 ```
 
 ### Develop
