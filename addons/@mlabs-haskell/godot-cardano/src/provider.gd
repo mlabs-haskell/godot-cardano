@@ -85,37 +85,52 @@ func _get_era_summaries() -> Array[EraSummary]:
 func _get_tx_status(tx_hash: TransactionHash) -> bool:
 	return false
 	
-func await_response(f: Callable, check: Callable, s: Signal, interval: float = 2.5):	
+func await_response(
+	f: Callable,
+	check: Callable,
+	s: Signal,
+	interval: float = 2.5,
+	timeout := 60
+):	
+	var start := Time.get_ticks_msec()
 	var timer := Timer.new()
 	timer.one_shot = false
 	timer.wait_time = interval
 	timer.timeout.connect(f)
 	add_child(timer)
 	timer.start()
+	var status := false
 	while true:
 		var r = await s
-		if check.call(r):
-			var connections: Array = timer.timeout.get_connections() 
-			for c in connections:
-				timer.timeout.disconnect(c['callable'])
-			timer.stop()
-			timer.start()
-			await timer.timeout
-			remove_child(timer)
-			return
+		status = status or check.call(r)
+		if status or (Time.get_ticks_msec() - start) / 1000 > timeout:
+			break
+	var connections: Array = timer.timeout.get_connections() 
+	for c in connections:
+		timer.timeout.disconnect(c['callable'])
+	timer.stop()
+	remove_child(timer)
+	return status
 	
-func await_tx(tx_hash: TransactionHash) -> void:
+func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 	print("Waiting for transaction %s..." % tx_hash.to_hex())
-	await await_response(
+	var confirmed = await await_response(
 		func () -> void: _get_tx_status(tx_hash),
 		func (result: TransactionStatus) -> bool:
 			return result._tx_hash == tx_hash and result._confirmed,
-		tx_status
+		tx_status,
+		timeout
 	)
-	print("Transaction confirmed")
+	if confirmed:
+		print("Transaction confirmed")
+	return confirmed
 
-func await_utxos_at(address: Address, from_tx: TransactionHash = null) -> void:
-	await await_response(
+func await_utxos_at(
+	address: Address,
+	from_tx: TransactionHash = null,
+	timeout := 60
+) -> bool:
+	return await await_response(
 		func () -> void: _get_utxos_at_address(address),
 		func (result: UtxoResult) -> bool:
 			var found_utxos = false
@@ -128,5 +143,6 @@ func await_utxos_at(address: Address, from_tx: TransactionHash = null) -> void:
 				)
 			return result._address.to_bech32() == address.to_bech32() and found_utxos,
 		utxo_result,
-		5
+		5,
+		timeout
 	)

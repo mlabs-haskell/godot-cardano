@@ -134,9 +134,9 @@ class TestSdk extends GutTest:
 			if complete_tx_result.is_ok():
 				complete_tx_result.value.sign("1234")
 				var submit_result := await complete_tx_result.value.submit()
-				assert(submit_result.is_ok())
+				or_quit(submit_result.is_ok())
 				var tx_hash := submit_result.value
-				assert(tx_hash != null)
+				or_quit(tx_hash != null)
 				return tx_hash
 			else:
 				gut.p(complete_tx_result.error)
@@ -195,8 +195,9 @@ class TestSdk extends GutTest:
 					),
 			"test wallet funding"
 		)
-		assert(fund_tx_hash != null)
-		await _provider.await_utxos_at(wallet._get_change_address(), fund_tx_hash)
+		or_quit(fund_tx_hash != null)
+		var status = await _provider.await_utxos_at(wallet._get_change_address(), fund_tx_hash)
+		or_quit(status)
 		gut.p('Transaction confirmed')
 		remove_child(wallet)
 		remove_child(cardano)
@@ -268,7 +269,10 @@ class TestSdk extends GutTest:
 			await _provider.got_protocol_parameters
 			await wallet.update_utxos()
 			var final_tx_hash: TransactionHash = await test.call(cardano)
-			await _provider.await_utxos_at(wallet._get_change_address(), final_tx_hash)
+			var status = await _provider.await_utxos_at(
+				wallet._get_change_address(),
+				final_tx_hash
+			)
 			var utxos := await wallet._get_updated_utxos()
 			await tx_with(
 				cardano,
