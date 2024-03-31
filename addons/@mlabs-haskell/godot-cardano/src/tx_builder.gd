@@ -119,7 +119,7 @@ func pay_to_address_with_datum(
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
 	else:
-		_builder.pay_to_address_with_datum(
+		_builder._pay_to_address_with_datum(
 			address._address,
 			coin._b,
 			assets._multi_asset,
