@@ -361,6 +361,48 @@ impl PlutusScript {
 }
 
 #[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=_PubKeyHash)]
+pub struct PubKeyHash {
+    pub hash: CSL::crypto::Ed25519KeyHash
+}
+
+#[derive(Debug)]
+pub enum PubKeyHashError {
+    FromHexError(JsError),
+}
+
+impl GodotConvert for PubKeyHashError {
+    type Via = i64;
+}
+
+impl ToGodot for PubKeyHashError {
+    fn to_godot(&self) -> Self::Via {
+        use PubKeyHashError::*;
+        match self {
+            FromHexError(_) => 1,
+        }
+    }
+}
+
+impl FailsWith for PubKeyHash {
+    type E = PubKeyHashError;
+}
+
+#[godot_api]
+impl PubKeyHash {
+    pub fn from_hex(hex: String) -> Result<PubKeyHash, PubKeyHashError> {
+        let hash = CSL::crypto::Ed25519KeyHash::from_hex(hex.as_str()).map_err(PubKeyHashError::FromHexError)?;
+        Ok(PubKeyHash { hash })
+    }
+
+    #[func]
+    pub fn _from_hex(hex: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(hex.to_string()))
+    }
+}
+
+
+#[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=_Utxo)]
 pub struct Utxo {
     #[var(get)]

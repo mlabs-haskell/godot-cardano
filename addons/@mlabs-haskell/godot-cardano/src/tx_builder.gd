@@ -142,7 +142,7 @@ func mint_assets(
 		)
 		return self
 
-	var serialize_result: Cbor.SerializeResult = Cbor.serialize(redeemer.to_data(true), true)
+	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
 	
 	_results.push_back(serialize_result)
 	if serialize_result.is_err():
@@ -178,7 +178,23 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 func set_change_address(change_address: Address) -> TxBuilder:
 	_change_address = change_address
 	return self
-	
+
+## Set the time in POSIX seconds after which the transaction is valid
+func valid_after(time: int) -> TxBuilder:
+	var slot := _cardano.time_to_slot(time)
+	_builder.valid_after(slot)
+	return self
+
+## Set the time in POSIX seconds before which the transaction is valid
+func valid_before(time: int) -> TxBuilder:
+	var slot := _cardano.time_to_slot(time)
+	_builder.valid_before(slot)
+	return self
+
+func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
+	_builder._add_required_signer(pub_key_hash._pub_key_hash)
+	return self
+
 func complete() -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
@@ -198,6 +214,8 @@ func complete() -> CompleteResult:
 				)
 			)
 		)
+	
+	_builder._add_dummy_redeemers()
 	
 	var balance_result := \
 		BalanceResult.new(

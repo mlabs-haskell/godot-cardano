@@ -42,7 +42,7 @@ func _ready() -> void:
 		phrase_input.text = seed_phrase_file.get_as_text(true)
 		_create_wallet_from_seedphrase(phrase_input.text)
 	
-	# basic check for invertibility
+	# basic check for invertibility, TODO: move to tests
 	var strict := true
 	var datum := ExampleDatum.new()
 	var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
@@ -57,6 +57,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if wallet != null:
 		timers_details.text = "Timer: %.2f" % wallet.time_left
+		timers_details.text += "\n%d" % cardano.time_to_slot(Time.get_unix_time_from_system())
 
 func _on_wallet_set() -> void:
 	var _ret := self.cardano.wallet.got_updated_utxos.connect(_on_utxos_updated)
@@ -103,18 +104,19 @@ func _on_send_ada_button_pressed() -> void:
 	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
-		MultiAsset.from_dictionary({}).value
+		MultiAsset.empty()
 	)
+	tx.valid_after(Time.get_unix_time_from_system() - 120)
+	tx.valid_before(Time.get_unix_time_from_system() + 180)
 	var result := await tx.complete()
 	
 	if result.is_ok():
 		result.value.sign("1234")
-		var tx_hash = await result.value.submit()
-		if tx_hash == null:
-			print('Failed to submit transaction')
+		var submit_result = await result.value.submit()
+		if submit_result.is_err():
+			print('Failed to submit transaction: %s' % submit_result.error)
 		else:
-			await provider.await_tx(tx_hash)
-			print('Tx confirmed: %s' % tx_hash.to_hex())
+			await provider.await_tx(submit_result.value)
 
 func _on_mint_token_button_pressed() -> void:
 	var address := Address.from_bech32(address_input.text)
@@ -128,14 +130,28 @@ func _on_mint_token_button_pressed() -> void:
 	tx.mint_assets(
 		PlutusScript.create("46010000222499".hex_decode()), 
 		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		VoidData.new()
+		VoidData.new().to_data()
 	)
+	#tx.mint_assets(
+		#PlutusScript.create("581801000032223253330043370e00290020a4c2c6eb40095cd1".hex_decode()), 
+		#[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
+		#BigInt.from_int(2)
+	#)
+	#tx.mint_assets(
+		#PlutusScript.create("581801000032223253330043370e00290010a4c2c6eb40095cd1".hex_decode()), 
+		#[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
+		#BigInt.from_int(1)
+	#)
 	var result := await tx.complete()
 	
 	if result.is_ok():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())
-		result.value.submit()
+		var submit_result := await result.value.submit()
+		if submit_result.is_err():
+			push_error(submit_result.error)
+	else:
+		push_error(result.error)
 	
 # Asynchronously load the wallet from a seedphrase
 func _create_wallet_from_seedphrase(seedphrase: String) -> void:

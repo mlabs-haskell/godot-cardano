@@ -8,6 +8,7 @@ signal got_tx_builder(initialized: bool)
 
 var provider: Provider
 var wallet: Wallet
+var _network_genesis: Provider.NetworkGenesis
 var _protocol_params: ProtocolParameters
 var _era_summaries: Array[Provider.EraSummary]
 var _cost_models: CostModels
@@ -15,14 +16,22 @@ var _cost_models: CostModels
 func _init(wallet_: Wallet, provider_: Provider) -> void:
 	self.provider = provider_
 	self.wallet = wallet_
+	if provider.got_network_genesis.connect(_on_got_network_genesis) == ERR_INVALID_PARAMETER:
+		push_error("Failed to connect provider's 'got_network_genesis' signal ")
 	if provider.got_protocol_parameters.connect(_on_got_protocol_parameters) == ERR_INVALID_PARAMETER:
 		push_error("Failed to connect provider's 'got_protocol_parameters' signal ")
 	if provider.got_era_summaries.connect(_on_got_era_summaries) == ERR_INVALID_PARAMETER:
 		push_error("Failed to connect provider's 'got_era_summaries' signal ")
 
 func _ready() -> void:
+	provider._get_network_genesis()
 	provider._get_protocol_parameters()
 	provider._get_era_summaries()
+
+func _on_got_network_genesis(
+	genesis: Provider.NetworkGenesis
+) -> void:
+	_network_genesis = genesis
 
 func _on_got_protocol_parameters(
 	params: ProtocolParameters,
@@ -48,6 +57,19 @@ func new_tx() -> TxBuilder.CreateResult:
 func _on_got_era_summaries(summaries: Array[Provider.EraSummary]) -> void:
 	_era_summaries = summaries
 
+func time_to_slot(time: int) -> int:
+	if _network_genesis == null:
+		return 0
+
+	for era in _era_summaries:
+		var era_start_time := _network_genesis._system_start + era._start._time
+		var era_end_time := _network_genesis._system_start + era._end._time
+		if time > era_start_time and time < era_end_time:
+			var time_in_era := time - era_start_time
+			return time_in_era / era._parameters._slot_length + era._start._slot
+	
+	return 0
+	
 func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
 	@warning_ignore("redundant_await")
 	var change_address := await wallet._get_change_address()
