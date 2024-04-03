@@ -5,7 +5,7 @@ class_name TxBuilder
 ## You should not create a [TxBuilder] with [TxBuilder.new], instead
 ## you should use [Cardano.new_tx].
 
-enum TxBuilderStatus { 
+enum TxBuilderStatus {
 	SUCCESS = 0,
 	BAD_PROTOCOL_PARAMETERS = 1,
 	QUANTITY_EXCEEDS_MAXIMUM = 2,
@@ -17,6 +17,7 @@ enum TxBuilderStatus {
 	OTHER_ERROR = 8,
 	CREATE_ERROR = 9,
 	INVALID_DATA = 10,
+	NO_UTXOS = 11,
 }
 
 var _builder: _TxBuilder
@@ -118,7 +119,7 @@ func pay_to_address_with_datum(
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
 	else:
-		_builder.pay_to_address_with_datum(
+		_builder._pay_to_address_with_datum(
 			address._address,
 			coin._b,
 			assets._multi_asset,
@@ -179,13 +180,24 @@ func set_change_address(change_address: Address) -> TxBuilder:
 	return self
 	
 func complete() -> CompleteResult:
-	var wallet_utxos: Array[Utxo] = _cardano.wallet._get_utxos()
+	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
 	var additional_utxos: Array[Utxo] = [] # TODO
 	additional_utxos.assign(wallet_utxos)
+	
+	if wallet_utxos.size() == 0:
+		_results.push_back(
+			CompleteResult.new(
+				_cardano,
+				_Result.err(
+					"",
+					TxBuilderStatus.NO_UTXOS
+				)
+			)
+		)
 	
 	var balance_result := \
 		BalanceResult.new(

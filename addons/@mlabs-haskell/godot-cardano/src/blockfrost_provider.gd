@@ -70,12 +70,14 @@ class EraSummariesRequest extends Request:
 
 class UtxosAtAddressRequest extends Request:
 	var _address: String
+	var _page: int
 	
-	func _init(address: String) -> void:
+	func _init(address: String, page := 1) -> void:
 		self._address = address
+		self._page = page
 		
 	func _url() -> String:
-		return "addresses/%s/utxos" % self._address
+		return "addresses/%s/utxos?page=%d" % [self._address, self._page]
 		
 class SubmitTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
@@ -213,12 +215,22 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 	)
 	return assets
 
-func _get_utxos_at_address(address: String) -> Array[Utxo]:
-	var utxos_response := await blockfrost_request(UtxosAtAddressRequest.new(address))
-	if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
-		return []
-		
-	var utxos_json: Array = utxos_response
+func _get_utxos_at_address(address: Address) -> Array[Utxo]:
+	var utxos_json: Array = []
+	
+	var page := 1
+	while true:
+		var utxos_response := await blockfrost_request(
+			UtxosAtAddressRequest.new(address.to_bech32(), page)
+		)
+		if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
+			utxo_result.emit(UtxoResult.new(address, []))
+			return []
+		utxos_json.append_array(utxos_response)
+		if utxos_response.size() < 100:
+			break
+		page += 1
+	
 	var utxos: Array[Utxo] = []
 	
 	utxos.assign(
@@ -245,7 +257,7 @@ func _get_utxos_at_address(address: String) -> Array[Utxo]:
 					
 				return result.value
 	))
-	
+	utxo_result.emit(UtxoResult.new(address, utxos))
 	return utxos
 
 func _get_era_summaries() -> Array[EraSummary]:
@@ -282,9 +294,12 @@ func _submit_transaction(tx: Transaction) -> TransactionHash:
 	return TransactionHash.from_hex(result).value
 
 func _get_tx_status(tx_hash: TransactionHash) -> bool:
-	var tx_response: Dictionary = await blockfrost_request(TransactionRequest.new(tx_hash.to_hex()))
-	var status := TransactionStatus.new(tx_hash, false)
-	if tx_response.get('status_code', 200) == 200:
-		status.set_confirmed(true)
+	var tx_response: Dictionary = await blockfrost_request(
+		TransactionRequest.new(tx_hash.to_hex())
+	)
+	var status := TransactionStatus.new(
+		tx_hash,
+		tx_response.get('status_code', 200) == 200
+	)
 	tx_status.emit(status)
 	return status._confirmed

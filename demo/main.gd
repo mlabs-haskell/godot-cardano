@@ -105,7 +105,7 @@ func _on_send_ada_button_pressed() -> void:
 		amount_result.value,
 		MultiAsset.from_dictionary({}).value
 	)
-	var result := tx.complete()
+	var result := await tx.complete()
 	
 	if result.is_ok():
 		result.value.sign("1234")
@@ -130,7 +130,7 @@ func _on_mint_token_button_pressed() -> void:
 		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
 		VoidData.new()
 	)
-	var result := tx.complete()
+	var result := await tx.complete()
 	
 	if result.is_ok():
 		result.value.sign("1234")
