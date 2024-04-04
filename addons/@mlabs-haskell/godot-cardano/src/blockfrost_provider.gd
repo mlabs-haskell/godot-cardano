@@ -252,7 +252,7 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 				var tx_index: int = utxo.tx_index
 				var utxo_address: String = utxo.address
 				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
-				var inline_datum_str: String = "" if utxo.inline_datum == null else utxo.data_hash
+				var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
 				var datum_info := self._build_datum_info(data_hash, inline_datum_str)
 				
 				var result = Utxo.create(
