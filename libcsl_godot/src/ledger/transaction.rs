@@ -2,7 +2,6 @@ use cardano_serialization_lib as CSL;
 use CSL::crypto::{ScriptHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
 use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
-use CSL::tx_builder::tx_inputs_builder::PlutusWitness;
 use CSL::tx_builder::tx_inputs_builder::{self, DatumSource};
 use CSL::utils::*;
 use CSL::{AssetName, TransactionInput, TransactionOutput};
@@ -97,6 +96,10 @@ impl MultiAsset {
         Gd::from_object(MultiAsset {
             assets: CSL::MultiAsset::new(),
         })
+    }
+
+    pub fn to_value(&self) -> Value {
+        Value::new_from_assets(&self.assets)
     }
 }
 
@@ -456,30 +459,20 @@ impl Utxo {
     }
 
     // TODO: Add error handling
-    pub fn to_plutus_witness(
-        &self,
-        script_source: Gd<PlutusScriptSource>,
-        redeemer_bytes: PackedByteArray,
-    ) -> PlutusWitness {
+    pub fn to_datum(&self) -> Option<DatumSource> {
         let datum_info = self.datum_info.bind();
-        let script = &script_source.bind().source;
-        let redeemer = CSL::plutus::Redeemer::from_bytes(redeemer_bytes.to_vec())
-            .expect("Could not parse redeemer");
         match (&datum_info.data_hash, &datum_info.inline_datum) {
             // no datum is needed nor provided
-            (None, None) => PlutusWitness::new_with_ref_without_datum(&script, &redeemer),
+            (None, None) => None,
             // a datum is needed and easily provided since it is inline
-            (_, Some(d)) => {
-                let datum = DatumSource::new(
-                    &CSL::plutus::PlutusData::from_hex(&d.to_string())
-                        .expect("Could not parse datum as PlutusData"),
-                );
-                PlutusWitness::new_with_ref(&script, &datum, &redeemer)
-            }
+            (_, Some(d)) => Some(DatumSource::new(
+                &CSL::plutus::PlutusData::from_hex(&d.to_string())
+                    .expect("Could not parse datum as PlutusData"),
+            )),
             // a datum is needed but we only have the hash, we need to retrieve it
             // using the provider
             // TODO
-            (Some(h), None) => {
+            (Some(_h), None) => {
                 todo!()
             }
         }

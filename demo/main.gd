@@ -20,6 +20,8 @@ var send_ada_button: Button = %SendAdaButton
 @onready
 var mint_token_button: Button = %MintTokenButton
 @onready
+var consume_script_input: Button = %ConsumeScriptInput
+@onready
 var set_button: Button = %SetButton
 
 func _ready() -> void:
@@ -43,27 +45,28 @@ func _ready() -> void:
 		_create_wallet_from_seedphrase(phrase_input.text)
 	
 	# basic check for invertibility
-	var strict := true
-	var datum := ExampleDatum.new()
-	var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
-	if bytes_result.is_ok():
-		var data_result := Cbor.deserialize(bytes_result.value)
-		
-		if data_result.is_ok():
-			var data := ExampleDatum.from_data(data_result.value)
-			print(datum)
-			print(data)
+	#var strict := true
+	#var datum := ExampleDatum.new()
+	#var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
+	#if bytes_result.is_ok():
+		#var data_result := Cbor.deserialize(bytes_result.value)
+		#
+		#if data_result.is_ok():
+			#var data := ExampleDatum.from_data(data_result.value)
+			#print(datum)
+			#print(data)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
 		timers_details.text = "Timer: %.2f" % wallet.time_left
 
 func _on_wallet_set() -> void:
-	var _ret := self.cardano.wallet.got_updated_utxos.connect(_on_utxos_updated)
-	var addr := cardano.wallet._get_change_address().to_bech32()
+	var _ret := self.wallet.got_updated_utxos.connect(_on_utxos_updated)
+	var addr := wallet._get_change_address().to_bech32()
 	wallet_details.text = "Using wallet %s" % addr
 	address_input.text = addr
 	send_ada_button.disabled = false
+	consume_script_input.disabled = false
 	
 func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 	var num_utxos := utxos.size()
@@ -160,3 +163,59 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 		push_error("Could not set wallet, found error", res.error)
 	set_button.text = old_text
 	set_button.disabled = false
+
+
+func _on_create_script_output():
+	var tx := cardano.new_tx()
+	if tx.is_err():
+		push_error("could not create tx_builder", tx.error)
+		return
+		
+	var script_addr := Address.from_bech32("addr_test1wqlljnnkjvknavyjdf9q99we3hanf2h7mcx3y0ssstdh2scr83sne")
+	
+	if script_addr.is_err():
+		push_error("something bad with address")
+		return
+	
+	tx.value.pay_to_address_with_datum(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), VoidData.new())
+	
+	var result : TxBuilder.CompleteResult = tx.value.complete()
+
+	if result.is_err():
+		print("Could not complete transaction", result.error)
+		return
+		
+	if result.is_ok():
+		result.value.sign("1234")
+		print(result.value._transaction.bytes().hex_encode())
+		var hash := await result.value.submit()
+		print("Transaction hash:", hash.to_hex())
+	
+func _on_consume_script_input_pressed():
+	var utxos := await provider._get_utxos_at_address("addr_test1wqlljnnkjvknavyjdf9q99we3hanf2h7mcx3y0ssstdh2scr83sne")
+	
+	var utxos_filtered = utxos.filter(func(u: Utxo): return u.datum_info().has_datum())
+	
+	var tx := cardano.new_tx()
+	if tx.is_err():
+		push_error("could not create tx_builder", tx.error)
+		return
+	
+	tx.value.collect_from_script(
+		PlutusScriptSource.from_script(
+			PlutusScript.create("586a58680100003222253330043371e91127313330383937303131383461616466616466373038643766306139643866376130733964386637004881273133303839373031313834616164666164663730386437663061396438663761307339643866370014984d9595cd01".hex_decode())
+		),
+		utxos_filtered,
+		PackedByteArray([0x80])
+	)
+	var result : TxBuilder.CompleteResult = tx.value.complete()
+	
+	if result.is_err():
+		print("Could not complete transaction", result.error)
+		return 
+		
+	if result.is_ok():
+		result.value.sign("1234")
+		print(result.value._transaction.bytes().hex_encode())
+		var hash := await result.value.submit()
+		print("Transaction hash:", hash.to_hex())

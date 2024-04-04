@@ -8,7 +8,7 @@ use CSL::fees::LinearFee;
 use CSL::output_builder::*;
 use CSL::plutus::{Costmdls, ExUnits, PlutusData, PlutusScripts, RedeemerTag, Redeemers};
 use CSL::tx_builder::mint_builder::*;
-use CSL::tx_builder::tx_inputs_builder::{PlutusScriptSource, TxInputsBuilder};
+use CSL::tx_builder::tx_inputs_builder::TxInputsBuilder;
 use CSL::tx_builder::*;
 use CSL::tx_builder_constants::TxBuilderConstants;
 use CSL::utils::*;
@@ -29,7 +29,7 @@ use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 use crate::ledger::transaction::{
     Address, CostModels, Datum, DatumValue, EvaluationResult, MultiAsset, PlutusScript,
-    Transaction, Utxo,
+    PlutusScriptSource, Transaction, Utxo,
 };
 
 struct MyExtension;
@@ -186,6 +186,45 @@ fn add_utxo_to_inputs_builder(
     Ok(())
 }
 
+fn add_plutus_script_input(
+    inputs_builder: &mut TxInputsBuilder,
+    redeemers: &mut Redeemers,
+    script_source: Gd<PlutusScriptSource>,
+    utxo: &Utxo,
+    redeemer_bytes: PackedByteArray,
+) -> Result<(), TxBuilderError> {
+    let input = utxo.to_transaction_input();
+    let datum = utxo.to_datum();
+    let value = utxo.get_assets().bind().to_value();
+
+    // Index and RedeemerTag are not necessary, they are automatically set
+    // by get_plutus_inputs_scripts()
+    let redeemer = CSL::plutus::Redeemer::new(
+        &RedeemerTag::new_spend(),
+        &to_bignum(0u64),
+        &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
+        &ExUnits::new(&BigNum::zero(), &BigNum::zero()), //
+    );
+
+    redeemers.add(&redeemer);
+
+    let witness = match datum {
+        None => CSL::tx_builder::tx_inputs_builder::PlutusWitness::new_with_ref_without_datum(
+            &script_source.bind().source,
+            &redeemer,
+        ),
+        Some(d) => CSL::tx_builder::tx_inputs_builder::PlutusWitness::new_with_ref(
+            &script_source.bind().source,
+            &d,
+            &redeemer,
+        ),
+    };
+
+    inputs_builder.add_plutus_script_input(&witness, &input, &value);
+
+    Ok(())
+}
+
 #[godot_api]
 impl GTxBuilder {
     /// It may fail with a BadProtocolParameters.
@@ -257,6 +296,61 @@ impl GTxBuilder {
     #[func]
     fn _collect_from(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<GResult> {
         Self::to_gresult(self.collect_from(gutxos))
+    }
+
+    fn collect_from_script(
+        &mut self,
+        script_source: Gd<PlutusScriptSource>,
+        gutxos: Array<Gd<Utxo>>,
+        redeemer: PackedByteArray,
+    ) -> Result<(), TxBuilderError> {
+        let mut address: Option<Address> = None;
+        for gutxo in gutxos.iter_shared() {
+            let utxo = gutxo.bind();
+            let addr = utxo.get_address();
+            println!(
+                "(collect_from_script) utxo address: {:?}",
+                addr.bind().to_bech32().expect("could not get address")
+            );
+            match &address {
+                Some(addr_) => {
+                    if addr.bind().address.to_bytes() != addr_.address.to_bytes() {
+                        godot_warn!("collect_from_script: Utxo was not added because its address did not match previous inputs: {:?}", utxo);
+                    } else {
+                        add_plutus_script_input(
+                            &mut self.inputs_builder,
+                            &mut self.redeemers,
+                            script_source.clone(),
+                            &utxo,
+                            redeemer.clone(),
+                        )?
+                    }
+                }
+                None => {
+                    address = Some(Address {
+                        address: utxo.address.bind().address.clone(),
+                    });
+                    add_plutus_script_input(
+                        &mut self.inputs_builder,
+                        &mut self.redeemers,
+                        script_source.clone(),
+                        &utxo,
+                        redeemer.clone(),
+                    )?
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[func]
+    fn _collect_from_script(
+        &mut self,
+        script_source: Gd<PlutusScriptSource>,
+        gutxos: Array<Gd<Utxo>>,
+        redeemer: PackedByteArray,
+    ) -> Gd<GResult> {
+        Self::to_gresult(self.collect_from_script(script_source, gutxos, redeemer))
     }
 
     #[func]
@@ -331,6 +425,7 @@ impl GTxBuilder {
         tokens: &Dictionary,
         redeemer: &CSL::plutus::Redeemer,
     ) -> Result<(), TxBuilderError> {
+        use cardano_serialization_lib::tx_builder::tx_inputs_builder::PlutusScriptSource;
         for (asset_name, amount) in tokens.iter_shared().typed::<PackedByteArray, Gd<BigInt>>() {
             self.mint_builder.add_asset(
                 &MintWitness::new_plutus_script(&PlutusScriptSource::new(&script.script), redeemer),
@@ -425,6 +520,7 @@ impl GTxBuilder {
         }
         tx_builder.add_change_if_needed(&change_address.bind().address)?;
         let tx_body = tx_builder.build()?;
+        println!("(balanceAndAssemble) tx body: {:?}", tx_body);
 
         let mut witnesses = TransactionWitnessSet::new();
         let vkey_witnesses = Vkeywitnesses::new();
@@ -456,6 +552,7 @@ impl GTxBuilder {
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
     ) -> Result<Transaction, TxBuilderError> {
+        // Why are redeemers and builders recreated when they can be overwritten?
         self.redeemers = Redeemers::new();
         self.mint_builder = MintBuilder::new();
         for redeemer in eval_result.bind().redeemers.iter_shared() {

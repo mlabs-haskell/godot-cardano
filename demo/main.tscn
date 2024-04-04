@@ -74,6 +74,15 @@ disabled = true
 text = "Mint token
 "
 
+[node name="ConsumeScriptInput" type="Button" parent="SendAdaForm"]
+unique_name_in_owner = true
+offset_left = 473.0
+offset_top = 578.0
+offset_right = 673.0
+offset_bottom = 620.0
+disabled = true
+text = "Consume  script input"
+
 [node name="Recipient" type="Node2D" parent="SendAdaForm"]
 
 [node name="Label" type="Label" parent="SendAdaForm/Recipient"]
@@ -110,3 +119,4 @@ text = "5000000"
 [connection signal="pressed" from="SetWalletForm/SetButton" to="." method="_on_set_wallet_button_pressed"]
 [connection signal="pressed" from="SendAdaForm/SendAdaButton" to="." method="_on_send_ada_button_pressed"]
 [connection signal="pressed" from="SendAdaForm/MintTokenButton" to="." method="_on_mint_token_button_pressed"]
+[connection signal="pressed" from="SendAdaForm/ConsumeScriptInput" to="." method="_on_consume_script_input_pressed"]

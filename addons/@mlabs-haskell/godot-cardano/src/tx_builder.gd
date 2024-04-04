@@ -23,6 +23,7 @@ enum TxBuilderStatus {
 var _builder: _TxBuilder
 var _cardano: Cardano
 var _results: Array[Result]
+var _script_utxos: Array[Utxo]
 
 var _change_address: Address
 
@@ -163,6 +164,7 @@ func mint_assets(
 		)
 	)
 	
+	
 	_results.push_back(result)
 	
 	return self
@@ -178,6 +180,20 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 func set_change_address(change_address: Address) -> TxBuilder:
 	_change_address = change_address
 	return self
+	
+func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[Utxo], redeemer: PackedByteArray) -> void:
+	var _utxos: Array[_Utxo] = []
+	_utxos.assign(
+		utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+	)
+	
+	_script_utxos.append_array(utxos)
+
+	_builder._collect_from_script(
+		plutus_script_source,
+		_utxos,
+		redeemer
+	)
 	
 func complete() -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
@@ -208,7 +224,7 @@ func complete() -> CompleteResult:
 	
 	_results.push_back(balance_result)
 	if not error and balance_result.is_ok():
-		var eval_result := balance_result.value.evaluate(wallet_utxos + additional_utxos)
+		var eval_result := balance_result.value.evaluate(wallet_utxos + additional_utxos + _script_utxos)
 		
 		_results.push_back(eval_result)
 		if eval_result.is_ok():
