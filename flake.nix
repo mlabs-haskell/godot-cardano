@@ -7,11 +7,20 @@
     gut = { url = "github:bitwes/gut/v9.2.0"; flake = false; };
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    hercules-ci-effects.url = "github:hercules-ci/hercules-ci-effects";
+
+    # plutip test
+    cardano-nix.url = "github:mlabs-haskell/cardano.nix";
+    # TODO: move to cardano.nix after kupo and plutip are merged there
+    plutip.url = "github:mlabs-haskell/plutip";
+    kupo-nixos.url = "github:mlabs-haskell/kupo-nixos/df5aaccfcec63016e3d9e10b70ef8152026d7bc3";
   };
 
   outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [
       inputs.pre-commit-hooks.flakeModule
+      inputs.hercules-ci-effects.flakeModule
+      ./plutip-test.nix
     ];
     perSystem = { self', pkgs, config, ... }:
       let
@@ -128,6 +137,7 @@
         run_gut_test = { name ? "godot-cardano-test", src ? ./test }: pkgs.writeShellApplication {
           inherit name;
           text = ''
+            [ ! -d test ] && echo "Could not find 'test' directory. Please run this script from the repository root." && exit 1
             cd test
             [ ! -f test.gd ] && echo "Could not find 'test.gd'. Please run this script from the repository root." && exit 1
             ${(gut_check {inherit name src; }).configurePhase}

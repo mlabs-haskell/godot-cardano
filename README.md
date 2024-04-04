@@ -126,6 +126,8 @@ testnet ADA from the faucet. Alternatively, your seed phrase can be set via the
 default address in most light wallets, as well as in the demo app provided with
 this project. Once these are set, run the test suite:
 
+Run integration test on preview network.
+
 ```
 nix run .#test
 ```
