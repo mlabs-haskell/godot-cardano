@@ -1,5 +1,5 @@
 use cardano_serialization_lib as CSL;
-use CSL::crypto::{ScriptHash, Vkeywitness, Vkeywitnesses};
+use CSL::crypto::{DataHash, ScriptHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
 use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
 use CSL::tx_builder::tx_inputs_builder::{self, DatumSource};
@@ -434,24 +434,41 @@ impl Utxo {
     }
 
     pub fn to_transaction_unspent_output(&self) -> TransactionUnspentOutput {
-        TransactionUnspentOutput::new(
-            &self.to_transaction_input(),
-            &TransactionOutput::new(
-                &self.address.bind().address,
-                &Value::new_with_assets(
-                    &to_bignum(
-                        self.coin
-                            .bind()
-                            .b
-                            .as_u64()
-                            .or(Some(BigNum::from(std::u64::MAX)))
-                            .unwrap()
-                            .into(),
-                    ),
-                    &self.assets.bind().assets,
+        let mut output = TransactionOutput::new(
+            &self.address.bind().address,
+            &Value::new_with_assets(
+                &to_bignum(
+                    self.coin
+                        .bind()
+                        .b
+                        .as_u64()
+                        .or(Some(BigNum::from(std::u64::MAX)))
+                        .unwrap()
+                        .into(),
                 ),
+                &self.assets.bind().assets,
             ),
-        )
+        );
+        let bound = self.get_datum_info();
+        let datum_info = bound.bind();
+
+        match (
+            datum_info.data_hash.clone(),
+            datum_info.inline_datum.clone(),
+        ) {
+            (_, Some(inline_datum)) => {
+                output.set_plutus_data(
+                    &PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
+                );
+            }
+            (Some(datum_hash), None) => {
+                output.set_data_hash(&DataHash::from_hex(datum_hash.to_string().as_str()).unwrap());
+            }
+            (None, None) => {
+                ();
+            }
+        }
+        TransactionUnspentOutput::new(&self.to_transaction_input(), &output)
     }
 
     pub fn to_transaction_input(&self) -> TransactionInput {
@@ -476,6 +493,18 @@ impl Utxo {
                 todo!()
             }
         }
+    }
+
+    pub fn to_value(&self) -> Value {
+        Value::new_with_assets(
+            &self
+                .coin
+                .bind()
+                .b
+                .as_u64()
+                .expect("too much lovelace in UTxO"),
+            &self.assets.bind().assets,
+        )
     }
 }
 

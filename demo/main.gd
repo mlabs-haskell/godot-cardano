@@ -171,7 +171,7 @@ func _on_create_script_output():
 		push_error("could not create tx_builder", tx.error)
 		return
 		
-	var script_addr := Address.from_bech32("addr_test1wqlljnnkjvknavyjdf9q99we3hanf2h7mcx3y0ssstdh2scr83sne")
+	var script_addr := Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm")
 	
 	if script_addr.is_err():
 		push_error("something bad with address")
@@ -179,7 +179,7 @@ func _on_create_script_output():
 	
 	tx.value.pay_to_address_with_datum(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), VoidData.new())
 	
-	var result : TxBuilder.CompleteResult = tx.value.complete()
+	var result : TxBuilder.CompleteResult = await tx.value.complete()
 
 	if result.is_err():
 		print("Could not complete transaction", result.error)
@@ -189,26 +189,27 @@ func _on_create_script_output():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())
 		var hash := await result.value.submit()
-		print("Transaction hash:", hash.to_hex())
+		print("Transaction hash:", hash.value.to_hex())
 	
 func _on_consume_script_input_pressed():
-	var utxos := await provider._get_utxos_at_address("addr_test1wqlljnnkjvknavyjdf9q99we3hanf2h7mcx3y0ssstdh2scr83sne")
+	var utxos := await provider._get_utxos_at_address(Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm").value)
 	
 	var utxos_filtered = utxos.filter(func(u: Utxo): return u.datum_info().has_datum())
 	
-	var tx := cardano.new_tx()
-	if tx.is_err():
-		push_error("could not create tx_builder", tx.error)
+	var tx_result := cardano.new_tx()
+	if tx_result.is_err():
+		push_error("could not create tx_builder", tx_result.error)
 		return
 	
-	tx.value.collect_from_script(
+	var tx = tx_result.value
+	tx.collect_from_script(
 		PlutusScriptSource.from_script(
-			PlutusScript.create("586a58680100003222253330043371e91127313330383937303131383461616466616466373038643766306139643866376130733964386637004881273133303839373031313834616164666164663730386437663061396438663761307339643866370014984d9595cd01".hex_decode())
+			PlutusScript.create("581b0100003222253330043330043370e900124008941288a4c2cae681".hex_decode())
 		),
 		utxos_filtered,
 		PackedByteArray([0x80])
 	)
-	var result : TxBuilder.CompleteResult = tx.value.complete()
+	var result : TxBuilder.CompleteResult = await tx.complete()
 	
 	if result.is_err():
 		print("Could not complete transaction", result.error)
@@ -218,4 +219,4 @@ func _on_consume_script_input_pressed():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())
 		var hash := await result.value.submit()
-		print("Transaction hash:", hash.to_hex())
+		#print("Transaction hash:", hash.value.to_hex())

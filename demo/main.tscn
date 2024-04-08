@@ -117,6 +117,6 @@ offset_bottom = 569.0
 text = "5000000"
 
 [connection signal="pressed" from="SetWalletForm/SetButton" to="." method="_on_set_wallet_button_pressed"]
-[connection signal="pressed" from="SendAdaForm/SendAdaButton" to="." method="_on_send_ada_button_pressed"]
+[connection signal="pressed" from="SendAdaForm/SendAdaButton" to="." method="_on_create_script_output"]
 [connection signal="pressed" from="SendAdaForm/MintTokenButton" to="." method="_on_mint_token_button_pressed"]
 [connection signal="pressed" from="SendAdaForm/ConsumeScriptInput" to="." method="_on_consume_script_input_pressed"]

@@ -176,10 +176,6 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	)
 	_builder._collect_from(_utxos)
 	return self
-
-func set_change_address(change_address: Address) -> TxBuilder:
-	_change_address = change_address
-	return self
 	
 func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[Utxo], redeemer: PackedByteArray) -> void:
 	var _utxos: Array[_Utxo] = []
@@ -194,6 +190,10 @@ func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[
 		_utxos,
 		redeemer
 	)
+
+func set_change_address(change_address: Address) -> TxBuilder:
+	_change_address = change_address
+	return self
 	
 func complete() -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
