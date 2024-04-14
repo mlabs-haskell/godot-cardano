@@ -194,15 +194,13 @@ func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[
 func set_change_address(change_address: Address) -> TxBuilder:
 	_change_address = change_address
 	return self
-	
-func complete() -> CompleteResult:
+
+func balance() -> BalanceResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
-	var additional_utxos: Array[Utxo] = [] # TODO
-	additional_utxos.assign(wallet_utxos)
 	
 	if wallet_utxos.size() == 0:
 		_results.push_back(
@@ -215,10 +213,31 @@ func complete() -> CompleteResult:
 			)
 		)
 	
-	var balance_result := \
-		BalanceResult.new(
-			_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
+	return BalanceResult.new(
+		_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
+	)
+	
+	
+func complete() -> CompleteResult:
+	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
+	var _wallet_utxos: Array[_Utxo] = []
+	_wallet_utxos.assign(
+		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+	)
+	var additional_utxos: Array[Utxo] = [] # TODO
+	
+	if wallet_utxos.size() == 0:
+		_results.push_back(
+			CompleteResult.new(
+				_cardano,
+				_Result.err(
+					"",
+					TxBuilderStatus.NO_UTXOS
+				)
+			)
 		)
+	
+	var balance_result := await balance()
 	
 	var error = _results.any(func (result: Result) -> bool: return result.is_err())
 	
@@ -240,7 +259,7 @@ func complete() -> CompleteResult:
 	for result in _results:
 		if result.is_err():
 			push_error(result.error)
-			
+	
 	return CompleteResult.new(
 		_cardano,
 		_Result.err(

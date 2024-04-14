@@ -208,7 +208,20 @@ func _on_consume_script_input_pressed():
 		),
 		utxos_filtered,
 		PackedByteArray([0x80])
+	)	
+	tx.mint_assets(
+		PlutusScript.create("46010000222499".hex_decode()), 
+		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
+		VoidData.new()
 	)
+	tx.mint_assets(
+		PlutusScript.create("55010000322253330033370e9004240102930b2b9a01".hex_decode()), 
+		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
+		VoidData.new()
+	)
+	var balance_result : TxBuilder.BalanceResult = await tx.balance()
+	if balance_result.is_ok():
+		print(balance_result.value.bytes().hex_encode())
 	var result : TxBuilder.CompleteResult = await tx.complete()
 	
 	if result.is_err():
@@ -219,4 +232,4 @@ func _on_consume_script_input_pressed():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())
 		var hash := await result.value.submit()
-		#print("Transaction hash:", hash.value.to_hex())
+		print("Transaction hash:", hash.value.to_hex())
