@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ops::Deref;
 
 use cardano_serialization_lib as CSL;
@@ -31,7 +31,7 @@ use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 use crate::ledger::transaction::{
     Address, CostModels, Datum, DatumValue, EvaluationResult, MultiAsset, PlutusScript,
-    PlutusScriptSource, Transaction, Utxo,
+    PlutusScriptSource, PubKeyHash, Transaction, Utxo,
 };
 
 struct MyExtension;
@@ -99,7 +99,8 @@ struct GTxBuilder {
     slot_config: (u64, u64, u32),
     cost_models: Costmdls,
     fee: Option<u64>,
-    minted_assets: HashMap<u32, (CSL::plutus::PlutusScript, Dictionary)>,
+    minted_assets:
+        BTreeMap<CSL::crypto::ScriptHash, (CSL::plutus::PlutusScript, Dictionary, PackedByteArray)>,
 }
 
 #[derive(Debug)]
@@ -229,7 +230,7 @@ impl GTxBuilder {
             slot_config: (0, 0, 0),
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
 
-            minted_assets: HashMap::new(),
+            minted_assets: BTreeMap::new(),
         })
     }
 
@@ -414,6 +415,17 @@ impl GTxBuilder {
         Self::to_gresult(self.pay_to_address_with_datum(address, coin, assets, datum))
     }
 
+    #[func]
+    fn valid_after(&mut self, slot: u64) {
+        self.tx_builder
+            .set_validity_start_interval_bignum(BigNum::from(slot))
+    }
+
+    #[func]
+    fn valid_before(&mut self, slot: u64) {
+        self.tx_builder.set_ttl_bignum(&BigNum::from(slot))
+    }
+
     fn add_mint_asset(
         &mut self,
         script: &PlutusScript,
@@ -439,27 +451,44 @@ impl GTxBuilder {
     ) -> Result<(), TxBuilderError> {
         let bound = gscript.bind();
         let script = bound.deref();
-        let mut index: u32 = 0;
-        let num_scripts: u32 = self.plutus_scripts.len() as u32;
-        while index < num_scripts {
-            if self.plutus_scripts.get(index as usize).hash() == script.script.hash() {
-                break;
+        let script_hash = &script.script.hash();
+
+        let mut non_zero = false;
+        // TODO: replace redeemer? error on mismatch?
+        match self.minted_assets.get_mut(script_hash) {
+            Some((_, previous_tokens, _)) => {
+                for (asset_name, amount) in tokens.iter_shared() {
+                    let previous_amount: Gd<BigInt> = match previous_tokens.get(asset_name.clone())
+                    {
+                        Some(amount) => amount.to(),
+                        None => BigInt::zero(),
+                    };
+                    let new_amount = previous_amount.bind().add(amount.to());
+                    if new_amount.bind().eq(BigInt::zero()) {
+                        previous_tokens.remove(asset_name.clone());
+                    } else {
+                        previous_tokens.set(asset_name.clone(), new_amount);
+                        non_zero = true;
+                    }
+                }
             }
-            index += 1;
+            None => {
+                self.minted_assets.insert(
+                    script_hash.clone(),
+                    (
+                        script.script.clone(),
+                        tokens.clone(),
+                        redeemer_bytes.clone(),
+                    ),
+                );
+                non_zero = true;
+            }
         }
-        let (max_steps, max_mem) = self.max_ex_units;
-        let redeemer = CSL::plutus::Redeemer::new(
-            &RedeemerTag::new_mint(),
-            &to_bignum(index as u64),
-            &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
-            &ExUnits::new(&BigNum::from(max_mem), &BigNum::from(max_steps)), //
-        );
-        if index >= num_scripts {
-            self.plutus_scripts.add(&script.script);
+        if !non_zero {
+            self.minted_assets.remove(&script_hash.clone());
         }
-        self.minted_assets
-            .insert(index, (script.script.clone(), tokens.clone()));
-        self.add_mint_asset(&script, &tokens, &redeemer)
+
+        Ok(())
     }
 
     #[func]
@@ -470,6 +499,45 @@ impl GTxBuilder {
         redeemer: PackedByteArray,
     ) -> Gd<GResult> {
         Self::to_gresult(self.mint_assets(script, &tokens, redeemer))
+    }
+
+    // adds redeemers for non-input scripts as needed
+    fn add_dummy_redeemers(&mut self) -> Result<(), TxBuilderError> {
+        self.mint_builder = MintBuilder::new();
+        let minted_assets = self.minted_assets.clone();
+        for (index, (_script_hash, (script, assets, redeemer_bytes))) in
+            minted_assets.iter().enumerate()
+        {
+            // set the maximum ex units to overestimate the fee on first balance pass
+            let max_mem = self.protocol_parameters.max_mem_units;
+            let max_steps = self.protocol_parameters.max_cpu_units;
+            let redeemer = CSL::plutus::Redeemer::new(
+                &RedeemerTag::new_mint(),
+                &BigNum::from(index),
+                &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
+                &ExUnits::new(&BigNum::from(max_mem), &BigNum::from(max_steps)),
+            );
+            self.add_mint_asset(
+                &PlutusScript {
+                    script: script.clone(),
+                },
+                &assets,
+                &redeemer,
+            )?;
+            self.plutus_scripts.add(&script);
+        }
+        Ok(())
+    }
+
+    #[func]
+    fn _add_dummy_redeemers(&mut self) -> Gd<GResult> {
+        Self::to_gresult(self.add_dummy_redeemers())
+    }
+
+    #[func]
+    fn _add_required_signer(&mut self, pub_key_hash: Gd<PubKeyHash>) {
+        self.tx_builder
+            .add_required_signer(&pub_key_hash.bind().hash);
     }
 
     fn balance_and_assemble(
@@ -500,6 +568,7 @@ impl GTxBuilder {
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
             // NOTE: look for at least enough ADA to return a change output
             //       this may still fail if tokens on the output require more ADA
+            // FIXME: don't actually want to multiply by 3
             let collateral_amount = Gd::from_object(BigInt::from_int(
                 (min_collateral * 3)
                     .try_into()
@@ -507,6 +576,7 @@ impl GTxBuilder {
             ));
             for gutxo in gutxos.iter_shared() {
                 let utxo = gutxo.bind();
+                // FIXME: we probably want to select more than a single input
                 if utxo.coin.bind().gt(collateral_amount.clone()) {
                     let mut inputs_builder = TxInputsBuilder::new();
                     add_utxo_to_inputs_builder(utxo.deref(), &mut inputs_builder)?;
@@ -559,14 +629,21 @@ impl GTxBuilder {
         let mut script_input_index = 0;
         for redeemer in eval_result.bind().redeemers.iter_shared() {
             let bound = redeemer.bind().deref().redeemer.clone();
+            let minted_assets = self.minted_assets.clone();
             match bound.tag().kind() {
                 CSL::plutus::RedeemerTagKind::Mint => {
-                    let (script, assets) = self
-                        .minted_assets
-                        .get(&bound.index().try_into()?)
-                        .ok_or(TxBuilderError::UnknownRedeemerIndex(bound.index().into()))?
-                        .to_owned();
-                    self.add_mint_asset(&PlutusScript { script }, &assets, &bound)?;
+                    let index: u64 = bound.index().into();
+                    let (_script_hash, (script, assets, _redeemer_bytes)) = minted_assets
+                        .iter()
+                        .nth(index.try_into().unwrap())
+                        .ok_or(TxBuilderError::UnknownRedeemerIndex(index))?;
+                    self.add_mint_asset(
+                        &PlutusScript {
+                            script: script.clone(),
+                        },
+                        &assets,
+                        &bound,
+                    )?;
                 }
                 CSL::plutus::RedeemerTagKind::Spend => {
                     let index: u64 = bound.index().into();

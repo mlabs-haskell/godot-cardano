@@ -115,7 +115,7 @@ func pay_to_address_with_datum(
 			)
 		)
 
-	var serialize_result := Cbor.serialize(datum.to_data(true), true)
+	var serialize_result := Cbor.serialize(PlutusData.unwrap(datum, true), true)
 
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
@@ -143,7 +143,7 @@ func mint_assets(
 		)
 		return self
 
-	var serialize_result: Cbor.SerializeResult = Cbor.serialize(redeemer.to_data(true), true)
+	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
 	
 	_results.push_back(serialize_result)
 	if serialize_result.is_err():
@@ -177,7 +177,18 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	_builder._collect_from(_utxos)
 	return self
 	
-func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[Utxo], redeemer: PackedByteArray) -> void:
+func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[Utxo], redeemer: Object) -> TxBuilder:
+	if !redeemer.has_method("to_data"):
+		_results.push_back(
+			Result.Err.new(
+				"Provided redeemer does not implement `to_data`",
+				TxBuilderStatus.INVALID_DATA
+			)
+		)
+		return self
+
+	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
+	
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(
 		utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
@@ -188,11 +199,29 @@ func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[
 	_builder._collect_from_script(
 		plutus_script_source,
 		_utxos,
-		redeemer
+		serialize_result.value
 	)
+	
+	return self
 
 func set_change_address(change_address: Address) -> TxBuilder:
 	_change_address = change_address
+	return self
+
+## Set the time in POSIX seconds after which the transaction is valid
+func valid_after(time: int) -> TxBuilder:
+	var slot := _cardano.time_to_slot(time)
+	_builder.valid_after(slot)
+	return self
+
+## Set the time in POSIX seconds before which the transaction is valid
+func valid_before(time: int) -> TxBuilder:
+	var slot := _cardano.time_to_slot(time)
+	_builder.valid_before(slot)
+	return self
+
+func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
+	_builder._add_required_signer(pub_key_hash._pub_key_hash)
 	return self
 
 func balance() -> BalanceResult:
@@ -217,7 +246,6 @@ func balance() -> BalanceResult:
 		_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
 	)
 	
-	
 func complete() -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
@@ -236,6 +264,7 @@ func complete() -> CompleteResult:
 				)
 			)
 		)
+	_builder._add_dummy_redeemers()
 	
 	var balance_result := await balance()
 	

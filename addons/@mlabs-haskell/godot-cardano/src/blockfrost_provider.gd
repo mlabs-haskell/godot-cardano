@@ -52,6 +52,10 @@ class Request:
 		}
 		return "%s %s" % [method_to_string[_method()], _url()]
 		
+class GenesisRequest extends Request:
+	func _url() -> String:
+		return "genesis"
+		
 class ProtocolParametersRequest extends Request:
 	var _epoch: Epoch
 	
@@ -172,7 +176,9 @@ func blockfrost_request(request: Request) -> Variant:
 	
 	# TODO: handle error responses properly
 	if status_code != 200:
-		if status_code == 404:
+		# NOTE: return parsed content if response is expected to be handled,
+		#		this may be phased out
+		if status_code == 404 or status_code == 400:
 			return JSON.parse_string(content)
 		print("Blockfrost request failed with status code ", status_code, ". Response content: ")
 		print(content)
@@ -208,6 +214,23 @@ func _get_protocol_parameters() -> ProtocolParameters:
 	self.got_protocol_parameters.emit(params, cost_models)
 	return params
 
+func _get_network_genesis() -> NetworkGenesis:
+	var genesis_json: Dictionary = await blockfrost_request(GenesisRequest.new())
+	var genesis := NetworkGenesis.new(
+		genesis_json.active_slots_coefficient as Variant as int,
+		genesis_json.update_quorum as Variant as int,
+		genesis_json.max_lovelace_supply as Variant as String,
+		genesis_json.network_magic as Variant as int,
+		genesis_json.epoch_length as Variant as int,
+		genesis_json.system_start as Variant as int,
+		genesis_json.slots_per_kes_period as Variant as int,
+		genesis_json.slot_length as Variant as int,
+		genesis_json.max_kes_evolutions as Variant as int,
+		genesis_json.security_param as Variant as int,
+	)
+	self.got_network_genesis.emit(genesis)
+	return genesis
+	
 func utxo_assets(utxo: Dictionary) -> Dictionary:
 	var assets: Dictionary = {}
 	var amount: Array = utxo.amount
@@ -223,7 +246,7 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 				push_error("There was an error while reading the assets from a utxo", res.error)
 	)
 	return assets
-
+	
 func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 	var utxos_json: Array = []
 	
@@ -314,11 +337,13 @@ func _get_era_summaries() -> Array[EraSummary]:
 	got_era_summaries.emit(summaries)
 	return summaries
 	
-func _submit_transaction(tx: Transaction) -> TransactionHash:
+func _submit_transaction(tx: Transaction) -> Provider.SubmitResult:
 	var result = await blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
-	if typeof(result) == TYPE_DICTIONARY or result == null:
-		return null
-	return TransactionHash.from_hex(result).value
+	if typeof(result) == TYPE_DICTIONARY:
+		return SubmitResult.new(_Result.err(result.message, ProviderStatus.SUBMIT_ERROR))
+	elif typeof(result) == null:
+		return SubmitResult.new(_Result.err("Unknown error while submitting", ProviderStatus.SUBMIT_ERROR))
+	return SubmitResult.new(_Result.ok(TransactionHash.from_hex(result).value))
 
 func _get_tx_status(tx_hash: TransactionHash) -> bool:
 	var tx_response: Dictionary = await blockfrost_request(
