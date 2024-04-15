@@ -29,7 +29,7 @@ func _ready() -> void:
 		.open("./preview_token.txt", FileAccess.READ)\
 		.get_as_text(true)\
 		.replace("\n", "")
-		
+
 	provider = BlockfrostProvider.new(
 		Provider.Network.PREVIEW,
 		token
@@ -43,18 +43,6 @@ func _ready() -> void:
 	if seed_phrase_file != null:
 		phrase_input.text = seed_phrase_file.get_as_text(true)
 		_create_wallet_from_seedphrase(phrase_input.text)
-	
-	# basic check for invertibility, TODO: move to tests
-	#var strict := true
-	#var datum := ExampleDatum.new()
-	#var bytes_result := Cbor.serialize(datum.to_data(strict), strict)
-	#if bytes_result.is_ok():
-		#var data_result := Cbor.deserialize(bytes_result.value)
-		#
-		#if data_result.is_ok():
-			#var data := ExampleDatum.from_data(data_result.value)
-			#print(datum)
-			#print(data)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
@@ -68,7 +56,7 @@ func _on_wallet_set() -> void:
 	address_input.text = addr
 	send_ada_button.disabled = false
 	consume_script_input.disabled = false
-	
+
 func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 	var num_utxos := utxos.size()
 	var total_lovelace : BigInt = utxos.reduce(
@@ -135,18 +123,8 @@ func _on_mint_token_button_pressed() -> void:
 		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
 		VoidData.new().to_data()
 	)
-	#tx.mint_assets(
-		#PlutusScript.create("581801000032223253330043370e00290020a4c2c6eb40095cd1".hex_decode()), 
-		#[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		#BigInt.from_int(2)
-	#)
-	#tx.mint_assets(
-		#PlutusScript.create("581801000032223253330043370e00290010a4c2c6eb40095cd1".hex_decode()), 
-		#[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		#BigInt.from_int(1)
-	#)
 	var result := await tx.complete()
-	
+
 	if result.is_ok():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())
@@ -155,7 +133,7 @@ func _on_mint_token_button_pressed() -> void:
 			push_error(submit_result.error)
 	else:
 		push_error(result.error)
-	
+
 # Asynchronously load the wallet from a seedphrase
 func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	var old_text := set_button.text
@@ -180,7 +158,6 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	set_button.text = old_text
 	set_button.disabled = false
 
-
 func _on_create_script_output():
 	var tx := cardano.new_tx()
 	if tx.is_err():
@@ -188,71 +165,55 @@ func _on_create_script_output():
 		return
 		
 	var script_addr := Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm")
-	
+	var fifty_one_script_addr = Address.from_bech32("addr_test1wr35xl58rpdf02ldpkqen5hrneh624938402qh5rzynvnnsvhucue")
+
 	if script_addr.is_err():
 		push_error("something bad with address")
 		return
-	
-	tx.value.pay_to_address_with_datum(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), VoidData.new().to_data())
-	
+
+	if fifty_one_script_addr.is_err():
+		push_error("something bad with address")
+		return
+
+	tx.value.pay_to_address_with_datum(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), [])
 	var result : TxBuilder.CompleteResult = await tx.value.complete()
 
 	if result.is_err():
 		print("Could not complete transaction", result.error)
 		return
-		
+
 	if result.is_ok():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())
 		var hash := await result.value.submit()
 		print("Transaction hash:", hash.value.to_hex())
-	
+
 func _on_consume_script_input_pressed():
 	var utxos := await provider._get_utxos_at_address(Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm").value)
 	var utxos_filtered = utxos.filter(func(u: Utxo): return u.datum_info().has_datum())
-	
-	var fifty_one_utxos = await provider._get_utxos_at_address(Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm").value)
-	var fifty_one_utxos_filtered = utxos.filter(func(u: Utxo): return u.datum_info().has_datum())
-	
+
 	var tx_result := cardano.new_tx()
 	if tx_result.is_err():
 		push_error("could not create tx_builder", tx_result.error)
 		return
-	
+
 	var tx = tx_result.value
 	tx.collect_from_script(
 		PlutusScriptSource.from_script(
 			PlutusScript.create("581b0100003222253330043330043370e900124008941288a4c2cae681".hex_decode())
 		),
 		utxos_filtered,
-		PackedByteArray([0x80])
-	)
-	tx.collect_from_script(
-		PlutusScriptSource.from_script(
-			PlutusScript.create("5819010000322223253330053370e00290330a4c2c6eb40095cd01".hex_decode())
-		),
-		fifty_one_utxos,
-		BigInt.from_int(51).to_data()
-	)
-	tx.mint_assets(
-		PlutusScript.create("46010000222499".hex_decode()), 
-		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		VoidData.new().to_data()
-	)
-	tx.mint_assets(
-		PlutusScript.create("55010000322253330033370e9004240102930b2b9a01".hex_decode()), 
-		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		VoidData.new().to_data()
+		BigInt.from_int(0)
 	)
 	var balance_result : TxBuilder.BalanceResult = await tx.balance()
 	if balance_result.is_ok():
 		print(balance_result.value.bytes().hex_encode())
 	var result : TxBuilder.CompleteResult = await tx.complete()
-	
+
 	if result.is_err():
 		print("Could not complete transaction", result.error)
 		return 
-		
+
 	if result.is_ok():
 		result.value.sign("1234")
 		print(result.value._transaction.bytes().hex_encode())

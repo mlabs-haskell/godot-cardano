@@ -110,7 +110,9 @@ signal tx_status(status: TransactionStatus)
 signal utxo_result(result: UtxoResult)
 signal _empty()
 
-enum Network {MAINNET, PREVIEW, PREPROD}
+enum Network {MAINNET, PREVIEW, PREPROD, CUSTOM}
+
+var network: Network
 
 func _init() -> void:
 	pass
@@ -198,3 +200,6 @@ func await_utxos_at(
 		5,
 		timeout
 	)
+
+func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Address:
+	return Address.build(1 if network == Network.MAINNET else 0, payment_cred, stake_cred)

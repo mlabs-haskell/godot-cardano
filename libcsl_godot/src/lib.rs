@@ -568,9 +568,9 @@ impl GTxBuilder {
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
             // NOTE: look for at least enough ADA to return a change output
             //       this may still fail if tokens on the output require more ADA
-            // FIXME: don't actually want to multiply by 3
+            // FIXME: make sure `min_collateral` is valid even with assets to return
             let collateral_amount = Gd::from_object(BigInt::from_int(
-                (min_collateral * 3)
+                min_collateral
                     .try_into()
                     .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?,
             ));

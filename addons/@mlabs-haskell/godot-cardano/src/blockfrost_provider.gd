@@ -136,8 +136,7 @@ class TransactionRequest extends Request:
 
 	func _url() -> String:
 		return "txs/%s" % _tx_hash
-	
-var network: Network
+
 var api_key: String
 
 const network_endpoints: Dictionary = {

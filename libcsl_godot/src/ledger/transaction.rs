@@ -1,5 +1,5 @@
 use cardano_serialization_lib as CSL;
-use CSL::crypto::{DataHash, ScriptHash, Vkeywitness, Vkeywitnesses};
+use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
 use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
 use CSL::tx_builder::tx_inputs_builder::{self, DatumSource};
@@ -63,7 +63,7 @@ impl MultiAsset {
         let mut assets: CSL::MultiAsset = CSL::MultiAsset::new();
         for (unit, amount) in dict.iter_shared().typed::<GString, Gd<BigInt>>() {
             assets.set_asset(
-                &ScriptHash::from_hex(
+                &CSL::crypto::ScriptHash::from_hex(
                     &unit
                         .to_string()
                         .get(0..56)
@@ -163,6 +163,29 @@ pub struct Signature {
 }
 
 #[derive(GodotClass)]
+#[class(base=RefCounted, rename=_Credential)]
+pub struct Credential {
+    pub credential: CSL::address::StakeCredential,
+}
+
+#[godot_api]
+impl Credential {
+    #[func]
+    fn from_key_hash(hash: Gd<PubKeyHash>) -> Gd<Credential> {
+        Gd::from_object(Credential {
+            credential: CSL::address::StakeCredential::from_keyhash(&hash.bind().hash),
+        })
+    }
+
+    #[func]
+    fn from_script_hash(hash: Gd<ScriptHash>) -> Gd<Credential> {
+        Gd::from_object(Credential {
+            credential: CSL::address::StakeCredential::from_scripthash(&hash.bind().hash),
+        })
+    }
+}
+
+#[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Address)]
 pub struct Address {
     pub address: CSL::address::Address,
@@ -213,6 +236,32 @@ impl Address {
     #[func]
     pub fn _to_bech32(&self) -> Gd<GResult> {
         Self::to_gresult(self.to_bech32())
+    }
+
+    #[func]
+    pub fn build(
+        network_id: u8,
+        payment_credential: Gd<Credential>,
+        mb_stake_credential: Option<Gd<Credential>>,
+    ) -> Gd<Address> {
+        let address = match mb_stake_credential {
+            Some(stake_cred) => Self {
+                address: CSL::address::BaseAddress::new(
+                    network_id,
+                    &payment_credential.bind().credential,
+                    &stake_cred.bind().credential,
+                )
+                .to_address(),
+            },
+            None => Self {
+                address: CSL::address::EnterpriseAddress::new(
+                    network_id,
+                    &payment_credential.bind().credential,
+                )
+                .to_address(),
+            },
+        };
+        Gd::from_object(address)
     }
 }
 
@@ -357,11 +406,10 @@ impl PlutusScript {
     }
 
     #[func]
-    fn hash(&self) -> PackedByteArray {
-        let hash = self.script.hash();
-        let bound = hash.to_bytes();
-        let bytes: &[u8] = bound.as_slice().into();
-        PackedByteArray::from(bytes)
+    fn hash(&self) -> Gd<ScriptHash> {
+        Gd::from_object(ScriptHash {
+            hash: self.script.hash(),
+        })
     }
 }
 
@@ -383,8 +431,8 @@ impl PlutusScriptSource {
     // TODO: Add a version that picks up the script hash from the Utxo automatically
     #[func]
     fn from_ref(script_hash: GString, input: Gd<Utxo>) -> Gd<PlutusScriptSource> {
-        let hash =
-            ScriptHash::from_hex(&script_hash.to_string()).expect("Could not parse script hash");
+        let hash = CSL::crypto::ScriptHash::from_hex(&script_hash.to_string())
+            .expect("Could not parse script hash");
         Gd::from_object(Self {
             source: tx_inputs_builder::PlutusScriptSource::new_ref_input_with_lang_ver(
                 &hash,
@@ -429,6 +477,48 @@ impl PubKeyHash {
         let hash = CSL::crypto::Ed25519KeyHash::from_hex(hex.as_str())
             .map_err(PubKeyHashError::FromHexError)?;
         Ok(PubKeyHash { hash })
+    }
+
+    #[func]
+    pub fn _from_hex(hex: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(hex.to_string()))
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=_ScriptHash)]
+pub struct ScriptHash {
+    pub hash: CSL::crypto::ScriptHash,
+}
+
+#[derive(Debug)]
+pub enum ScriptHashError {
+    FromHexError(JsError),
+}
+
+impl GodotConvert for ScriptHashError {
+    type Via = i64;
+}
+
+impl ToGodot for ScriptHashError {
+    fn to_godot(&self) -> Self::Via {
+        use ScriptHashError::*;
+        match self {
+            FromHexError(_) => 1,
+        }
+    }
+}
+
+impl FailsWith for ScriptHash {
+    type E = ScriptHashError;
+}
+
+#[godot_api]
+impl ScriptHash {
+    pub fn from_hex(hex: String) -> Result<ScriptHash, ScriptHashError> {
+        let hash = CSL::crypto::ScriptHash::from_hex(hex.as_str())
+            .map_err(ScriptHashError::FromHexError)?;
+        Ok(ScriptHash { hash })
     }
 
     #[func]

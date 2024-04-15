@@ -105,16 +105,8 @@ func pay_to_address_with_datum(
 	address: Address,
 	coin: BigInt,
 	assets: MultiAsset,
-	datum: Object
+	datum: Variant
 ) -> TxBuilder:
-	if !datum.has_method("to_data"):
-		_results.push_back(
-			Result.Err.new(
-				"Provided datum does not implement `to_data`",
-				TxBuilderStatus.INVALID_DATA
-			)
-		)
-
 	var serialize_result := Cbor.serialize(PlutusData.unwrap(datum, true), true)
 
 	if serialize_result.is_err():
@@ -132,17 +124,8 @@ func pay_to_address_with_datum(
 func mint_assets(
 	minting_policy: PlutusScript,
 	tokens: Array[MintToken],
-	redeemer: Object
+	redeemer: Variant
 ) -> TxBuilder:
-	if !redeemer.has_method("to_data"):
-		_results.push_back(
-			Result.Err.new(
-				"Provided redeemer does not implement `to_data`",
-				TxBuilderStatus.INVALID_DATA
-			)
-		)
-		return self
-
 	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
 	
 	_results.push_back(serialize_result)
@@ -177,16 +160,11 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	_builder._collect_from(_utxos)
 	return self
 	
-func collect_from_script(plutus_script_source: PlutusScriptSource, utxos: Array[Utxo], redeemer: Object) -> TxBuilder:
-	if !redeemer.has_method("to_data"):
-		_results.push_back(
-			Result.Err.new(
-				"Provided redeemer does not implement `to_data`",
-				TxBuilderStatus.INVALID_DATA
-			)
-		)
-		return self
-
+func collect_from_script(
+	plutus_script_source: PlutusScriptSource,
+	utxos: Array[Utxo],
+	redeemer: Variant
+) -> TxBuilder:
 	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
 	
 	var _utxos: Array[_Utxo] = []
@@ -228,7 +206,7 @@ func balance() -> BalanceResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
-		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
 	
 	if wallet_utxos.size() == 0:
@@ -250,7 +228,7 @@ func complete() -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
-		_cardano.wallet._get_utxos().map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
 	var additional_utxos: Array[Utxo] = [] # TODO
 	
