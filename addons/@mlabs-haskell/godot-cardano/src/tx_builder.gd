@@ -100,7 +100,7 @@ func set_cost_models(cost_models: CostModels) -> TxBuilder:
 func pay_to_address(address: Address, coin: BigInt, assets: MultiAsset) -> TxBuilder:
 	_builder.pay_to_address(address._address, coin._b, assets._multi_asset)
 	return self
-	
+
 func pay_to_address_with_datum(
 	address: Address,
 	coin: BigInt,
@@ -117,6 +117,26 @@ func pay_to_address_with_datum(
 			coin._b,
 			assets._multi_asset,
 			Datum.inline(serialize_result.value)
+		)
+	
+	return self
+	
+func pay_to_address_with_datum_hash(
+	address: Address,
+	coin: BigInt,
+	assets: MultiAsset,
+	datum: Variant
+) -> TxBuilder:
+	var serialize_result := Cbor.serialize(PlutusData.unwrap(datum, true), true)
+
+	if serialize_result.is_err():
+		_results.push_back(serialize_result)
+	else:
+		_builder._pay_to_address_with_datum(
+			address._address,
+			coin._b,
+			assets._multi_asset,
+			Datum.hashed(serialize_result.value)
 		)
 	
 	return self

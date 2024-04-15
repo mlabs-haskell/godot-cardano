@@ -2,7 +2,7 @@ use cardano_serialization_lib as CSL;
 use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
 use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
-use CSL::tx_builder::tx_inputs_builder::{self, DatumSource};
+use CSL::tx_builder::tx_inputs_builder::{self};
 use CSL::utils::*;
 use CSL::{AssetName, TransactionInput, TransactionOutput};
 
@@ -282,23 +282,33 @@ pub struct Datum {
 impl Datum {
     #[func]
     pub fn none() -> Gd<Datum> {
-        return Gd::from_object(Datum {
+        Gd::from_object(Datum {
             datum: DatumValue::NoDatum,
-        });
+        })
     }
 
     #[func]
     pub fn hash(bytes: PackedByteArray) -> Gd<Datum> {
-        return Gd::from_object(Datum {
+        Gd::from_object(Datum {
             datum: DatumValue::Hash(bytes),
-        });
+        })
+    }
+
+    #[func]
+    pub fn hashed(bytes: PackedByteArray) -> Gd<Datum> {
+        let b = hash_plutus_data(&CSL::plutus::PlutusData::from_bytes(bytes.to_vec()).unwrap())
+            .to_bytes();
+        let hash_bytes: &[u8] = b.as_slice().into();
+        Gd::from_object(Datum {
+            datum: DatumValue::Hash(PackedByteArray::from(hash_bytes)),
+        })
     }
 
     #[func]
     pub fn inline(bytes: PackedByteArray) -> Gd<Datum> {
-        return Gd::from_object(Datum {
+        Gd::from_object(Datum {
             datum: DatumValue::Inline(bytes),
-        });
+        })
     }
 }
 
@@ -584,21 +594,16 @@ impl Utxo {
         let bound = self.get_datum_info();
         let datum_info = bound.bind();
 
-        match (
-            datum_info.data_hash.clone(),
-            datum_info.inline_datum.clone(),
-        ) {
-            (_, Some(inline_datum)) => {
+        match (datum_info.data_hash.clone(), datum_info.datum_value.clone()) {
+            (_, Some(UtxoDatumValue::Inline(inline_datum))) => {
                 output.set_plutus_data(
                     &PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
                 );
             }
-            (Some(datum_hash), None) => {
+            (Some(datum_hash), _) => {
                 output.set_data_hash(&DataHash::from_hex(datum_hash.to_string().as_str()).unwrap());
             }
-            (None, None) => {
-                ();
-            }
+            _ => (),
         }
         TransactionUnspentOutput::new(&self.to_transaction_input(), &output)
     }
@@ -608,16 +613,13 @@ impl Utxo {
     }
 
     // TODO: Add error handling
-    pub fn to_datum(&self) -> Option<DatumSource> {
+    pub fn to_datum(&self) -> Option<UtxoDatumValue> {
         let datum_info = self.datum_info.bind();
-        match (&datum_info.data_hash, &datum_info.inline_datum) {
+        match (&datum_info.data_hash, datum_info.datum_value.clone()) {
             // no datum is needed nor provided
             (None, None) => None,
-            // a datum is needed and easily provided since it is inline
-            (_, Some(d)) => Some(DatumSource::new(
-                &CSL::plutus::PlutusData::from_hex(&d.to_string())
-                    .expect("Could not parse datum as PlutusData"),
-            )),
+            // a datum is needed and easily provided since it is inline or resolved
+            (_, Some(d)) => Some(d),
             // a datum is needed but we only have the hash, we need to retrieve it
             // using the provider
             // TODO
@@ -640,11 +642,18 @@ impl Utxo {
     }
 }
 
+// FIXME?: is this redundant with `Datum`? Should they be combined?
+#[derive(Debug, Clone)]
+pub enum UtxoDatumValue {
+    Inline(GString),
+    Resolved(GString),
+}
+
 #[derive(GodotClass)]
 #[class(base=RefCounted)]
 pub struct UtxoDatumInfo {
     pub data_hash: Option<GString>,
-    pub inline_datum: Option<GString>,
+    pub datum_value: Option<UtxoDatumValue>,
 }
 
 #[derive(Debug)]
@@ -677,22 +686,36 @@ impl UtxoDatumInfo {
     pub fn empty() -> Gd<UtxoDatumInfo> {
         Gd::from_object(UtxoDatumInfo {
             data_hash: None,
-            inline_datum: None,
+            datum_value: None,
         })
     }
     #[func]
     pub fn create_with_hash(data_hash: GString) -> Gd<UtxoDatumInfo> {
         Gd::from_object(UtxoDatumInfo {
             data_hash: Some(data_hash),
-            inline_datum: None,
+            datum_value: None,
         })
     }
 
     #[func]
-    pub fn create_with_datum(data_hash: GString, inline_datum: GString) -> Gd<UtxoDatumInfo> {
+    pub fn create_with_resolved_datum(
+        data_hash: GString,
+        resolved_datum: GString,
+    ) -> Gd<UtxoDatumInfo> {
         Gd::from_object(UtxoDatumInfo {
             data_hash: Some(data_hash),
-            inline_datum: Some(inline_datum),
+            datum_value: Some(UtxoDatumValue::Resolved(resolved_datum)),
+        })
+    }
+
+    #[func]
+    pub fn create_with_inline_datum(
+        data_hash: GString,
+        inline_datum: GString,
+    ) -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: Some(data_hash),
+            datum_value: Some(UtxoDatumValue::Inline(inline_datum)),
         })
     }
 
@@ -703,7 +726,10 @@ impl UtxoDatumInfo {
 
     #[func]
     pub fn has_datum_inline(&self) -> bool {
-        self.inline_datum.is_some()
+        match self.datum_value {
+            Some(UtxoDatumValue::Inline(_)) => true,
+            _ => false,
+        }
     }
 
     #[func]
@@ -713,11 +739,11 @@ impl UtxoDatumInfo {
 
     #[func]
     pub fn inline_datum(&self) -> Gd<GResult> {
-        Self::to_gresult(
-            self.inline_datum
-                .clone()
-                .ok_or(DatumInfoError::DatumNotInline),
-        )
+        let result = match self.datum_value.clone() {
+            Some(UtxoDatumValue::Inline(d)) => Ok(d.clone()),
+            _ => Err(DatumInfoError::DatumNotInline),
+        };
+        Self::to_gresult(result)
     }
 }
 

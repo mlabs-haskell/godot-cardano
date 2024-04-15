@@ -264,8 +264,18 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 	
 	var utxos: Array[Utxo] = []
 	
+	var data_map := {}
+	
+	for utxo in utxos_json:
+		var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
+		var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
+		var resolved_datum_str: String = ""
+		if inline_datum_str == "" and data_hash != "":
+			var resolve_result := await blockfrost_request(DatumCborFromHash.new(data_hash))
+			data_map[data_hash] = resolve_result.cbor
+	
 	utxos.assign(
-		utxos_json.map(
+		await utxos_json.map(
 			func (utxo: Dictionary) -> Utxo:
 				var assets: Dictionary = utxo_assets(utxo)
 				var coin: BigInt = BigInt.new(assets['lovelace'] as Variant as _BigInt)
@@ -275,7 +285,12 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 				var utxo_address: String = utxo.address
 				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
 				var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
-				var datum_info := self._build_datum_info(data_hash, inline_datum_str)
+				var resolved_datum_str: String = ""
+				
+				if inline_datum_str == "" and data_hash != "" and data_map.has(data_hash):
+					resolved_datum_str = data_map.get(data_hash)
+					
+				var datum_info := self._build_datum_info(data_hash, inline_datum_str, resolved_datum_str)
 				
 				var result = Utxo.create(
 					tx_hash,
@@ -289,19 +304,26 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 				if result.is_err():
 					push_error("Could not create UTxO: %s" % result.error)
 					return null
-					
+				
 				return result.value
 	))
 	utxo_result.emit(UtxoResult.new(address, utxos))
 	return utxos
 	
-func _build_datum_info(datum_hash: String, datum_inline_str: String) -> UtxoDatumInfo:
+func _build_datum_info(
+	datum_hash: String,
+	datum_inline_str: String,
+	datum_resolved_str: String,
+) -> UtxoDatumInfo:
 	if datum_hash == "":
 		return UtxoDatumInfo.empty()
 	elif datum_inline_str == "":
-		return UtxoDatumInfo.create_with_hash(datum_hash)
+		if datum_resolved_str == "":
+			return UtxoDatumInfo.create_with_hash(datum_hash)
+		else:
+			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
 	else:
-		return UtxoDatumInfo.create_with_datum(datum_hash, datum_inline_str)
+		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
 
 func _get_datum_cbor(_datum_hash: String) -> Cbor:
 	var cbor_resp : Dictionary = await blockfrost_request(DatumCborFromHash.new(_datum_hash))

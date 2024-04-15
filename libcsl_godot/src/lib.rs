@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 
 use cardano_serialization_lib as CSL;
@@ -31,7 +31,7 @@ use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 use crate::ledger::transaction::{
     Address, CostModels, Datum, DatumValue, EvaluationResult, MultiAsset, PlutusScript,
-    PlutusScriptSource, PubKeyHash, Transaction, Utxo,
+    PlutusScriptSource, PubKeyHash, Transaction, Utxo, UtxoDatumValue,
 };
 
 struct MyExtension;
@@ -101,6 +101,7 @@ struct GTxBuilder {
     fee: Option<u64>,
     minted_assets:
         BTreeMap<CSL::crypto::ScriptHash, (CSL::plutus::PlutusScript, Dictionary, PackedByteArray)>,
+    data: BTreeSet<PlutusData>,
 }
 
 #[derive(Debug)]
@@ -231,6 +232,7 @@ impl GTxBuilder {
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
 
             minted_assets: BTreeMap::new(),
+            data: BTreeSet::new(),
         })
     }
 
@@ -285,11 +287,17 @@ impl GTxBuilder {
         );
 
         // FIXME: script data hash fails to match if we add the datum here?
-        let witness = match None {
-            None => {
-                PlutusWitness::new_with_ref_without_datum(&script_source.bind().source, &redeemer)
+        let witness = match datum {
+            Some(UtxoDatumValue::Resolved(datum_hex)) => {
+                let data = PlutusData::from_hex(datum_hex.to_string().as_str()).unwrap();
+                self.data.insert(data.clone());
+                PlutusWitness::new_with_ref(
+                    &script_source.bind().source,
+                    &CSL::tx_builder::tx_inputs_builder::DatumSource::new(&data),
+                    &redeemer,
+                )
             }
-            Some(d) => PlutusWitness::new_with_ref(&script_source.bind().source, &d, &redeemer),
+            _ => PlutusWitness::new_with_ref_without_datum(&script_source.bind().source, &redeemer),
         };
 
         // FIXME: resolve reference scripts
@@ -570,7 +578,7 @@ impl GTxBuilder {
             //       this may still fail if tokens on the output require more ADA
             // FIXME: make sure `min_collateral` is valid even with assets to return
             let collateral_amount = Gd::from_object(BigInt::from_int(
-                min_collateral
+                (min_collateral + 3_000_000)
                     .try_into()
                     .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?,
             ));

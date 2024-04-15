@@ -175,7 +175,7 @@ func _on_create_script_output():
 		push_error("something bad with address")
 		return
 
-	tx.value.pay_to_address_with_datum(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), [])
+	tx.value.pay_to_address_with_datum_hash(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), BigInt.from_int(66))
 	var result : TxBuilder.CompleteResult = await tx.value.complete()
 
 	if result.is_err():
