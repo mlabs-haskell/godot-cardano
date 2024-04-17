@@ -20,8 +20,8 @@ func _init(cardano: Cardano, transaction: Transaction) -> void:
 	_cardano = cardano
 	_transaction = transaction
 
-func sign(password: String) -> TxComplete:		
-	var sign_result := _cardano.wallet._sign_transaction(password, _transaction)
+func sign(password: String, wallet: Wallet = _cardano.wallet) -> TxComplete:		
+	var sign_result := wallet._sign_transaction(password, _transaction)
 	_results.push_back(sign_result)
 	if sign_result.is_ok():
 		_transaction.add_signature(sign_result.value)

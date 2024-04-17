@@ -184,6 +184,7 @@ func await_utxos_at(
 	from_tx: TransactionHash = null,
 	timeout := 60
 ) -> bool:
+	print("Waiting for UTxOs at %s..." % address.to_bech32())
 	return await await_response(
 		func () -> void: _get_utxos_at_address(address),
 		func (result: UtxoResult) -> bool:

@@ -6,7 +6,7 @@ use CSL::crypto::Vkeywitnesses;
 use CSL::error::JsError;
 use CSL::fees::LinearFee;
 use CSL::output_builder::*;
-use CSL::plutus::{Costmdls, ExUnits, PlutusData, PlutusScripts, RedeemerTag};
+use CSL::plutus::{Costmdls, ExUnits, PlutusData, RedeemerTag};
 use CSL::tx_builder::mint_builder::*;
 use CSL::tx_builder::tx_inputs_builder::{
     InputWithScriptWitness, InputsWithScriptWitness, PlutusWitness, TxInputsBuilder,
@@ -94,7 +94,7 @@ struct GTxBuilder {
     protocol_parameters: ProtocolParameters,
     inputs_builder: TxInputsBuilder,
     mint_builder: MintBuilder,
-    plutus_scripts: PlutusScripts,
+    uses_plutus_scripts: bool,
     max_ex_units: (u64, u64),
     slot_config: (u64, u64, u32),
     cost_models: Costmdls,
@@ -225,7 +225,7 @@ impl GTxBuilder {
             protocol_parameters: params.clone(),
             inputs_builder: TxInputsBuilder::new(),
             mint_builder: MintBuilder::new(),
-            plutus_scripts: PlutusScripts::new(),
+            uses_plutus_scripts: false,
             fee: None,
             max_ex_units: (params.max_cpu_units, params.max_mem_units),
             slot_config: (0, 0, 0),
@@ -283,7 +283,7 @@ impl GTxBuilder {
             &RedeemerTag::new_spend(),
             &to_bignum(0u64),
             &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
-            &ExUnits::new(&BigNum::from(max_mem), &BigNum::from(max_steps)), //
+            &ExUnits::new(&BigNum::from(max_mem / 4), &BigNum::from(max_steps / 4)), //
         );
 
         // FIXME: script data hash fails to match if we add the datum here?
@@ -300,9 +300,7 @@ impl GTxBuilder {
             _ => PlutusWitness::new_with_ref_without_datum(&script_source.bind().source, &redeemer),
         };
 
-        // FIXME: resolve reference scripts
-        let script = witness.script().unwrap();
-        self.plutus_scripts.add(&script);
+        self.uses_plutus_scripts = true;
 
         self.inputs_builder
             .add_plutus_script_input(&witness, &input, &value);
@@ -320,10 +318,6 @@ impl GTxBuilder {
         for gutxo in gutxos.iter_shared() {
             let utxo = gutxo.bind();
             let addr = utxo.get_address();
-            println!(
-                "(collect_from_script) utxo address: {:?}",
-                addr.bind().to_bech32().expect("could not get address")
-            );
             match &address {
                 Some(addr_) => {
                     if addr.bind().address.to_bytes() != addr_.address.to_bytes() {
@@ -517,13 +511,12 @@ impl GTxBuilder {
             minted_assets.iter().enumerate()
         {
             // set the maximum ex units to overestimate the fee on first balance pass
-            let max_mem = self.protocol_parameters.max_mem_units;
-            let max_steps = self.protocol_parameters.max_cpu_units;
+            let (max_steps, max_mem) = self.max_ex_units;
             let redeemer = CSL::plutus::Redeemer::new(
                 &RedeemerTag::new_mint(),
                 &BigNum::from(index),
                 &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
-                &ExUnits::new(&BigNum::from(max_mem), &BigNum::from(max_steps)),
+                &ExUnits::new(&BigNum::from(max_mem / 4), &BigNum::from(max_steps / 4)),
             );
             self.add_mint_asset(
                 &PlutusScript {
@@ -532,7 +525,7 @@ impl GTxBuilder {
                 &assets,
                 &redeemer,
             )?;
-            self.plutus_scripts.add(&script);
+            self.uses_plutus_scripts = true;
         }
         Ok(())
     }
@@ -555,7 +548,6 @@ impl GTxBuilder {
     ) -> Result<Transaction, TxBuilderError> {
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         let mut tx_builder = self.tx_builder.clone();
-        let uses_plutus_scripts = self.plutus_scripts.len() > 0;
 
         for gutxo in gutxos.iter_shared() {
             utxos.add(&gutxo.bind().to_transaction_unspent_output());
@@ -565,7 +557,7 @@ impl GTxBuilder {
         tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
-        if uses_plutus_scripts {
+        if self.uses_plutus_scripts {
             let fee = match self.fee {
                 Some(set_fee) => set_fee,
                 None => match self.tx_builder.min_fee() {
@@ -574,34 +566,44 @@ impl GTxBuilder {
                 },
             };
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
-            // NOTE: look for at least enough ADA to return a change output
-            //       this may still fail if tokens on the output require more ADA
-            // FIXME: make sure `min_collateral` is valid even with assets to return
-            let collateral_amount = Gd::from_object(BigInt::from_int(
-                (min_collateral + 3_000_000)
-                    .try_into()
-                    .map_err(|_| TxBuilderError::UnexpectedCollateralAmount())?,
-            ));
+            let collateral_amount = BigNum::from(min_collateral);
+            let mut collateral_inputs_builder = TxInputsBuilder::new();
             for gutxo in gutxos.iter_shared() {
                 let utxo = gutxo.bind();
-                // FIXME: we probably want to select more than a single input
-                if utxo.coin.bind().gt(collateral_amount.clone()) {
-                    let mut inputs_builder = TxInputsBuilder::new();
-                    add_utxo_to_inputs_builder(utxo.deref(), &mut inputs_builder)?;
-                    tx_builder.set_collateral(&inputs_builder);
-                    tx_builder.set_total_collateral_and_return(
-                        &BigNum::from(min_collateral),
-                        &change_address.bind().address,
-                    )?;
+                let output_builder = TransactionOutputBuilder::new();
+                let utxo_coin = utxo
+                    .coin
+                    .bind()
+                    .b
+                    .as_u64()
+                    .ok_or_else(|| TxBuilderError::QuantityExceedsMaximum())?;
+                let collateral_output = output_builder
+                    .with_address(&utxo.address.bind().address)
+                    .next()?
+                    .with_asset_and_min_required_coin_by_utxo_cost(
+                        &utxo.assets.bind().assets,
+                        &CSL::DataCost::new_coins_per_byte(&to_bignum(
+                            self.protocol_parameters.coins_per_utxo_byte,
+                        )),
+                    )?
+                    .build()?;
+                let output_min_utxo = collateral_output.amount().coin();
+                // FIXME: we probably want to select more than a single input when needed
+                if utxo_coin >= output_min_utxo.checked_add(&collateral_amount)? {
+                    add_utxo_to_inputs_builder(utxo.deref(), &mut collateral_inputs_builder)?;
                     break;
                 }
             }
+            tx_builder.set_collateral(&collateral_inputs_builder);
+            tx_builder.set_total_collateral_and_return(
+                &BigNum::from(min_collateral),
+                &change_address.bind().address,
+            )?;
             tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
         tx_builder.add_change_if_needed(&change_address.bind().address)?;
         self.fee = Some(tx_builder.get_fee_if_set().unwrap().into());
         let tx = tx_builder.build_tx()?;
-        println!("(balanceAndAssemble) tx body: {:?}", tx.body());
 
         let mut witnesses = tx.witness_set();
         let vkey_witnesses = Vkeywitnesses::new();
@@ -629,7 +631,7 @@ impl GTxBuilder {
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
     ) -> Result<Transaction, TxBuilderError> {
-        // Why is the mint builder recreated when they can be overwritten?
+        // FIXME: Why is the mint builder recreated when they can be overwritten?
         self.mint_builder = MintBuilder::new();
         let inputs = self.inputs_builder.inputs();
         let input_witnesses = self.inputs_builder.get_plutus_input_scripts();

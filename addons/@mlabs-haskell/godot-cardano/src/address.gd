@@ -37,6 +37,9 @@ func to_bech32() -> String:
 			push_error("An error was found while encoding an address as bech32", result.error)
 			return ""
 
+func _to_string() -> String:
+	return to_bech32()
+	
 static func build(
 	network_id: int,
 	payment_cred: Credential,

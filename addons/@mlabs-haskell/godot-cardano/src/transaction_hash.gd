@@ -22,3 +22,6 @@ static func from_hex(hash: String) -> FromHexResult:
 	
 func to_hex() -> String:
 	return _transaction_hash.to_hex()
+
+func _to_string() -> String:
+	return to_hex()
