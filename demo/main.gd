@@ -3,6 +3,7 @@ extends Node2D
 var provider: Provider
 var cardano: Cardano = null
 var wallet: Wallet.MnemonicWallet = null
+var correct_password: String = ""
 var loader := SingleAddressWalletLoader.new()
 
 @onready
@@ -11,6 +12,10 @@ var wallet_details: RichTextLabel = %WalletDetails
 var address_input: LineEdit = %AddressInput
 @onready
 var amount_input: LineEdit = %AmountInput
+@onready
+var password_input: LineEdit = $SendAdaForm/Password/PasswordInput
+@onready
+var password_warning: Label =  $SendAdaForm/Password/Status
 @onready
 var phrase_input: TextEdit = %PhraseInput
 @onready
@@ -84,7 +89,7 @@ func _on_generate_new_wallet_pressed():
 	set_button.disabled = true
 	generate_button.disabled = true
 	var create_result := SingleAddressWalletLoader.create(
-		"1234",
+		password_input.text,
 		0,
 		"",
 		""
@@ -128,7 +133,7 @@ func _on_send_ada_button_pressed() -> void:
 	var result := await tx.complete()
 	
 	if result.is_ok():
-		result.value.sign("1234")
+		result.value.sign(password_input.text)
 		var submit_result = await result.value.submit()
 		if submit_result.is_err():
 			print('Failed to submit transaction: %s' % submit_result.error)
@@ -152,7 +157,7 @@ func _on_mint_token_button_pressed() -> void:
 	var result := await tx.complete()
 
 	if result.is_ok():
-		result.value.sign("1234")
+		result.value.sign(password_input.text)
 		var submit_result := await result.value.submit()
 		if submit_result.is_err():
 			push_error(submit_result.error)
@@ -160,8 +165,14 @@ func _on_mint_token_button_pressed() -> void:
 		push_error(result.error)
 
 func set_wallet(key_ring: SingleAddressWallet):
+	if wallet != null:
+		remove_child(wallet)
+		remove_child(cardano)
+		
 	wallet = Wallet.MnemonicWallet.new(key_ring, provider)
 	add_child(wallet)
+	correct_password = password_input.text
+	password_warning.text = ""
 	cardano = Cardano.new(wallet, provider)
 	add_child(cardano)
 	_on_wallet_set()
@@ -175,7 +186,7 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	var res := await loader.import_from_seedphrase(
 		seedphrase,
 		"",
-		"1234",
+		password_input.text,
 		0,
 		"First account",
 		"The first account created")
@@ -208,7 +219,7 @@ func _on_create_script_output_pressed():
 		return
 
 	if result.is_ok():
-		result.value.sign("1234")
+		result.value.sign(password_input.text)
 		var hash := await result.value.submit()
 		print("Transaction hash:", hash.value.to_hex())
 
@@ -235,6 +246,13 @@ func _on_consume_script_input_pressed():
 		return 
 
 	if result.is_ok():
-		result.value.sign("1234")
+		result.value.sign(password_input.text)
 		var hash := await result.value.submit()
 		print("Transaction hash:", hash.value.to_hex())
+
+
+func _on_password_input_text_changed(new_text: String) -> void:
+	if wallet != null and new_text != correct_password:
+		password_warning.text = "Password incorrect, transaction signing will fail"
+	else:
+		password_warning.text = ""
