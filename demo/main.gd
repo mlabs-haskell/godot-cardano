@@ -20,9 +20,15 @@ var send_ada_button: Button = %SendAdaButton
 @onready
 var mint_token_button: Button = %MintTokenButton
 @onready
-var consume_script_input: Button = %ConsumeScriptInput
+var create_script_output_button: Button = %CreateScriptOutput
+@onready
+var consume_script_input_button: Button = %ConsumeScriptInput
 @onready
 var set_button: Button = %SetButton
+@onready
+var generate_button: Button = %GenerateButton
+
+var test_spend_script: PlutusScript = PlutusScript.create("581b0100003222253330043330043370e900124008941288a4c2cae681".hex_decode())
 
 func _ready() -> void:
 	var token : String = FileAccess\
@@ -47,15 +53,13 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if wallet != null:
 		timers_details.text = "Timer: %.2f" % wallet.time_left
-		timers_details.text += "\n%d" % cardano.time_to_slot(Time.get_unix_time_from_system())
+		timers_details.text += "\nSlot: %d" % cardano.time_to_slot(Time.get_unix_time_from_system())
 
 func _on_wallet_set() -> void:
 	var _ret := self.wallet.got_updated_utxos.connect(_on_utxos_updated)
 	var addr := wallet._get_change_address().to_bech32()
 	wallet_details.text = "Using wallet %s" % addr
 	address_input.text = addr
-	send_ada_button.disabled = false
-	consume_script_input.disabled = false
 
 func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 	var num_utxos := utxos.size()
@@ -68,10 +72,32 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]
 		send_ada_button.disabled = false
 		mint_token_button.disabled = false
+		create_script_output_button.disabled = false
+		consume_script_input_button.disabled = false
 
 func _on_set_wallet_button_pressed() -> void:
 	_create_wallet_from_seedphrase(phrase_input.text)
 
+func _on_generate_new_wallet_pressed():	
+	var old_text := set_button.text
+	generate_button.text = "Generating wallet..."
+	set_button.disabled = true
+	generate_button.disabled = true
+	var create_result := SingleAddressWalletLoader.create(
+		"1234",
+		0,
+		"",
+		""
+	)
+	if create_result.is_ok():	
+		phrase_input.text = create_result.value.seed_phrase
+		set_wallet(create_result.value.wallet)
+	else:
+		push_error("Creating wallet failed: %s" % create_result.error)
+	set_button.text = old_text
+	set_button.disabled = false
+	generate_button.disabled = false
+		
 func _on_send_ada_button_pressed() -> void:
 	var amount_result: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
 	
@@ -127,18 +153,25 @@ func _on_mint_token_button_pressed() -> void:
 
 	if result.is_ok():
 		result.value.sign("1234")
-		print(result.value._transaction.bytes().hex_encode())
 		var submit_result := await result.value.submit()
 		if submit_result.is_err():
 			push_error(submit_result.error)
 	else:
 		push_error(result.error)
 
+func set_wallet(key_ring: SingleAddressWallet):
+	wallet = Wallet.MnemonicWallet.new(key_ring, provider)
+	add_child(wallet)
+	cardano = Cardano.new(wallet, provider)
+	add_child(cardano)
+	_on_wallet_set()
+	
 # Asynchronously load the wallet from a seedphrase
 func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	var old_text := set_button.text
 	set_button.text = "Loading wallet..."
 	set_button.disabled = true
+	generate_button.disabled = true
 	var res := await loader.import_from_seedphrase(
 		seedphrase,
 		"",
@@ -147,35 +180,27 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 		"First account",
 		"The first account created")
 	if res.is_ok():
-		var key_ring := res.value.wallet
-		wallet = Wallet.MnemonicWallet.new(key_ring, provider)
-		add_child(wallet)
-		cardano = Cardano.new(wallet, provider)
-		add_child(cardano)
-		_on_wallet_set()
+		set_wallet(res.value.wallet)
 	else:
 		push_error("Could not set wallet, found error", res.error)
 	set_button.text = old_text
 	set_button.disabled = false
+	generate_button.disabled = false
 
-func _on_create_script_output():
+func _on_create_script_output_pressed():
 	var tx := cardano.new_tx()
 	if tx.is_err():
 		push_error("could not create tx_builder", tx.error)
 		return
 		
-	var script_addr := Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm")
-	var fifty_one_script_addr = Address.from_bech32("addr_test1wr35xl58rpdf02ldpkqen5hrneh624938402qh5rzynvnnsvhucue")
+	var script_address = provider.make_address(Credential.from_script(test_spend_script))
 
-	if script_addr.is_err():
-		push_error("something bad with address")
-		return
-
-	if fifty_one_script_addr.is_err():
-		push_error("something bad with address")
-		return
-
-	tx.value.pay_to_address_with_datum_hash(script_addr.value, BigInt.from_int(5_000_000), MultiAsset.empty(), BigInt.from_int(66))
+	tx.value.pay_to_address_with_datum_hash(
+		script_address,
+		BigInt.from_int(5_000_000),
+		MultiAsset.empty(),
+		BigInt.from_int(66)
+	)
 	var result : TxBuilder.CompleteResult = await tx.value.complete()
 
 	if result.is_err():
@@ -184,12 +209,12 @@ func _on_create_script_output():
 
 	if result.is_ok():
 		result.value.sign("1234")
-		print(result.value._transaction.bytes().hex_encode())
 		var hash := await result.value.submit()
 		print("Transaction hash:", hash.value.to_hex())
 
 func _on_consume_script_input_pressed():
-	var utxos := await provider._get_utxos_at_address(Address.from_bech32("addr_test1wz74sepyjkvmwxkcmvlz0eyjsqmczqshwl5gr78aej0jvtcgqmvtm").value)
+	var script_address = provider.make_address(Credential.from_script(test_spend_script))
+	var utxos := await provider._get_utxos_at_address(script_address)
 	var utxos_filtered = utxos.filter(func(u: Utxo): return u.datum_info().has_datum())
 
 	var tx_result := cardano.new_tx()
@@ -199,15 +224,10 @@ func _on_consume_script_input_pressed():
 
 	var tx = tx_result.value
 	tx.collect_from_script(
-		PlutusScriptSource.from_script(
-			PlutusScript.create("581b0100003222253330043330043370e900124008941288a4c2cae681".hex_decode())
-		),
+		PlutusScriptSource.from_script(test_spend_script),
 		utxos_filtered,
 		BigInt.from_int(0)
 	)
-	var balance_result : TxBuilder.BalanceResult = await tx.balance()
-	if balance_result.is_ok():
-		print(balance_result.value.bytes().hex_encode())
 	var result : TxBuilder.CompleteResult = await tx.complete()
 
 	if result.is_err():
@@ -216,6 +236,5 @@ func _on_consume_script_input_pressed():
 
 	if result.is_ok():
 		result.value.sign("1234")
-		print(result.value._transaction.bytes().hex_encode())
 		var hash := await result.value.submit()
 		print("Transaction hash:", hash.value.to_hex())

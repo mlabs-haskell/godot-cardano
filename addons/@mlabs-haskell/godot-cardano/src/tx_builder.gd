@@ -222,6 +222,10 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 	_builder._add_required_signer(pub_key_hash._pub_key_hash)
 	return self
 
+## Only balance the transaction and return the result. The resulting transaction
+## will not have been evaluated and will have inaccurate script execution units,
+## which may cause the transaction to fail at submission and potentially consume
+## the provided collateral.
 func balance() -> BalanceResult:
 	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
 	var _wallet_utxos: Array[_Utxo] = []
