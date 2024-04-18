@@ -75,7 +75,7 @@
           '';
           buildPhase = ''
             # link export templates
-            mkdir -p .home
+            mkdir -p .home .godot
             export HOME=$(pwd)/.home
             TEMPLATES_PACKAGE="${make_godot-export-templates-bin {}}"
             TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.2.stable"
