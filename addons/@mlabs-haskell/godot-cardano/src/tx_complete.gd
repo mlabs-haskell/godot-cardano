@@ -20,8 +20,8 @@ func _init(cardano: Cardano, transaction: Transaction) -> void:
 	_cardano = cardano
 	_transaction = transaction
 
-func sign(password: String) -> TxComplete:		
-	var sign_result := _cardano.wallet._sign_transaction(password, _transaction)
+func sign(password: String, wallet: Wallet = _cardano.wallet) -> TxComplete:		
+	var sign_result := wallet._sign_transaction(password, _transaction)
 	_results.push_back(sign_result)
 	if sign_result.is_ok():
 		_transaction.add_signature(sign_result.value)
@@ -37,8 +37,11 @@ func sign(password: String) -> TxComplete:
 func submit() -> SubmitResult:
 	var error := _results.any(func (result: Result) -> bool: return result.is_err())
 	if not error:
-		var tx_hash := await _cardano.provider._submit_transaction(_transaction)
-		return SubmitResult.new(_Result.ok(tx_hash))
+		var submit_result := await _cardano.provider._submit_transaction(_transaction)
+		if submit_result.is_ok():
+			return SubmitResult.new(_Result.ok(submit_result.value))
+		else:
+			return SubmitResult.new(_Result.err(submit_result.error, TxCompleteStatus.SUBMIT_ERROR))
 	
 	for result in _results:
 		if result.is_err():

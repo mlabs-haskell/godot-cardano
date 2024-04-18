@@ -118,6 +118,14 @@ nix run .#steam-run result/bin/demo
 
 ### Run Integration Test
 
+Before running the tests, ensure that `test/preview_token.txt` is populated
+with a valid Blockfrost preview key, and that `test/seed_phrase.txt` is
+populated with a valid 24-word seed phrase and the address is funded with
+testnet ADA from the faucet. Alternatively, your seed phrase can be set via the
+`TESTNET_SEED_PHRASE` environment variable. The address used will be the
+default address in most light wallets, as well as in the demo app provided with
+this project. Once these are set, run the test suite:
+
 ```
 nix run .#test
 ```

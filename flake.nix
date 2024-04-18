@@ -119,8 +119,7 @@
             timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
             echo "Reimporting resources done."
             echo
-            RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd)
-            echo -e "$RESULT"
+            RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd | tee >(cat 1>&2))
             [[ "$RESULT" =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
           '';
           installPhase = "touch $out";

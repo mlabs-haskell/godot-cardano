@@ -35,4 +35,4 @@ static func deserialize(bytes: PackedByteArray) -> DeserializeResult:
 	return DeserializeResult.new(_Cbor._to_variant(bytes))
 
 static func serialize(data: Variant, strict := false) -> SerializeResult:
-	return SerializeResult.new(_Cbor._from_variant(PlutusData.unwrap(data, strict)))
+	return SerializeResult.new(_Cbor._from_variant(data))
