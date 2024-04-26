@@ -105,18 +105,18 @@ Development is supported on linux. On other platforms, use a virtual machine or 
 
 ### Build Asset
 
-```
-nix build .#godot-cardano
+```bash
+$ nix build .#godot-cardano
 ```
 
 #### Build and Run Demo
 
-```
-nix build .#demo
-nix run .#steam-run result/bin/demo
+```bash
+$ nix build .#demo
+$ nix run .#steam-run result/bin/demo
 ```
 
-### Run Integration Test
+### Run Integration Test on preview network
 
 Before running the tests, ensure that `test/preview_token.txt` is populated
 with a valid Blockfrost preview key, and that `test/seed_phrase.txt` is
@@ -128,20 +128,68 @@ this project. Once these are set, run the test suite:
 
 Run integration test on preview network.
 
-```
-nix run .#test
-```
-
-### Develop
-
-Enter development shell with all dependencies in PATH and addons linked.
-
-```
-nix develop
-# ... entered development shell
-(cd libcsl_godot && cargo build)
-(cd demo && godot4 --headless --export-debug "Linux/X11" out/demo project.godot)
-(cd test && godot4 --headless --script addons/gut/gut_cmdln.gd)
+```bash
+$ nix run .#preview-integration-test
 ```
 
-If you open the projects in the Godot editor, it should automatically reload the gdextension after `cargo build`.
+### Development shell
+
+Enter development shell with all dependencies in PATH and addons linked. A list of useful commands is displayed.
+
+```bash
+$ nix develop
+🔨 Welcome to godot-cardano devshell
+
+[[general commands]]
+
+  cardano-cli - The Cardano command-line interface
+
+...
+```
+
+Here are some useful workflows inside the development shell:
+
+#### Build the Godot extension
+
+```bash
+$ cd libcsl_godot
+$ cargo build
+$ ls target/debug/libcsl_godot.so
+$ ls -la ../addons/@mlabs-haskell/godot-cardano/bin/
+```
+
+#### Open the demo app in Godot editor
+
+```bash
+$ cd demo
+$ echo "<your bockfrost preview token>" > preview_token.txt
+$ godot4 --editor
+```
+
+With the `demo` or `test` project open, the Godot editor should automatically reload the gdextension after `cargo build`.
+
+#### Export and run the demo
+
+```bash
+$ cd demo
+$ godot4 --headless --export-debug  "Linux/X11" out/demo project.godot
+$ steam-run out/demo
+```
+
+#### Run integration tests on preview network
+
+```bash
+$ cd test
+$ godot4 --headless --script addons/gut/gut_cmdln.gd
+```
+
+#### Start private testnet and fund wallet
+
+```bash
+$ overmind start -D
+$ private-testnet-fund-ada
+$ echo $PRIVATE_TESTNET_PAYMENT_ADDRESS
+$ echo $PRIVATE_TESTNET_PAYMENT_VKEY
+$ echo $PRIVATE_TESTNET_PAYMENT_SKEY
+$ overmind quit
+```
