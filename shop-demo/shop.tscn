@@ -1,0 +1,272 @@
+[gd_scene load_steps=10 format=3 uid="uid://h3yk18tq7pyn"]
+
+[ext_resource type="Texture2D" uid="uid://cetanqekjmkyy" path="res://bag.png" id="1_d460o"]
+[ext_resource type="Script" path="res://confirm_button.gd" id="2_mcnlb"]
+
+[sub_resource type="GDScript" id="GDScript_xfge1"]
+script/source = "@tool
+extends Node2D
+
+var ShopItem = preload(\"res://shop_item.tscn\")
+var InventoryItem = preload(\"res://inventory_item.tscn\")
+var UserMessage = preload(\"res://user_message.tscn\")
+
+var shop_items: Array[ShopItem]
+var user_items: Array[InventoryItem]
+var user_funds: float
+@export
+var display_inventory: bool = false
+var selected_item: InventoryItem = null
+var selection_stylebox: StyleBox = null
+var unselected_stylebox: StyleBox = null
+
+func _ready():
+	user_funds = maxf(800, randfn(3000, 1200))
+	shop_items = []
+	selection_stylebox = StyleBoxFlat.new()
+	selection_stylebox.bg_color = Color.WHITE
+	selection_stylebox.set_expand_margin_all(2)
+	selection_stylebox.set_corner_radius_all(16)
+	unselected_stylebox = StyleBoxEmpty.new()
+	for n in range(8):
+		var item := ShopItem.instantiate() as ShopItem
+		item.item_name = \"Item %d\" % n
+		item.price = maxf(randfn(5,2) * 100, 100)
+		item.stock = randi_range(0,5)
+		item.sku = n
+		item.color = Color(randf_range(0, 1), randf_range(0, 1), randf_range(0, 1))
+		item.item_bought.connect(
+			func():
+				var new_message = UserMessage.instantiate()
+				if user_funds < item.price:
+					new_message.set_message(\"Insufficient funds\")
+					new_message.set_color(Color.RED)
+				else:
+					new_message.set_message(\"-%.2f t₳\" % item.price)
+					new_message.set_color(Color.GOLD)
+					var user_item: InventoryItem = InventoryItem.instantiate()
+					user_item.from_item(item as Item)
+					user_item.add_theme_stylebox_override(
+						\"panel\",
+						unselected_stylebox
+					)
+					user_item.item_selected.connect(
+						func():
+							deselect_item()
+							selected_item = user_item
+							selected_item.add_theme_stylebox_override(
+								\"panel\",
+								selection_stylebox
+							)
+					)
+					%UserItemContainer.add_child(user_item)
+					user_item.gui_input
+					user_funds -= item.price
+					item.stock -= 1
+				add_child(new_message)
+		)
+		shop_items.push_back(item)
+	var item_container := %ItemContainer
+	var container_children = item_container.get_children()
+	for child in container_children:
+		item_container.remove_child(child)
+		
+	for item in shop_items:
+		item_container.add_child(item)
+	
+func _process(delta: float):
+	%UserFundsLabel.text = \"%.2f t₳\" % user_funds
+	
+	var inventory_screen := $InventoryScreen
+	
+	if display_inventory:
+		inventory_screen.visible = true
+		if inventory_screen.scale.x < 1:
+			inventory_screen.scale += Vector2.ONE * delta * 5
+		if inventory_screen.scale.x >= 1:
+			inventory_screen.scale = Vector2.ONE
+	else:
+		if inventory_screen.scale.x > 0:
+			inventory_screen.scale -= Vector2.ONE * delta * 5
+		if inventory_screen.scale.x <= 0:
+			inventory_screen.visible = false
+	
+	if selected_item == null:
+		%SelectedItemDescription.text = \"\"
+		%SelectedItemPrice.text = \"\"
+		%SelectedItemSellButton.disabled = true
+	else:
+		%SelectedItemDescription.text = selected_item.stats_string()
+		%SelectedItemPrice.text = \"%.2f t₳\" % selected_item.price
+		%SelectedItemSellButton.disabled = false
+	
+func _on_inventory_button_pressed() -> void:
+	display_inventory = not display_inventory
+	if selected_item:
+		selected_item.remove_theme_stylebox_override(\"panel\")
+		deselect_item()
+
+func _on_main_screen_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		display_inventory = false
+
+func _on_selected_item_sell_button_confirmed() -> void:
+	user_items.erase(selected_item)
+	%UserItemContainer.remove_child(selected_item)
+	shop_items[selected_item.sku].stock += 1
+	user_funds += selected_item.price
+	var new_message = UserMessage.instantiate()
+	new_message.set_message(\"+%.2f t₳\" % selected_item.price)
+	new_message.set_color(Color.GREEN)
+	add_child(new_message)
+	deselect_item()
+
+func deselect_item():
+	if selected_item != null:
+		selected_item.add_theme_stylebox_override(\"panel\", unselected_stylebox)
+		selected_item = null
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2h07v"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.384314, 0.384314, 0.384314, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.2, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_d60ub"]
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sa2h1"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_omcx3"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yylvk"]
+bg_color = Color(0.0745098, 0.0745098, 0.0745098, 0.764706)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7mq2t"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+
+[node name="Node2D" type="Node2D"]
+script = SubResource("GDScript_xfge1")
+
+[node name="MainScreen" type="VBoxContainer" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+
+[node name="Control" type="CenterContainer" parent="MainScreen"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 6
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainScreen/Control"]
+custom_minimum_size = Vector2(700, 300)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2h07v")
+horizontal_scroll_mode = 2
+
+[node name="ItemContainer" type="BoxContainer" parent="MainScreen/Control/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_constants/separation = 20
+
+[node name="PanelContainer" type="PanelContainer" parent="MainScreen"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_d60ub")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MainScreen/PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 10
+
+[node name="InventoryButton" type="Button" parent="MainScreen/PanelContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_sa2h1")
+icon = ExtResource("1_d460o")
+expand_icon = true
+
+[node name="UserFundsLabel" type="Label" parent="MainScreen/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "4258.61 t₳"
+
+[node name="InventoryScreen" type="CenterContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(1280, 720)
+offset_right = 1280.0
+offset_bottom = 720.0
+pivot_offset = Vector2(1147, 658)
+mouse_filter = 2
+
+[node name="Inventory" type="HBoxContainer" parent="InventoryScreen"]
+unique_name_in_owner = true
+z_index = 1
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="InventoryScreen/Inventory"]
+custom_minimum_size = Vector2(595, 400)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_omcx3")
+horizontal_scroll_mode = 0
+
+[node name="UserItemContainer" type="GridContainer" parent="InventoryScreen/Inventory/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 15
+columns = 4
+
+[node name="Control" type="PanelContainer" parent="InventoryScreen/Inventory"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yylvk")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="InventoryScreen/Inventory/Control"]
+layout_mode = 2
+
+[node name="SelectedItemDescription" type="RichTextLabel" parent="InventoryScreen/Inventory/Control/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="InventoryScreen/Inventory/Control/VBoxContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_7mq2t")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="SelectedItemPrice" type="Label" parent="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectedItemSellButton" type="Button" parent="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+disabled = true
+text = "Sell"
+script = ExtResource("2_mcnlb")
+
+[connection signal="gui_input" from="MainScreen" to="." method="_on_main_screen_gui_input"]
+[connection signal="pressed" from="MainScreen/PanelContainer/HBoxContainer/InventoryButton" to="." method="_on_inventory_button_pressed"]
+[connection signal="confirmed" from="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer/HBoxContainer/SelectedItemSellButton" to="." method="_on_selected_item_sell_button_confirmed"]
