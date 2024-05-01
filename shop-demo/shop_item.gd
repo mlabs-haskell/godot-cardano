@@ -12,7 +12,7 @@ func _process(delta: float):
 		%StickerLabel.text = "Sold out"
 
 	%Name.text = item_name
-	%Price.text = "%.2f tADA" % price
+	%Price.text = "%s tADA" % price.b.format_price()
 	%Icon.custom_minimum_size = %Sprite.texture.get_size()
 
 	%Sticker.position = Vector2(get_rect().size.x - 20, 20)
@@ -35,4 +35,4 @@ func _process(delta: float):
 	%Sprite.modulate = color
 
 func _on_buy_confirmed() -> void:
-	item_bought.emit()
+	item_bought.emit(self)

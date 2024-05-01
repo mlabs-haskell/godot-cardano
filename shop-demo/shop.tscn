@@ -4,67 +4,71 @@
 [ext_resource type="Script" path="res://confirm_button.gd" id="2_mcnlb"]
 
 [sub_resource type="GDScript" id="GDScript_xfge1"]
-script/source = "@tool
-extends Node2D
+script/source = "extends Node2D
 
 var ShopItem = preload(\"res://shop_item.tscn\")
 var InventoryItem = preload(\"res://inventory_item.tscn\")
 var UserMessage = preload(\"res://user_message.tscn\")
 
 var shop_items: Array[ShopItem]
-var user_items: Array[InventoryItem]
-var user_funds: float
+var user_funds: BigInt
 @export
 var display_inventory: bool = false
 var selected_item: InventoryItem = null
 var selection_stylebox: StyleBox = null
 var unselected_stylebox: StyleBox = null
 
+# TODO: save and import as resource
+var wallet: Wallet.MnemonicWallet = null
+
+var cardano: Cardano = null
+var provider: BlockfrostProvider = null
+
 func _ready():
-	user_funds = maxf(800, randfn(3000, 1200))
+	user_funds = BigInt.zero()
+	
 	shop_items = []
 	selection_stylebox = StyleBoxFlat.new()
 	selection_stylebox.bg_color = Color.WHITE
 	selection_stylebox.set_expand_margin_all(2)
 	selection_stylebox.set_corner_radius_all(16)
 	unselected_stylebox = StyleBoxEmpty.new()
+	
+	var seed_phrase := FileAccess.get_file_as_string(\"res://seed_phrase.txt\")
+	var wallet_loader := SingleAddressWalletLoader.new()
+	var import_result := await wallet_loader.import_from_seedphrase(
+		seed_phrase,
+		\"\",
+		\"1234\",
+		0,
+		\"My Wallet\",
+		\"\"
+	)
+	
+	if import_result.is_err():
+		push_error(\"Failed to import: %s\" % import_result.error)
+		get_tree().quit()
+	
+	var blockfrost_api_key = FileAccess.get_file_as_string(\"res://preview_token.txt\").strip_edges()
+	provider = BlockfrostProvider.new(
+		Provider.Network.PREVIEW,
+		blockfrost_api_key
+	)
+	add_child(provider)
+	wallet = Wallet.MnemonicWallet.new(import_result.value.wallet, provider)
+	add_child(wallet)
+	cardano = Cardano.new(wallet, provider)
+	add_child(cardano)
+	wallet.got_updated_utxos.connect(self._on_wallet_updated_utxos)
+	
 	for n in range(8):
 		var item := ShopItem.instantiate() as ShopItem
 		item.item_name = \"Item %d\" % n
-		item.price = maxf(randfn(5,2) * 100, 100)
+		item.price.b = BigInt.from_int(int(randfn(800000000, 300000000)))
 		item.stock = randi_range(0,5)
 		item.sku = n
 		item.color = Color(randf_range(0, 1), randf_range(0, 1), randf_range(0, 1))
-		item.item_bought.connect(
-			func():
-				var new_message = UserMessage.instantiate()
-				if user_funds < item.price:
-					new_message.set_message(\"Insufficient funds\")
-					new_message.set_color(Color.RED)
-				else:
-					new_message.set_message(\"-%.2f t₳\" % item.price)
-					new_message.set_color(Color.GOLD)
-					var user_item: InventoryItem = InventoryItem.instantiate()
-					user_item.from_item(item as Item)
-					user_item.add_theme_stylebox_override(
-						\"panel\",
-						unselected_stylebox
-					)
-					user_item.item_selected.connect(
-						func():
-							deselect_item()
-							selected_item = user_item
-							selected_item.add_theme_stylebox_override(
-								\"panel\",
-								selection_stylebox
-							)
-					)
-					%UserItemContainer.add_child(user_item)
-					user_item.gui_input
-					user_funds -= item.price
-					item.stock -= 1
-				add_child(new_message)
-		)
+		item.item_bought.connect(_on_buy_shop_item)
 		shop_items.push_back(item)
 	var item_container := %ItemContainer
 	var container_children = item_container.get_children()
@@ -75,7 +79,7 @@ func _ready():
 		item_container.add_child(item)
 	
 func _process(delta: float):
-	%UserFundsLabel.text = \"%.2f t₳\" % user_funds
+	%UserFundsLabel.text = \"%s t₳\" % user_funds.format_price()
 	
 	var inventory_screen := $InventoryScreen
 	
@@ -97,8 +101,26 @@ func _process(delta: float):
 		%SelectedItemSellButton.disabled = true
 	else:
 		%SelectedItemDescription.text = selected_item.stats_string()
-		%SelectedItemPrice.text = \"%.2f t₳\" % selected_item.price
+		%SelectedItemPrice.text = \"%s t₳\" % selected_item.price.b.format_price()
 		%SelectedItemSellButton.disabled = false
+
+func deselect_item():
+	if selected_item != null:
+		selected_item.add_theme_stylebox_override(\"panel\", unselected_stylebox)
+		selected_item = null
+		
+func create_new_wallet():
+	var new_wallet_result := SingleAddressWalletLoader.create(\"1234\", 0, \"My Account\", \"\")
+	
+	if new_wallet_result.is_err():
+		push_error(\"Failed to create wallet: %s\" % new_wallet_result.error)
+		return
+	
+	ResourceSaver.save(new_wallet_result.value._create_res.wallet_store, \"user://user_wallet.tres\")
+
+func load_wallet():
+	var loaded_wallet: _SingleAddressWalletStore = load(\"user://user_wallet.tres\") as _SingleAddressWalletStore
+	print(loaded_wallet)
 	
 func _on_inventory_button_pressed() -> void:
 	display_inventory = not display_inventory
@@ -111,20 +133,50 @@ func _on_main_screen_gui_input(event: InputEvent) -> void:
 		display_inventory = false
 
 func _on_selected_item_sell_button_confirmed() -> void:
-	user_items.erase(selected_item)
 	%UserItemContainer.remove_child(selected_item)
 	shop_items[selected_item.sku].stock += 1
-	user_funds += selected_item.price
+	user_funds = user_funds.add(selected_item.price.b)
 	var new_message = UserMessage.instantiate()
-	new_message.set_message(\"+%.2f t₳\" % selected_item.price)
+	new_message.set_message(\"+%s t₳\" % selected_item.price.b.format_price())
 	new_message.set_color(Color.GREEN)
 	add_child(new_message)
 	deselect_item()
-
-func deselect_item():
-	if selected_item != null:
-		selected_item.add_theme_stylebox_override(\"panel\", unselected_stylebox)
-		selected_item = null
+	
+func _on_wallet_updated_utxos(utxos: Array[Utxo]):
+	if wallet == null:
+		user_funds = BigInt.zero()
+	else:
+		user_funds = await wallet.total_lovelace()
+		
+func _on_buy_shop_item(item: ShopItem):
+	var new_message := UserMessage.instantiate()
+	if user_funds.lt(item.price.b):
+		new_message.set_message(\"Insufficient funds\")
+		new_message.set_color(Color.RED)
+	else:
+		new_message.set_message(\"-%s t₳\" % item.price.b.format_price())
+		new_message.set_color(Color.GOLD)
+		var user_item: InventoryItem = InventoryItem.instantiate()
+		user_item.from_item(item as Item)
+		user_item.add_theme_stylebox_override(
+			\"panel\",
+			unselected_stylebox
+		)
+		user_item.item_selected.connect(_on_select_inventory_item)
+		%UserItemContainer.add_child(user_item)
+		user_item.gui_input
+		user_funds = user_funds.sub(item.price.b)
+		item.stock -= 1
+	add_child(new_message)
+	
+func _on_select_inventory_item(selection: InventoryItem):
+	deselect_item()
+	selected_item = selection
+	selected_item.add_theme_stylebox_override(
+		\"panel\",
+		selection_stylebox
+	)
+	%SelectedItemSellButton.release_focus()
 "
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2h07v"]
@@ -204,13 +256,14 @@ expand_icon = true
 [node name="UserFundsLabel" type="Label" parent="MainScreen/PanelContainer/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "4258.61 t₳"
+text = "4195.24 t₳"
 
 [node name="InventoryScreen" type="CenterContainer" parent="."]
 visible = false
 custom_minimum_size = Vector2(1280, 720)
 offset_right = 1280.0
 offset_bottom = 720.0
+scale = Vector2(-0.0303623, -0.0303623)
 pivot_offset = Vector2(1147, 658)
 mouse_filter = 2
 

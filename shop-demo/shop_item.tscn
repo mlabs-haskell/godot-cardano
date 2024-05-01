@@ -1,17 +1,19 @@
-[gd_scene load_steps=5 format=3 uid="uid://b7smhakpc6bxh"]
+[gd_scene load_steps=6 format=3 uid="uid://b7smhakpc6bxh"]
 
 [ext_resource type="Texture2D" uid="uid://bl6qq6ah62p24" path="res://icon.svg" id="1_amla7"]
 [ext_resource type="Script" path="res://shop_item.gd" id="1_cbvqj"]
 [ext_resource type="Script" path="res://confirm_button.gd" id="3_b84ld"]
+[ext_resource type="Script" path="res://big_int_node.gd" id="4_hcil3"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_aee75"]
 
-[node name="ShopItem" type="PanelContainer"]
+[node name="ShopItem" type="PanelContainer" node_paths=PackedStringArray("price")]
 offset_top = 221.0
 offset_right = 128.0
 offset_bottom = 221.0
 theme_override_styles/panel = SubResource("StyleBoxEmpty_aee75")
 script = ExtResource("1_cbvqj")
+price = NodePath("Price")
 
 [node name="ShopItem" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -61,5 +63,8 @@ layout_mode = 2
 disabled = true
 text = "Buy"
 script = ExtResource("3_b84ld")
+
+[node name="Price" type="Node" parent="."]
+script = ExtResource("4_hcil3")
 
 [connection signal="confirmed" from="ShopItem/BuyButton" to="." method="_on_buy_confirmed"]

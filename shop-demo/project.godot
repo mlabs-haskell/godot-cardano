@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="store-demo"
+config/name="shop-demo"
 run/main_scene="res://shop.tscn"
 config/features=PackedStringArray("4.2", "Forward Plus")
 config/icon="res://icon.svg"

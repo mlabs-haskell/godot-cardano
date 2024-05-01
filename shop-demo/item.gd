@@ -5,15 +5,15 @@ extends PanelContainer
 @export
 var item_name: String
 @export
-var price: float
+var price: BigIntNode
 @export
 var sku: int
 @export
 var color: Color = Color.WHITE
 
-signal item_bought()
-signal item_sold()
-signal item_selected()
-
+signal item_bought(item: Item)
+signal item_sold(item: Item)
+signal item_selected(item: Item)
+	
 func stats_string() -> String:
 	return "Red: %.2f\nGreen: %.2f\nBlue: %.2f" % [color.r, color.g, color.b]

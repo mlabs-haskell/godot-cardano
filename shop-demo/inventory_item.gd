@@ -18,4 +18,4 @@ func from_item(item: Item):
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.is_pressed():
-		item_selected.emit()
+		item_selected.emit(self)
