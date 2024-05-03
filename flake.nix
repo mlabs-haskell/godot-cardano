@@ -7,13 +7,27 @@
     gut = { url = "github:bitwes/gut/v9.2.0"; flake = false; };
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    hercules-ci-effects.url = "github:hercules-ci/hercules-ci-effects";
+    hercules-ci-effects.inputs.nixpkgs.follows = "nixpkgs";
+    devshell.url = "github:numtide/devshell";
+    devshell.inputs.nixpkgs.follows = "nixpkgs";
+
+    # plutip test
+    cardano-nix.url = "github:mlabs-haskell/cardano.nix";
+    # TODO: use cardano.nix after kupo and plutip are merged there
+    plutip.url = "github:mlabs-haskell/plutip";
+    kupo-nixos.url = "github:mlabs-haskell/kupo-nixos/df5aaccfcec63016e3d9e10b70ef8152026d7bc3";
   };
 
   outputs = inputs@{ self, flake-parts, nixpkgs, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [
       inputs.pre-commit-hooks.flakeModule
+      inputs.hercules-ci-effects.flakeModule
+      inputs.devshell.flakeModule
+      ./nix/private-testnet.nix
+      ./nix/devshell.nix
     ];
-    perSystem = { self', pkgs, config, ... }:
+    perSystem = { self', inputs', pkgs, config, ... }:
       let
         pkgsCrossWin = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.mingwW64;
         make_godot-export-templates-bin = { version ? "4.2.1" }: pkgs.stdenv.mkDerivation {
@@ -100,82 +114,64 @@
         };
         make_demo = { name ? "demo", src ? ./demo, ... }@args:
           make_gd_project (args // { inherit name src; });
-        gut_check = { name ? "godot-cardano-test", src ? ./test }: pkgs.stdenv.mkDerivation {
-          inherit name src;
-          configurePhase = ''
-            rm -rf ./addons/gut
-            mkdir -p ./addons
-            ln -s ${inputs.gut}/addons/gut ./addons/gut
-
-            rm -rf ./addons/@mlabs-haskell/godot-cardano
-            mkdir -p ./addons/@mlabs-haskell
-            ln -s ${make_addon {}}/addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
-          '';
-          buildPhase = ''
-            mkdir -p .home
-            HOME="$(pwd)/.home"
-            export HOME
-            echo "Reimporting resources..."
-            timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
-            echo "Reimporting resources done."
-            echo
-            RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd | tee >(cat 1>&2))
-            [[ "$RESULT" =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
-          '';
-          installPhase = "touch $out";
-          dontFixup = true;
-        };
+        gut_check_configure = { name ? "godot-cardano-test", src ? ./test }: pkgs.writeShellScriptBin "gut_check_configure" ''
+          rm -rf ./addons/gut
+          mkdir -p ./addons
+          ln -s ${inputs.gut}/addons/gut ./addons/gut
+          rm -rf ./addons/@mlabs-haskell/godot-cardano
+          mkdir -p ./addons/@mlabs-haskell
+          ln -s ${make_addon {}}/addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+        '';
+        gut_check_build = { name ? "godot-cardano-test", src ? ./test }: pkgs.writeShellScriptBin "gut_check_build" ''
+          mkdir -p .home
+          HOME="$(pwd)/.home"
+          export HOME
+          echo "Reimporting resources..."
+          timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
+          echo "Reimporting resources done."
+          echo
+          RESULT=$(${self'.packages.godot}/bin/godot4 --headless --script res://addons/gut/gut_cmdln.gd)
+          echo -e "$RESULT"
+          [[ "$RESULT" =~ '---- All tests passed! ----' ]] || (echo "Not all tests passed." && exit 1)
+        '';
         run_gut_test = { name ? "godot-cardano-test", src ? ./test }: pkgs.writeShellApplication {
           inherit name;
           text = ''
+            [ ! -d test ] && echo "Could not find 'test' directory. Please run this script from the repository root." && exit 1
             cd test
             [ ! -f test.gd ] && echo "Could not find 'test.gd'. Please run this script from the repository root." && exit 1
-            ${(gut_check {inherit name src; }).configurePhase}
-            ${(gut_check {inherit name src; }).buildPhase}
+            ${gut_check_configure {inherit name src; }}/bin/gut_check_configure
+            ${gut_check_build {inherit name src; }}/bin/gut_check_build
           '';
         };
-        devShell = pkgs.mkShell {
-          buildInputs = [
-            self'.packages.godot
-            self'.packages.steam-run
-            pkgs.cargo
-            pkgs.rustc
-            pkgs.rust-analyzer
-          ];
-          shellHook = ''
-            set -e
-            test -f demo/project.godot
+        setup-dev-env = pkgs.writeShellScriptBin "setup-dev-env" ''
+          # private testnet tests
+          rm -rf private-testnet
+          mkdir -p private-testnet
 
-            mkdir -p demo/out
+          test -f demo/project.godot
 
-            # link gdextension
-            rm -f addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.*.template_*.*
-            ln -s ../../../../libcsl_godot/target/debug/libcsl_godot.so 'addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so'
+          mkdir -p demo/out
 
-            link-addon () {
-              rm -rf ./addons/@mlabs-haskell/godot-cardano
-              ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
-            }
-            (cd demo &&  (${(make_demo {}).configurePhase}) && link-addon)
-            (cd test && (${(gut_check {}).configurePhase}) && link-addon)
+          # link gdextension
+          rm -f addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.*.template_*.*
+          ln -s ../../../../libcsl_godot/target/debug/libcsl_godot.so 'addons/@mlabs-haskell/godot-cardano/bin/libcsl_godot.linux.template_debug.x86_64.so'
 
-            ${config.pre-commit.installationScript}
+          link-addon () {
+            rm -rf ./addons/@mlabs-haskell/godot-cardano
+            ln -s ../../../addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+          }
+          (cd demo &&  (${self'.packages.demo.configurePhase}) && link-addon)
+          (cd test && (  ${gut_check_configure {}}/bin/gut_check_configure) && link-addon)
 
-            set +e
-          '';
-        };
-        devShellCrossWin = pkgs.mkShell {
-          buildInputs = [
-            self'.packages.godot
-            pkgsCrossWin.rustPlatform.rust.cargo
-            pkgsCrossWin.rustPlatform.rust.rustc
-          ];
-          shellHook = self'.devShells.default.shellHook;
-        };
+          ${config.pre-commit.installationScript}
+
+          set +e
+        '';
       in
       {
-        packages = rec {
-          default = godot-cardano;
+        packages = {
+          default = self'.packages.godot-cardano;
           steam-run = pkgs.steamPackages.steam-fhsenv-without-steam.run;
           godot = pkgs.godot_4;
           godot-bin = pkgs.callPackage (import ./godot-bin.nix) { };
@@ -192,11 +188,9 @@
           demo-windows = make_demo { windows = true; };
           demo-windows-debug = make_demo { windows = true; debug = true; };
           pre_commit_checks = config.pre-commit.settings.run;
-          test = run_gut_test { };
-        };
-        devShells = {
-          default = devShell;
-          cross-windows = devShellCrossWin;
+          preview-integration-test = run_gut_test { };
+          inherit (inputs'.cardano-nix.packages) cardano-cli;
+          inherit setup-dev-env;
         };
         pre-commit.settings = {
           settings = {
