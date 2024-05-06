@@ -141,7 +141,11 @@ func _on_send_ada_button_pressed() -> void:
 			await provider.await_tx(submit_result.value)
 
 func _on_mint_token_button_pressed() -> void:
-	var address := Address.from_bech32(address_input.text)
+	var address_result := Address.from_bech32(address_input.text)
+	if address_result.is_err():
+		push_error("Could not convert Bech32 to address", address_result.value)
+	var address := address_result.value
+	
 	var create_tx_result := cardano.new_tx()
 	
 	if create_tx_result.is_err():
@@ -149,11 +153,52 @@ func _on_mint_token_button_pressed() -> void:
 		return
 		
 	var tx := create_tx_result.value
+	
+	var policy_script = PlutusScript.create("46010000222499".hex_decode())
+	# CIP67 tags and token names
+	var token_name_body : String = "montevideo".to_utf8_buffer().hex_encode()
+	var user_token_name := "00de" + token_name_body
+	var ref_token_name := "0064" + token_name_body
+	
 	tx.mint_assets(
-		PlutusScript.create("46010000222499".hex_decode()), 
-		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		VoidData.new().to_data()
+		policy_script, 
+		[ TxBuilder.MintToken.new(user_token_name.hex_decode(), BigInt.one()),
+		TxBuilder.MintToken.new(ref_token_name.hex_decode(), BigInt.one()) ],
+		VoidData.new()
 	)
+	
+	# Example CIP68 metadata
+	var cip68_datum_payload := {}
+	cip68_datum_payload["Red".to_utf8_buffer()] = BigInt.from_int(255)
+	cip68_datum_payload["Green".to_utf8_buffer()] = BigInt.zero()
+	cip68_datum_payload["Blue".to_utf8_buffer()] = BigInt.zero()
+	
+	var cip68_datum :=	[
+			cip68_datum_payload,
+			BigInt.one(),
+			VoidData.new()
+		]
+	
+
+	var policy_hex := policy_script.hash_as_hex()
+	
+	var minted_value_dict := {}
+	minted_value_dict["%s%s" % [policy_hex, user_token_name]] = BigInt.one()._b
+	minted_value_dict["%s%s" % [policy_hex, ref_token_name]] = BigInt.one()._b
+	var minted_value_result := MultiAsset.from_dictionary(minted_value_dict)
+	if minted_value_result.is_err():
+		push_error("Could not created minted value from dictionary: ", minted_value_result.error)
+	var minted_value := minted_value_result.value
+	
+	# TODO: When balancing the transaction, the minted tokens are not used,
+	# resulting in a 'Insufficient balance in UTxO' error
+	tx.pay_to_address_with_datum(
+		address,
+		BigInt.from_int(5_000_000),
+		minted_value,
+		cip68_datum
+	)
+
 	var result := await tx.complete()
 
 	if result.is_ok():
@@ -161,8 +206,10 @@ func _on_mint_token_button_pressed() -> void:
 		var submit_result := await result.value.submit()
 		if submit_result.is_err():
 			push_error(submit_result.error)
+		else:
+			print("Token minted succesfully. Tx hash: ", submit_result.value.to_hex())
 	else:
-		push_error(result.error)
+		push_error("Failed to complete transaction: ", result.error)
 
 func set_wallet(key_ring: SingleAddressWallet):
 	if wallet != null:
