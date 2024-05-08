@@ -4,7 +4,7 @@ var provider: Provider
 var cardano: Cardano = null
 var wallet: Wallet.MnemonicWallet = null
 var correct_password: String = ""
-var loader := SingleAddressWalletLoader.new()
+var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
 
 @onready
 var wallet_details: RichTextLabel = %WalletDetails
@@ -92,7 +92,8 @@ func _on_generate_new_wallet_pressed():
 		password_input.text,
 		0,
 		"",
-		""
+		"",
+		Provider.Network.PREVIEW
 	)
 	if create_result.is_ok():	
 		phrase_input.text = create_result.value.seed_phrase
