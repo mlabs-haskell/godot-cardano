@@ -25,6 +25,7 @@
       inputs.pre-commit-hooks.flakeModule
       inputs.hercules-ci-effects.flakeModule
       inputs.devshell.flakeModule
+      ./docs
       ./nix/godot-cardano.nix
       ./nix/private-testnet.nix
       ./nix/devshell.nix
