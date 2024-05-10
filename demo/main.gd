@@ -1,5 +1,8 @@
 extends Node2D
 
+@export
+var mint_token_conf: MintCip68Pair
+
 var provider: Provider
 var cardano: Cardano = null
 var wallet: Wallet.MnemonicWallet = null
@@ -37,12 +40,12 @@ var test_spend_script: PlutusScript = PlutusScript.create("581b01000032222533300
 
 func _ready() -> void:
 	var token : String = FileAccess\
-		.open("./preview_token.txt", FileAccess.READ)\
+		.open("./preprod_token.txt", FileAccess.READ)\
 		.get_as_text(true)\
 		.replace("\n", "")
 
 	provider = BlockfrostProvider.new(
-		Provider.Network.PREVIEW,
+		Provider.Network.PREPROD,
 		token
 	)
 	add_child(provider)
@@ -141,64 +144,40 @@ func _on_send_ada_button_pressed() -> void:
 			await provider.await_tx(submit_result.value)
 
 func _on_mint_token_button_pressed() -> void:
+	# Get own address
 	var address_result := Address.from_bech32(address_input.text)
 	if address_result.is_err():
 		push_error("Could not convert Bech32 to address", address_result.value)
 	var address := address_result.value
 	
+	# Create TX builder
 	var create_tx_result := cardano.new_tx()
-	
 	if create_tx_result.is_err():
 		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
 		return
-		
-	var tx := create_tx_result.value
+	var tx : TxBuilder = create_tx_result.value
 	
+	# We mint the CIP68 pair
 	var policy_script = PlutusScript.create("46010000222499".hex_decode())
-	# CIP67 tags and token names
-	var token_name_body : String = "paris".to_utf8_buffer().hex_encode()
-	var user_token_name := "000de140" + token_name_body
-	var ref_token_name := "000643b0" + token_name_body
-	
-	tx.mint_assets(
-		policy_script, 
-		[ TxBuilder.MintToken.new(user_token_name.hex_decode(), BigInt.one()),
-		TxBuilder.MintToken.new(ref_token_name.hex_decode(), BigInt.one()) ],
-		VoidData.new()
-	)
-	
-	# Example CIP68 metadata
-	var cip68_datum_payload := {}
-	cip68_datum_payload["name".to_utf8_buffer()] = "Geographic Token".to_utf8_buffer()
-	cip68_datum_payload["image".to_utf8_buffer()] = "http://localhost/my-image.png".to_utf8_buffer() 
-	cip68_datum_payload["Red".to_utf8_buffer()] = BigInt.from_int(255)
-	cip68_datum_payload["Green".to_utf8_buffer()] = BigInt.zero()
-	cip68_datum_payload["Blue".to_utf8_buffer()] = BigInt.zero()
-	
-	var cip68_datum :=	Constr.new(BigInt.zero(), [
-			cip68_datum_payload,
-			BigInt.one(),
-			VoidData.new()
-		])
-	
+	var redeemer = VoidData.new()	
+	tx.mint_cip68_pair(policy_script, redeemer, mint_token_conf)
 
+	# Create MultiAsset with both tokens
 	var policy_hex := policy_script.hash_as_hex()
-	
 	var minted_value_dict := {}
-	minted_value_dict["%s%s" % [policy_hex, user_token_name]] = BigInt.one()._b
-	minted_value_dict["%s%s" % [policy_hex, ref_token_name]] = BigInt.one()._b
+	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_user_token_name().hex_encode()]] = BigInt.one()._b
+	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_ref_token_name().hex_encode()]] = BigInt.one()._b
 	var minted_value_result := MultiAsset.from_dictionary(minted_value_dict)
 	if minted_value_result.is_err():
 		push_error("Could not created minted value from dictionary: ", minted_value_result.error)
 	var minted_value := minted_value_result.value
 	
-	# TODO: When balancing the transaction, the minted tokens are not used,
-	# resulting in a 'Insufficient balance in UTxO' error
+	# Send both tokens to myself and set its corresponding metadata
 	tx.pay_to_address_with_datum(
 		address,
 		BigInt.from_int(5_000_000),
 		minted_value,
-		cip68_datum
+		mint_token_conf.to_data(true)
 	)
 
 	var result := await tx.complete()
