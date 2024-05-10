@@ -156,9 +156,9 @@ func _on_mint_token_button_pressed() -> void:
 	
 	var policy_script = PlutusScript.create("46010000222499".hex_decode())
 	# CIP67 tags and token names
-	var token_name_body : String = "montevideo".to_utf8_buffer().hex_encode()
-	var user_token_name := "00de" + token_name_body
-	var ref_token_name := "0064" + token_name_body
+	var token_name_body : String = "paris".to_utf8_buffer().hex_encode()
+	var user_token_name := "000de140" + token_name_body
+	var ref_token_name := "000643b0" + token_name_body
 	
 	tx.mint_assets(
 		policy_script, 
@@ -169,15 +169,17 @@ func _on_mint_token_button_pressed() -> void:
 	
 	# Example CIP68 metadata
 	var cip68_datum_payload := {}
+	cip68_datum_payload["name".to_utf8_buffer()] = "Geographic Token".to_utf8_buffer()
+	cip68_datum_payload["image".to_utf8_buffer()] = "http://localhost/my-image.png".to_utf8_buffer() 
 	cip68_datum_payload["Red".to_utf8_buffer()] = BigInt.from_int(255)
 	cip68_datum_payload["Green".to_utf8_buffer()] = BigInt.zero()
 	cip68_datum_payload["Blue".to_utf8_buffer()] = BigInt.zero()
 	
-	var cip68_datum :=	[
+	var cip68_datum :=	Constr.new(BigInt.zero(), [
 			cip68_datum_payload,
 			BigInt.one(),
 			VoidData.new()
-		]
+		])
 	
 
 	var policy_hex := policy_script.hash_as_hex()
