@@ -77,5 +77,9 @@
           my-mkdocs
         ];
       };
+
+      hercules-ci.github-pages.settings.contents = self'.packages.docs;
     };
+
+  hercules-ci.github-pages.branch = "marton/docs";
 }
