@@ -1,9 +1,6 @@
-{ self, config, lib, ... }: {
+{ config, ... }: {
   perSystem = { self', pkgs, ... }:
     let
-
-      docsPath = "./docs/reference/module-options";
-
       my-mkdocs =
         pkgs.runCommand "my-mkdocs"
           {
@@ -56,5 +53,29 @@
         ${self'.packages.docs.configurePhase}
         ${my-mkdocs}/bin/mkdocs serve
       '';
+
+      devshells.default = {
+        commands =
+          let
+            category = "documentation";
+          in
+          [
+            {
+              inherit category;
+              name = "docs-serve";
+              help = "serve documentation web page";
+              command = "nix run .#docs-serve";
+            }
+            {
+              inherit category;
+              name = "docs-build";
+              help = "build documentation";
+              command = "nix build .#docs";
+            }
+          ];
+        packages = [
+          my-mkdocs
+        ];
+      };
     };
 }
