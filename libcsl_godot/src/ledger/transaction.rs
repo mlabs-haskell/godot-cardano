@@ -421,6 +421,11 @@ impl PlutusScript {
             hash: self.script.hash(),
         })
     }
+
+    #[func]
+    fn hash_as_hex(&self) -> GString {
+        self.hash().bind().hash.to_hex().to_godot()
+    }
 }
 
 #[derive(GodotClass, Debug)]

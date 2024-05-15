@@ -3,6 +3,7 @@
 /demo/addons/
 /demo/out/
 /test/addons/
+/private-testnet/
 *.so
 *.dll
 .godot/
