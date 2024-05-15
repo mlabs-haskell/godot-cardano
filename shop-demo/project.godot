@@ -15,6 +15,10 @@ run/main_scene="res://shop.tscn"
 config/features=PackedStringArray("4.2", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+WalletSingleton="*res://wallet_singleton.gd"
+
 [display]
 
 window/size/viewport_width=1280

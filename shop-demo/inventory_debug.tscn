@@ -1,0 +1,92 @@
+[gd_scene load_steps=5 format=3 uid="uid://f358od1ky5cm"]
+
+[ext_resource type="PackedScene" uid="uid://cmtq3bljeruha" path="res://inventory_item.tscn" id="1_ekyv2"]
+[ext_resource type="Script" path="res://confirm_button.gd" id="2_wj2ry"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_omcx3"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7mq2t"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+
+[node name="Inventory" type="HBoxContainer"]
+z_index = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(600, 400)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_omcx3")
+horizontal_scroll_mode = 0
+
+[node name="UserItemContainer" type="GridContainer" parent="ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 15
+columns = 5
+
+[node name="InventoryItem" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
+layout_mode = 2
+item_name = "Item 0"
+color = Color(0.161079, 0.983541, 0.574101, 1)
+
+[node name="_PanelContainer_10" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
+layout_mode = 2
+item_name = "Item 1"
+sku = 1
+color = Color(0.808554, 0.0566542, 0.512233, 1)
+
+[node name="_PanelContainer_12" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
+layout_mode = 2
+item_name = "Item 2"
+sku = 2
+color = Color(0.0425754, 0.242668, 0.496777, 1)
+
+[node name="_PanelContainer_13" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
+layout_mode = 2
+item_name = "Item 3"
+sku = 3
+color = Color(0.599166, 0.5591, 0.241384, 1)
+
+[node name="Control" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control"]
+layout_mode = 2
+
+[node name="SelectedItemDescription" type="RichTextLabel" parent="Control/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "Red: 0.80855423212051
+Green: 0.05665416643023
+Blue: 0.5122327208519"
+
+[node name="PanelContainer" type="PanelContainer" parent="Control/VBoxContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_7mq2t")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Control/VBoxContainer/PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="SelectedItemPrice" type="Label" parent="Control/VBoxContainer/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "907.48 t₳"
+
+[node name="SelectedItemSellButton" type="Button" parent="Control/VBoxContainer/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Sell"
+script = ExtResource("2_wj2ry")

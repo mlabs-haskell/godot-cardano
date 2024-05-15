@@ -69,3 +69,6 @@ func to_data(_strict := false) -> Variant:
 	
 func _to_string() -> String:
 	return _b.to_str()
+
+func format_price(quantity_decimals: float = 6, format_decimals: int = 2) -> String:
+	return ("%." + str(format_decimals) + "f") % (float(to_string()) / pow(10, quantity_decimals))

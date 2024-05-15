@@ -172,18 +172,24 @@ func mint_assets(
 	
 	return self
 	
-func mint_cip68_pair(
+func mint_cip68(
 	minting_policy: PlutusScript
 	, redeemer: Variant
-	, conf: MintCip68Pair) -> TxBuilder:
-		mint_assets(
-			minting_policy, 
-			[ TxBuilder.MintToken.new(conf.get_user_token_name(), BigInt.one()),
-			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one()) ],
-		redeemer)
-		
-		return self
+	, conf: MintCip68) -> TxBuilder:
+	# TODO: Query reference token to check if it already exists on-chain
+	mint_assets(
+		minting_policy, 
+		[ TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_initial_quantity()),
+		TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one()) ],
+	redeemer)
 	
+	return self
+
+func pay_reference_token_to(
+	address: Address,
+	conf: MintCip68
+) -> TxBuilder:
+	return self
 
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	var _utxos: Array[_Utxo] = []
