@@ -40,12 +40,12 @@ var test_spend_script: PlutusScript = PlutusScript.create("581b01000032222533300
 
 func _ready() -> void:
 	var token : String = FileAccess\
-		.open("./preprod_token.txt", FileAccess.READ)\
+		.open("./preview_token.txt", FileAccess.READ)\
 		.get_as_text(true)\
 		.replace("\n", "")
 
 	provider = BlockfrostProvider.new(
-		Provider.Network.PREPROD,
+		Provider.Network.PREVIEW,
 		token
 	)
 	add_child(provider)
@@ -159,7 +159,7 @@ func _on_mint_token_button_pressed() -> void:
 	
 	# We mint the CIP68 pair
 	var policy_script = PlutusScript.create("46010000222499".hex_decode())
-	var redeemer = VoidData.new()	
+	var redeemer = VoidData.new().to_data(true)
 	tx.mint_cip68_pair(policy_script, redeemer, mint_token_conf)
 
 	# Create MultiAsset with both tokens
