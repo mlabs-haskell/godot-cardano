@@ -1,8 +1,8 @@
 class_name VoidData
 extends RefCounted
 
-func to_data(strict := false) -> Variant:
-	return Constr.new(BigInt.from_int(0), []).to_data(strict)
+func to_data(_strict := false) -> Variant:
+	return Constr.new(BigInt.from_int(0), [])
 
 static func from_data(v: Variant) -> VoidData:
 	assert(is_instance_of(v, Constr))
