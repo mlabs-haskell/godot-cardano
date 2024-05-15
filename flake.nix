@@ -44,6 +44,10 @@
           # clippy.enable = true;
         };
       };
+      packages.fmt = pkgs.writeShellScriptBin "fmt" ''
+        ${config.pre-commit.settings.package}/bin/pre-commit run --all-files
+      '';
+      formatter = config.packages.fmt;
     };
   };
 }
