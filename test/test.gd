@@ -68,14 +68,15 @@ class TestWallets extends GutTest:
 			"1234",
 			account_index,
 			"",
-			""
+			"",
+			Provider.Network.PREVIEW
 		)
 		assert_true(
 			create_result.is_ok(),
 			"Create new wallet with account %d" % account_index
 		)
 		
-		var loader := SingleAddressWalletLoader.new()
+		var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
 		var import_result := await loader.import_from_seedphrase(
 			create_result.value.seed_phrase,
 			"",
@@ -101,7 +102,7 @@ class TestWallets extends GutTest:
 		)
 		
 	func test_wallet_import() -> void:
-		var loader := SingleAddressWalletLoader.new()
+		var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
 		for wallet_data: Dictionary in _wallets:
 			var seed_phrase: String = wallet_data['seedPhrase']
 			var import_result := await loader.import_from_seedphrase(
@@ -162,7 +163,7 @@ class TestSdk extends GutTest:
 				"No funding wallet available"
 			)
 			funding_wallet_phrase = FileAccess.get_file_as_string("res://seed_phrase.txt")
-		var loader := SingleAddressWalletLoader.new()
+		var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
 		var import_result := await loader.import_from_seedphrase(
 			funding_wallet_phrase,
 			"",
@@ -237,7 +238,8 @@ class TestSdk extends GutTest:
 				"1234",
 				0,
 				"",
-				""
+				"",
+				Provider.Network.PREVIEW
 			)
 			if create_result.is_err():
 				continue
