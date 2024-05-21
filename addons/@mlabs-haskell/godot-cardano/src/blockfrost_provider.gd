@@ -363,9 +363,3 @@ func _get_tx_status(tx_hash: TransactionHash) -> bool:
 	)
 	tx_status.emit(status)
 	return status._confirmed
-
-func await_all_requests() -> void:
-	var children := get_children()
-	for child in children:
-		if child is HTTPRequest:
-			await child.request_completed

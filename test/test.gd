@@ -151,7 +151,6 @@ class TestSdk extends GutTest:
 		var data: Dictionary = JSON.parse_string(data_json)
 		_script_data = data.scripts
 
-	func before_each():
 		or_quit(FileAccess.file_exists("res://preview_token.txt"), "No Blockfrost token available")
 		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		_provider = BlockfrostProvider.new(
@@ -159,11 +158,6 @@ class TestSdk extends GutTest:
 			preview_token,
 		)
 		add_child(_provider)
-		
-	func after_each():
-		await _provider.await_all_requests()
-		remove_child(_provider)
-		_provider.free()
 
 	func or_quit(test: bool, msg: String = "") -> void:
 		if not test:
@@ -305,23 +299,22 @@ class TestSdk extends GutTest:
 		add_child(cardano)
 
 		await _provider.got_protocol_parameters
-		#await wallet._get_updated_utxos()
-		#var create_tx_result := cardano.new_tx()
-		#assert_true(create_tx_result.is_ok(), "Create test wallet funding tx")
-		#if create_tx_result.is_ok():
-			#var fund_tx := create_tx_result.value
-			#var complete_tx_result := await fund_tx.complete()
-			#assert_true(complete_tx_result.is_ok(), "Build test wallet funding tx")
-			#if complete_tx_result.is_ok():
-				#var complete_tx := complete_tx_result.value
-				#complete_tx.sign(incorrect_password)
-				#assert_true(
-					#complete_tx._results[0].tag() == TxComplete.TxCompleteStatus.INVALID_SIGNATURE,
-					#"Signing transaction with incorrect password fails"
-				#)
-		#else:
-			#print("Failed to create transaction: %s" % create_tx_result.error)
-		assert_true(true)
+		await wallet._get_updated_utxos()
+		var create_tx_result := cardano.new_tx()
+		assert_true(create_tx_result.is_ok(), "Create test wallet funding tx")
+		if create_tx_result.is_ok():
+			var fund_tx := create_tx_result.value
+			var complete_tx_result := await fund_tx.complete()
+			assert_true(complete_tx_result.is_ok(), "Build test wallet funding tx")
+			if complete_tx_result.is_ok():
+				var complete_tx := complete_tx_result.value
+				complete_tx.sign(incorrect_password)
+				assert_true(
+					complete_tx._results[0].tag() == TxComplete.TxCompleteStatus.INVALID_SIGNATURE,
+					"Signing transaction with incorrect password fails"
+				)
+		else:
+			print("Failed to create transaction: %s" % create_tx_result.error)
 
 	func blockfrost_payment(cardano: Cardano) -> TransactionHash:
 		await _provider.await_utxos_at(cardano.wallet._get_change_address(), null, 180)
@@ -524,4 +517,6 @@ class TestSdk extends GutTest:
 			var wallet := _wallets[ix]
 			var cardano := cardanos[ix]
 			remove_child(wallet)
+			wallet.queue_free()
 			remove_child(cardano)
+			cardano.queue_free()

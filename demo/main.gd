@@ -49,6 +49,7 @@ func _ready() -> void:
 		token
 	)
 	add_child(provider)
+	add_child(loader)
 	wallet_details.text = "No wallet set"
 	
 	# if a seed phrase file is available, we load the seed phrase from there
@@ -126,11 +127,10 @@ func _on_send_ada_button_pressed() -> void:
 		return
 		
 	var tx := create_tx_result.value
-	tx.pay_to_address_with_datum(
+	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
-		MultiAsset.empty(),
-		BigInt.from_int(21)
+		MultiAsset.empty()
 	)
 	tx.valid_after(Time.get_unix_time_from_system() - 120)
 	tx.valid_before(Time.get_unix_time_from_system() + 180)

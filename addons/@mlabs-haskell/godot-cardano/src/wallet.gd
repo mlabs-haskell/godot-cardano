@@ -35,9 +35,9 @@ class MnemonicWallet extends Wallet:
 	var single_address_wallet: SingleAddressWallet
 
 	@export
-	var utxos_update_age: float = 4
+	var utxos_update_age: float = 30
 	@export
-	var utxos_cache_age: float = 4
+	var utxos_cache_age: float = 30
 
 	# Time left before the Utxos are refreshed. If equal to zero, then the utxos
 	# are currently being fetched.
