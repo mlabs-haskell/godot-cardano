@@ -1,4 +1,4 @@
-extends Node
+extends RefCounted
 
 class_name SingleAddressWalletLoader
 
@@ -107,6 +107,7 @@ func import_from_seedphrase(
 			)
 		)
 		var res: WalletImportResult = await import_completed
+		thread.wait_to_finish()
 		return res
 			
 func _wrap_import_from_seedphrase(
@@ -161,12 +162,6 @@ static func create(
 			wallet_password.to_utf8_buffer(), account_index, name, account_description
 		)
 	)
-
-func _exit_tree():
-	if not (thread == null) and thread.is_started():
-		thread.wait_to_finish()
-	else:
-		pass # the thread was never started or it's still running
 		
 func add_account(account_index: int, password: String):
 	_wallet_store._add_account(account_index, "", "", password.to_utf8_buffer())

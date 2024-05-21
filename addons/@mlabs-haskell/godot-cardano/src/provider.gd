@@ -204,3 +204,18 @@ func await_utxos_at(
 
 func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Address:
 	return Address.build(1 if network == Network.MAINNET else 0, payment_cred, stake_cred)
+
+func _build_datum_info(
+	datum_hash: String,
+	datum_inline_str: String,
+	datum_resolved_str: String,
+) -> UtxoDatumInfo:
+	if datum_hash == "":
+		return UtxoDatumInfo.empty()
+	elif datum_inline_str == "":
+		if datum_resolved_str == "":
+			return UtxoDatumInfo.create_with_hash(datum_hash)
+		else:
+			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
+	else:
+		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)

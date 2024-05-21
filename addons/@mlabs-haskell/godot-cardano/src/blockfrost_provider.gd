@@ -165,6 +165,7 @@ func blockfrost_request(request: Request) -> Variant:
 	if status != OK:
 		print("Creating Blockfrost request failed: %s, %s" % [status, request])
 		remove_child(http_request)
+		http_request.queue_free()
 		return null
 
 	var result : Array = await http_request.request_completed
@@ -172,6 +173,7 @@ func blockfrost_request(request: Request) -> Variant:
 	var content_bytes : PackedByteArray = result[3]
 	var content := content_bytes.get_string_from_utf8()
 	remove_child(http_request)
+	http_request.queue_free()
 	
 	# TODO: handle error responses properly
 	if status_code != 200:
@@ -309,21 +311,6 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 	))
 	utxo_result.emit(UtxoResult.new(address, utxos))
 	return utxos
-	
-func _build_datum_info(
-	datum_hash: String,
-	datum_inline_str: String,
-	datum_resolved_str: String,
-) -> UtxoDatumInfo:
-	if datum_hash == "":
-		return UtxoDatumInfo.empty()
-	elif datum_inline_str == "":
-		if datum_resolved_str == "":
-			return UtxoDatumInfo.create_with_hash(datum_hash)
-		else:
-			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
-	else:
-		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
 
 func _get_datum_cbor(_datum_hash: String) -> Cbor:
 	var cbor_resp : Dictionary = await blockfrost_request(DatumCborFromHash.new(_datum_hash))
@@ -376,3 +363,9 @@ func _get_tx_status(tx_hash: TransactionHash) -> bool:
 	)
 	tx_status.emit(status)
 	return status._confirmed
+
+func await_all_requests() -> void:
+	var children := get_children()
+	for child in children:
+		if child is HTTPRequest:
+			await child.request_completed

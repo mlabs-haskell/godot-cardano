@@ -1,5 +1,5 @@
 class_name Abstract
-extends Node
+extends RefCounted
 ## Used to represent abstract classes which should never be instantiated. 
 ## Concrete classes inheriting from this class should always override _init.
 
