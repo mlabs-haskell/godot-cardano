@@ -274,16 +274,13 @@ impl GTxBuilder {
         let datum = utxo.to_datum();
         let value = utxo.to_value();
 
-        // set the maximum ex units to overestimate the fee on first balance pass
-        let (max_steps, max_mem) = self.max_ex_units;
-
         // Index and RedeemerTag are not necessary, they are automatically set
         // by get_plutus_inputs_scripts()
         let redeemer = CSL::plutus::Redeemer::new(
             &RedeemerTag::new_spend(),
             &to_bignum(0u64),
             &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
-            &ExUnits::new(&BigNum::from(max_mem / 4), &BigNum::from(max_steps / 4)), //
+            &ExUnits::new(&BigNum::zero(), &BigNum::zero()), //
         );
 
         // FIXME: script data hash fails to match if we add the datum here?
@@ -510,13 +507,11 @@ impl GTxBuilder {
         for (index, (_script_hash, (script, assets, redeemer_bytes))) in
             minted_assets.iter().enumerate()
         {
-            // set the maximum ex units to overestimate the fee on first balance pass
-            let (max_steps, max_mem) = self.max_ex_units;
             let redeemer = CSL::plutus::Redeemer::new(
                 &RedeemerTag::new_mint(),
                 &BigNum::from(index),
                 &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
-                &ExUnits::new(&BigNum::from(max_mem / 4), &BigNum::from(max_steps / 4)),
+                &ExUnits::new(&BigNum::zero(), &BigNum::zero()),
             );
             self.add_mint_asset(
                 &PlutusScript {
@@ -554,7 +549,6 @@ impl GTxBuilder {
         }
 
         tx_builder.set_inputs(&self.inputs_builder.clone());
-        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
         if self.uses_plutus_scripts {
@@ -601,7 +595,19 @@ impl GTxBuilder {
             )?;
             tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
-        tx_builder.add_change_if_needed(&change_address.bind().address)?;
+
+        match self.fee {
+            Some(_fee) => {
+                tx_builder
+                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
+                tx_builder.add_change_if_needed(&change_address.bind().address)?;
+            }
+            None => {
+                tx_builder.set_fee(&BigNum::from(5_000_000u64));
+                tx_builder
+                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
+            }
+        }
         self.fee = Some(tx_builder.get_fee_if_set().unwrap().into());
         let tx = tx_builder.build_tx()?;
 

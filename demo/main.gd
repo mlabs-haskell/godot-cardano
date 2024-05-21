@@ -1,10 +1,13 @@
 extends Node2D
 
+@export
+var mint_token_conf: MintCip68Pair
+
 var provider: Provider
 var cardano: Cardano = null
 var wallet: Wallet.MnemonicWallet = null
 var correct_password: String = ""
-var loader := SingleAddressWalletLoader.new()
+var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
 
 @onready
 var wallet_details: RichTextLabel = %WalletDetails
@@ -91,7 +94,8 @@ func _on_generate_new_wallet_pressed():
 		password_input.text,
 		0,
 		"",
-		""
+		"",
+		Provider.Network.PREVIEW
 	)
 	if create_result.is_ok():	
 		phrase_input.text = create_result.value.seed_phrase
@@ -141,19 +145,42 @@ func _on_send_ada_button_pressed() -> void:
 			await provider.await_tx(submit_result.value)
 
 func _on_mint_token_button_pressed() -> void:
-	var address := Address.from_bech32(address_input.text)
-	var create_tx_result := cardano.new_tx()
+	# Get own address
+	var address_result := Address.from_bech32(address_input.text)
+	if address_result.is_err():
+		push_error("Could not convert Bech32 to address", address_result.value)
+	var address := address_result.value
 	
+	# Create TX builder
+	var create_tx_result := cardano.new_tx()
 	if create_tx_result.is_err():
 		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
 		return
-		
-	var tx := create_tx_result.value
-	tx.mint_assets(
-		PlutusScript.create("46010000222499".hex_decode()), 
-		[ TxBuilder.MintToken.new("example token".to_utf8_buffer(), BigInt.one()) ],
-		VoidData.new().to_data()
+	var tx : TxBuilder = create_tx_result.value
+	
+	# We mint the CIP68 pair
+	var policy_script = PlutusScript.create("46010000222499".hex_decode())
+	var redeemer = VoidData.new().to_data(true)
+	tx.mint_cip68_pair(policy_script, redeemer, mint_token_conf)
+
+	# Create MultiAsset with both tokens
+	var policy_hex := policy_script.hash_as_hex()
+	var minted_value_dict := {}
+	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_user_token_name().hex_encode()]] = BigInt.one()._b
+	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_ref_token_name().hex_encode()]] = BigInt.one()._b
+	var minted_value_result := MultiAsset.from_dictionary(minted_value_dict)
+	if minted_value_result.is_err():
+		push_error("Could not created minted value from dictionary: ", minted_value_result.error)
+	var minted_value := minted_value_result.value
+	
+	# Send both tokens to myself and set its corresponding metadata
+	tx.pay_to_address_with_datum(
+		address,
+		BigInt.from_int(5_000_000),
+		minted_value,
+		mint_token_conf.to_data(true)
 	)
+
 	var result := await tx.complete()
 
 	if result.is_ok():
@@ -161,8 +188,10 @@ func _on_mint_token_button_pressed() -> void:
 		var submit_result := await result.value.submit()
 		if submit_result.is_err():
 			push_error(submit_result.error)
+		else:
+			print("Token minted succesfully. Tx hash: ", submit_result.value.to_hex())
 	else:
-		push_error(result.error)
+		push_error("Failed to complete transaction: ", result.error)
 
 func set_wallet(key_ring: SingleAddressWallet):
 	if wallet != null:
