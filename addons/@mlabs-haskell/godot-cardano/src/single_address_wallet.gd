@@ -35,12 +35,32 @@ class SingleAddressWalletError extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
-	
-	
+
 ## Sign the given [Transaction] and obtain a [Signature]
 func _sign_transaction(password: String, tx: Transaction) -> SingleAddressWalletError:
 	return SingleAddressWalletError.new(
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
+	)
+
+class SignDataError extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: DataSignature:
+		get: return _res.unsafe_value() as DataSignature
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
+
+
+
+## TODO: add address to parameters
+## TODO: verify address matches spending_private_key (or use account_private_key?)
+## TODO: check that key passed as argument to sign functions is own wallet pub key
+## TODO: check that the given address belongs to the current network
+
+## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
+func _sign_data(password: String, data: String) -> SignDataError:
+	return SignDataError.new(
+	_wallet._sign_data(password.to_utf8_buffer(), data)
 	)
 
 ## Adds an account to this wallet's store with the given index

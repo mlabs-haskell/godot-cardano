@@ -108,6 +108,19 @@ func import_from_seedphrase(
 		)
 		var res: WalletImportResult = await import_completed
 		return res
+		
+func import_from_seedphrase_wo_new_thread(
+	phrase: String,
+	phrase_password: String, 
+	wallet_password: String,
+	account_index: int,
+	name: String,
+	account_description: String) -> WalletImportResult:
+		_wrap_import_from_seedphrase(
+				phrase, phrase_password, wallet_password, account_index, name, account_description
+			)
+		var res: WalletImportResult = await import_completed
+		return res
 			
 func _wrap_import_from_seedphrase(
 	phrase: String,

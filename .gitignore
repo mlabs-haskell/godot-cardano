@@ -5,9 +5,11 @@
 /test/addons/
 *.so
 *.dll
+*.wasm
 .godot/
 seed_phrase.txt
 preview_token.txt
 result*
 */.godot/
 .pre-commit-config.yaml
+.vscode

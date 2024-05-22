@@ -24,6 +24,8 @@ pub mod wallet;
 pub mod ledger {
     pub mod transaction;
 }
+pub mod cip_30_sign;
+pub mod cip_8_sign;
 
 use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
