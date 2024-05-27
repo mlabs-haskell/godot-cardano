@@ -133,6 +133,7 @@ impl SingleAddressWallet {
         &self,
         password: PackedByteArray,
         cbor_string: String,
+        network_id: u8,
     ) -> Result<DataSignature, SingleAddressWalletError> {
         let pbes2_params = self.get_pbes2_params();
 
@@ -145,7 +146,7 @@ impl SingleAddressWallet {
             self.account_info.index,
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0);
-                let address = address_from_key(&account_private_key.to_public());
+                let address = address_from_key(network_id, &account_private_key.to_public());
                 cip_8_sign::sign_data(data.clone(), &spend_key, &address)
                     .map_err(SingleAddressWalletError::DataSignCip30Error)
             },
@@ -157,8 +158,13 @@ impl SingleAddressWallet {
     }
 
     #[func]
-    fn _sign_data(&self, password: PackedByteArray, cbor_string: String) -> Gd<GResult> {
-        Self::to_gresult_class(self.sign_data(password, cbor_string))
+    fn _sign_data(
+        &self,
+        password: PackedByteArray,
+        cbor_string: String,
+        network_id: u8,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(self.sign_data(password, cbor_string, network_id))
     }
 
     pub fn get_address(&self) -> Gd<Address> {

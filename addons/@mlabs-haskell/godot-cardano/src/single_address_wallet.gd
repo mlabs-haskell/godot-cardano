@@ -42,17 +42,14 @@ class SignDataError extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 
-
-
-## TODO: add address to parameters
-## TODO: verify address matches spending_private_key (or use account_private_key?)
-## TODO: check that key passed as argument to sign functions is own wallet pub key
-## TODO: check that the given address belongs to the current network
-
+# TODO: CIP-30 compliant error
 ## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
-func _sign_data(password: String, data: String) -> SignDataError:
+func sign_data(password: String, signing_address: String, data: String) -> SignDataError:
+	var own_address = self.get_address()
+	if (signing_address != own_address.to_hex() &&  signing_address != own_address.to_bech32()):
+		return SignDataError.new(_Result.err("Address do not match", 0)) # TODO: proper tag
 	return SignDataError.new(
-	_wallet._sign_data(password.to_utf8_buffer(), data)
+	_wallet._sign_data(password.to_utf8_buffer(), data, _wallet_loader._network)
 	)
 
 ## Adds an account to this wallet's store with the given index
