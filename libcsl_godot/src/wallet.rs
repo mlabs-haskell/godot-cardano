@@ -164,7 +164,9 @@ impl SingleAddressWallet {
 /// with a password (as explained in the BIP39 standard).
 ///
 /// The wallet is serialised to disk, but as the Cardano private master key.
-/// We are not interested in preserving the seed phrase or other currencies' keys.
+/// We are not interested in preserving other currencies' keys. The seed phrase
+/// is not stored either, only being returned during wallet creation.
+///
 /// For safety, the private key is stored using the PBES2 encryption scheme.
 ///
 /// For convenience, the account public key is also stored. Considering that
@@ -172,7 +174,7 @@ impl SingleAddressWallet {
 /// the public key, as it is equivalent to storing the only address that will
 /// be in use for any given account.
 #[derive(GodotClass)]
-#[class(base=Resource, rename=_SingleAddressWalletStore)]
+#[class(base=RefCounted, rename=_SingleAddressWalletStore)]
 pub struct SingleAddressWalletStore {
     #[var]
     encrypted_master_private_key: PackedByteArray,
@@ -198,6 +200,8 @@ pub enum SingleAddressWalletStoreError {
     BadScryptParams(InvalidParams),
     CouldNotParseAesIv(TryFromSliceError),
     AccountNotFound(u32),
+    AttributeNotFoundInResource(StringName),
+    AttributeWithWrongTypeInResource(StringName),
 }
 
 impl GodotConvert for SingleAddressWalletStoreError {
@@ -214,6 +218,8 @@ impl ToGodot for SingleAddressWalletStoreError {
             BadScryptParams(_) => 4,
             CouldNotParseAesIv(_) => 5,
             AccountNotFound(_) => 6,
+            AttributeNotFoundInResource(_) => 7,
+            AttributeWithWrongTypeInResource(_) => 8,
         }
     }
 }
@@ -276,6 +282,71 @@ impl SingleAddressWalletStore {
         )
     }
 
+    /// This method allows initialization of all the internal fields by copying
+    /// them from a generic object. It will fail if any attributes are missing
+    /// or they don't match the expected type.
+    pub fn import_from_resource(
+        resource: Gd<Resource>,
+        network_id: u8,
+    ) -> Result<SingleAddressWalletImportResult, SingleAddressWalletStoreError> {
+        // helper for getting attributes and casting them to the appropriate type
+        fn get_attr<T>(name: &str, res: &Gd<Resource>) -> Result<T, SingleAddressWalletStoreError>
+        where
+            T: FromGodot,
+        {
+            let attr_name = StringName::from(name);
+            let attr: Variant = res.get(attr_name.clone());
+            if attr.is_nil() {
+                Err(SingleAddressWalletStoreError::AttributeNotFoundInResource(
+                    attr_name,
+                ))
+            } else {
+                match attr.try_to::<T>() {
+                    Ok(v) => Ok(v),
+                    Err(_) => Err(
+                        SingleAddressWalletStoreError::AttributeWithWrongTypeInResource(
+                            attr_name.clone(),
+                        ),
+                    ),
+                }
+            }
+        }
+
+        let accounts: Array<Gd<Account>> = {
+            let accounts_untyped: Array<Gd<Resource>> = get_attr("accounts", &resource)?;
+            accounts_untyped
+                .iter_shared()
+                .map(|res: Gd<Resource>| {
+                    Ok(Gd::from_object(Account {
+                        index: get_attr("index", &res)?,
+                        name: get_attr("name", &res)?,
+                        description: get_attr("description", &res)?,
+                        public_key: get_attr("public_key", &res)?,
+                    }))
+                })
+                .collect::<Result<Array<Gd<Account>>, SingleAddressWalletStoreError>>()
+        }?;
+
+        // create wallet store
+        let wallet_store = Self {
+            encrypted_master_private_key: get_attr("encrypted_master_private_key", &resource)?,
+            accounts,
+            scrypt_salt: get_attr("scrypt_salt", &resource)?,
+            scrypt_log_n: get_attr("scrypt_log_n", &resource)?,
+            scrypt_r: get_attr("scrypt_r", &resource)?,
+            scrypt_p: get_attr("scrypt_p", &resource)?,
+            aes_iv: get_attr("aes_iv", &resource)?,
+        };
+
+        // obtain a wallet
+        let wallet = wallet_store.get_wallet(0, network_id)?;
+
+        Ok(SingleAddressWalletImportResult {
+            wallet_store: Gd::from_object(wallet_store),
+            wallet: Gd::from_object(wallet),
+        })
+    }
+
     /// Create a `SingleAddressWalletStore` by using entropy to generate the
     /// private key.
     ///
@@ -311,7 +382,7 @@ impl SingleAddressWalletStore {
         })
     }
 
-    pub fn from_entropy(
+    fn from_entropy(
         entropy: &[u8],
         phrase_password: PackedByteArray,
         wallet_password: PackedByteArray,
@@ -419,44 +490,6 @@ impl SingleAddressWalletStore {
         })
     }
 
-    #[func]
-    fn _import_from_seedphrase(
-        phrase: String,
-        mnemonic_password: PackedByteArray,
-        wallet_password: PackedByteArray,
-        account_index: u32,
-        account_name: String,
-        account_description: String,
-        network_id: u8,
-    ) -> Gd<GResult> {
-        Self::to_gresult_class(Self::import_from_seedphrase(
-            phrase,
-            mnemonic_password,
-            wallet_password,
-            account_index,
-            account_name,
-            account_description,
-            network_id,
-        ))
-    }
-
-    #[func]
-    fn _create(
-        wallet_password: PackedByteArray,
-        account_index: u32,
-        account_name: String,
-        account_description: String,
-        network_id: u8,
-    ) -> Gd<GResult> {
-        Self::to_gresult_class(Self::create(
-            wallet_password,
-            account_index,
-            account_name,
-            account_description,
-            network_id,
-        ))
-    }
-
     /// Obtains a `SingleAddressWallet` that can be used for signing operations.
     /// This step may fail, since a `SingleAddressWalletStore` is a resource
     /// loaded from disk and may contain erroneous information.
@@ -496,13 +529,32 @@ impl SingleAddressWalletStore {
         ))
     }
 
-    #[func]
-    pub fn _get_wallet(&self, account_index: u32, network_id: u8) -> Gd<GResult> {
-        Self::to_gresult_class(self.get_wallet(account_index, network_id))
+    /// This just stores the public key of the new account
+    pub fn add_account(
+        &mut self,
+        account: u32,
+        name: GString,
+        description: GString,
+        password: PackedByteArray,
+    ) -> Result<Bip32PublicKey, SingleAddressWalletStoreError> {
+        let pbes2_params = self.get_pbes2_params()?;
+        let encrypted_master_private_key = self.encrypted_master_private_key.to_vec();
+        let (account, private_key) = Self::add_account_helper(
+            name,
+            description,
+            password,
+            account,
+            pbes2_params,
+            encrypted_master_private_key.as_slice(),
+        )?;
+        self.accounts.push(Gd::from_object(account));
+        Ok(private_key)
     }
 
-    /// This method *does not* validate that the contents of
-    /// `SingleAddressWallet` constitute valid PBES2 parameters.
+    /// HELPERS
+
+    // This method *does not* validate that the contents of
+    // `SingleAddressWallet` constitute valid PBES2 parameters.
     fn unsafe_make_wallet(
         encrypted_master_key: &[u8],
         salt: &[u8],
@@ -569,42 +621,6 @@ impl SingleAddressWalletStore {
             .map_err(|e| SingleAddressWalletStoreError::Pkcs5Error(e))
     }
 
-    #[func]
-    pub fn _add_account(
-        &mut self,
-        account: u32,
-        name: GString,
-        description: GString,
-        password: PackedByteArray,
-    ) -> Gd<GResult> {
-        Self::to_gresult(
-            self.add_account(account, name, description, password)
-                .map(|_| ()),
-        )
-    }
-
-    /// This just stores the public key of the new account
-    pub fn add_account(
-        &mut self,
-        account: u32,
-        name: GString,
-        description: GString,
-        password: PackedByteArray,
-    ) -> Result<Bip32PublicKey, SingleAddressWalletStoreError> {
-        let pbes2_params = self.get_pbes2_params()?;
-        let encrypted_master_private_key = self.encrypted_master_private_key.to_vec();
-        let (account, private_key) = Self::add_account_helper(
-            name,
-            description,
-            password,
-            account,
-            pbes2_params,
-            encrypted_master_private_key.as_slice(),
-        )?;
-        self.accounts.push(Gd::from_object(account));
-        Ok(private_key)
-    }
-
     // This implementation avoids using &mut self to escape borrowing issues.
     fn add_account_helper(
         name: GString,
@@ -630,12 +646,76 @@ impl SingleAddressWalletStore {
             },
         )
     }
+
+    // WRAPPERS
+
+    #[func]
+    fn _import_from_seedphrase(
+        phrase: String,
+        mnemonic_password: PackedByteArray,
+        wallet_password: PackedByteArray,
+        account_index: u32,
+        account_name: String,
+        account_description: String,
+        network_id: u8,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(Self::import_from_seedphrase(
+            phrase,
+            mnemonic_password,
+            wallet_password,
+            account_index,
+            account_name,
+            account_description,
+            network_id,
+        ))
+    }
+
+    #[func]
+    fn _import_from_resource(resource: Gd<Resource>, network_id: u8) -> Gd<GResult> {
+        Self::to_gresult_class(Self::import_from_resource(resource, network_id))
+    }
+
+    #[func]
+    fn _create(
+        wallet_password: PackedByteArray,
+        account_index: u32,
+        account_name: String,
+        account_description: String,
+        network_id: u8,
+    ) -> Gd<GResult> {
+        Self::to_gresult_class(Self::create(
+            wallet_password,
+            account_index,
+            account_name,
+            account_description,
+            network_id,
+        ))
+    }
+
+    #[func]
+    pub fn _add_account(
+        &mut self,
+        account: u32,
+        name: GString,
+        description: GString,
+        password: PackedByteArray,
+    ) -> Gd<GResult> {
+        Self::to_gresult(
+            self.add_account(account, name, description, password)
+                .map(|_| ()),
+        )
+    }
+
+    #[func]
+    pub fn _get_wallet(&self, account_index: u32, network_id: u8) -> Gd<GResult> {
+        Self::to_gresult_class(self.get_wallet(account_index, network_id))
+    }
 }
 
 /// An account, as stored within a `SingleAddressWalletStore`. This is a data
 /// class and should not be manipulated directly
 #[derive(GodotClass)]
-#[class(base=Resource)]
+#[class(base=RefCounted)]
 pub struct Account {
     #[var]
     index: u32,

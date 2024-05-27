@@ -9,7 +9,9 @@ enum Status {
 	PKCS5_ERROR = 3,
 	BAD_SCRYPT_PARAMS = 4,
 	COULD_NOT_PARSE_AES_IV = 5,
-	ACCOUNT_NOT_FOUND = 6
+	ACCOUNT_NOT_FOUND = 6,
+	ATTRIBUTE_NOT_FOUND_IN_RESOURCE = 7,
+	ATTRIBUTE_WITH_WRONG_TYPE_IN_RESOURCE = 8,
 }
 
 ## Emitted when [method SingleAddressWalletStore.import_from_seedphrase]
@@ -84,7 +86,7 @@ class WalletImportResult extends Result:
 		super(res)
 		_loader = loader
 
-## Construct a [SingleAddressWalletStoreError] from a mnemonic [param phrase].
+## Construct a [WalletImportResult] from a mnemonic [param phrase].
 ## 
 ## The phrase should follow the BIP32 standard and it may have a [phrase_password]
 ## (if not, an empty string should be passed). This standard is followed by
@@ -100,8 +102,8 @@ class WalletImportResult extends Result:
 ## set to 0, with all subsequent accounts added to the wallet taking the next
 ## indices.
 ##
-## This function is asynchronous. You can await it or use hook a callback to
-## [signal SingleAddressWalletStore.import_completed].
+## This function is asynchronous. You can await it or connect a callback to
+## [signal SingleAddressWalletLoader.import_completed].
 func import_from_seedphrase(
 	phrase: String,
 	phrase_password: String, 
@@ -127,6 +129,57 @@ func import_from_seedphrase(
 		var res: WalletImportResult = await import_completed
 		thread.wait_to_finish()
 		return res
+		
+## Import from a [class SingleAddressWalletResource]. If the resource is
+## malformed, an error will be thrown. To export a wallet, read
+## [method SingleAddressWalletLoader.export].
+##
+## This function is asynchronous. You can await it or connect a callback to
+## [signal SingleAddressWalletLoader.import_completed].
+func import_from_resource(resource: SingleAddressWalletResource) -> WalletImportResult:
+		if not (thread == null):
+			if thread.is_alive():
+				push_warning("Import in progress, ignoring latest call...")
+				var old_res: WalletImportResult = await(import_completed)
+				return old_res
+			elif thread.is_started():
+				thread.wait_to_finish() # the thread should have stopped working by now
+			else:
+				push_warning("thread object is initialized but not started")
+		thread = Thread.new()
+		thread.start(
+			_wrap_import_from_resource.bind(
+				resource
+			)
+		)
+		var res: WalletImportResult = await import_completed
+		return res
+		
+## Export the wallet to a [class SingleAddressWalletResource], which can
+## subsequently used like any other Godot [class Resource].
+##
+## For importing, read [method SingleAddressWalletLoader.import_from_resource].
+##
+## This function will return null if no wallet has been loaded or created so far.
+func export() -> SingleAddressWalletResource:
+	if _wallet_store == null:
+		push_error("No wallet has been loaded")
+		return null
+	var res := SingleAddressWalletResource.new()
+	for account: Account in self._wallet_store.accounts:
+		var account_res = AccountResource.new()
+		account_res.index = account.index
+		account_res.name = account.name
+		account_res.description = account.description
+		account_res.public_key = account.public_key
+		res.accounts.push_back(account_res)
+	res.encrypted_master_private_key = self._wallet_store.encrypted_master_private_key
+	res.scrypt_salt = self._wallet_store.scrypt_salt
+	res.scrypt_log_n = self._wallet_store.scrypt_log_n
+	res.scrypt_r = self._wallet_store.scrypt_r
+	res.scrypt_p = self._wallet_store.scrypt_p
+	res.aes_iv = self._wallet_store.aes_iv
+	return res
 			
 func _wrap_import_from_seedphrase(
 	phrase: String,
@@ -146,7 +199,17 @@ func _wrap_import_from_seedphrase(
 				account_description,
 				1 if _network == ProviderApi.Network.MAINNET else 0))
 		call_deferred("emit_signal", "import_completed", res)
+		
+func _wrap_import_from_resource(resource: SingleAddressWalletResource) -> void:
+		var res := WalletImportResult.new(
+			SingleAddressWalletLoader.new(_network),
+			_SingleAddressWalletStore._import_from_resource(
+				resource,
+				1 if _network == Provider.Network.MAINNET else 0))
+		call_deferred("emit_signal", "import_completed", res)
 			
+## The output of creating a wallet. It consists of a [member WalletCreation.seed_phrase] and a
+## [member WalletCreation.wallet] that can be used 
 class WalletCreation extends RefCounted:
 	var _create_res: _SingleAddressWalletCreateResult
 	var _network: ProviderApi.Network

@@ -46,3 +46,7 @@ func add_account(account_index: int, password: String) -> SingleAddressWalletLoa
 ## exists. It returns the account index when it succeeds.
 func switch_account(account_index: int) -> Result:
 	return Result.VariantResult.new(_wallet._switch_account(account_index))
+	
+## Export wallet to a resource.
+func export() -> SingleAddressWalletResource:
+	return _wallet_loader.export()
