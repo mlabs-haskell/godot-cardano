@@ -69,14 +69,14 @@ class TestWallets extends GutTest:
 			account_index,
 			"",
 			"",
-			Provider.Network.PREVIEW
+			ProviderApi.Network.PREVIEW
 		)
 		assert_true(
 			create_result.is_ok(),
 			"Create new wallet with account %d" % account_index
 		)
 		
-		var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
+		var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 		var import_result := await loader.import_from_seedphrase(
 			create_result.value.seed_phrase,
 			"",
@@ -102,7 +102,7 @@ class TestWallets extends GutTest:
 		)
 		
 	func test_wallet_import() -> void:
-		var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
+		var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 		for wallet_data: Dictionary in _wallets:
 			var seed_phrase: String = wallet_data['seedPhrase']
 			var import_result := await loader.import_from_seedphrase(
@@ -163,7 +163,7 @@ class TestSdk extends GutTest:
 				"No funding wallet available"
 			)
 			funding_wallet_phrase = FileAccess.get_file_as_string("res://seed_phrase.txt")
-		var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
+		var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 		var import_result := await loader.import_from_seedphrase(
 			funding_wallet_phrase,
 			"",
@@ -179,12 +179,12 @@ class TestSdk extends GutTest:
 		return import_result.value.wallet
 
 	func tx_with(
-		cardano: Cardano,
+		wallet: Wallet.MnemonicWallet,
 		build: Callable,
 		test_name: String = "test",
 		post_complete: Callable = func (x): return x.sign("1234"),
 	) -> TransactionHash:
-		var create_tx_result := cardano.new_tx()
+		var create_tx_result := await wallet.new_tx()
 		if create_tx_result.is_ok():
 			var tx := create_tx_result.value
 			await build.call(tx)
@@ -204,11 +204,11 @@ class TestSdk extends GutTest:
 		return null
 	
 	func tx_fail_with(
-		cardano: Cardano,
+		wallet: Wallet.MnemonicWallet,
 		build: Callable,
 		test_name: String = "test"
 	) -> void:
-		var create_tx_result := cardano.new_tx()
+		var create_tx_result := await wallet.new_tx()
 		if create_tx_result.is_ok():
 			var tx := create_tx_result.value
 			build.call(tx)
@@ -220,18 +220,18 @@ class TestSdk extends GutTest:
 		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		var funding_wallet := await load_funding_wallet()
 		
-		_provider = BlockfrostProvider.new(
-			Provider.Network.PREVIEW,
+		var provider_api = BlockfrostProviderApi.new(
+			ProviderApi.Network.PREVIEW,
 			preview_token,
 		)
+		add_child(provider_api)
+		_provider = Provider.new(provider_api)
 		add_child(_provider)
 		var wallet := Wallet.MnemonicWallet.new(funding_wallet, _provider)
 		add_child(wallet)
 		_funding_address = wallet._get_change_address()
-		var cardano := Cardano.new(wallet, _provider)
-		add_child(cardano)
 		
-		await _provider.got_protocol_parameters
+		await provider_api.got_protocol_parameters
 		
 		for _t: Callable in blockfrost_tests:
 			var create_result := SingleAddressWalletLoader.create(
@@ -239,7 +239,7 @@ class TestSdk extends GutTest:
 				0,
 				"",
 				"",
-				Provider.Network.PREVIEW
+				ProviderApi.Network.PREVIEW
 			)
 			if create_result.is_err():
 				continue
@@ -264,7 +264,7 @@ class TestSdk extends GutTest:
 		)
 		
 		var fund_tx_hash := await tx_with(
-			cardano,
+			wallet,
 			func (tx: TxBuilder) -> void:
 				for test_wallet in _wallets:
 					tx.pay_to_address(
@@ -283,27 +283,26 @@ class TestSdk extends GutTest:
 		or_quit(status)
 		gut.p('Test wallets funded')
 		remove_child(wallet)
-		remove_child(cardano)
 
 	func test_invalid_signature() -> void:
 		or_quit(FileAccess.file_exists("res://preview_token.txt"), "No Blockfrost token available")
 		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		var funding_wallet := await load_funding_wallet()
 		
-		_provider = BlockfrostProvider.new(
-			Provider.Network.PREVIEW,
+		var provider_api := BlockfrostProviderApi.new(
+			ProviderApi.Network.PREVIEW,
 			preview_token,
 		)
+		add_child(provider_api)
+		_provider = Provider.new(provider_api)
 		add_child(_provider)
 		var wallet := Wallet.MnemonicWallet.new(funding_wallet, _provider)
 		_funding_address = wallet._get_change_address()
 		add_child(wallet)
-		var cardano := Cardano.new(wallet, _provider)
-		add_child(cardano)
 		
-		await _provider.got_protocol_parameters
+		await provider_api.got_protocol_parameters
 		await wallet._get_updated_utxos()
-		var create_tx_result := cardano.new_tx()
+		var create_tx_result := await wallet.new_tx()
 		assert_true(create_tx_result.is_ok(), "Create test wallet funding tx")
 		if create_tx_result.is_ok():
 			var fund_tx := create_tx_result.value
@@ -319,31 +318,30 @@ class TestSdk extends GutTest:
 		else:
 			print("Failed to create transaction: %s" % create_tx_result.error)
 		remove_child(wallet)
-		remove_child(cardano)
 
-	func blockfrost_payment(cardano: Cardano) -> TransactionHash:
-		await _provider.await_utxos_at(cardano.wallet._get_change_address(), null, 180)
+	func blockfrost_payment(wallet: Wallet) -> TransactionHash:
+		await _provider.await_utxos_at(wallet._get_change_address(), null, 180)
 		var tx_hash = await tx_with(
-			cardano,
+			wallet,
 			func(_tx: TxBuilder) -> void: pass,
 			"simple payment"
 		)
 		tx_test_finished.emit({
 			"name": "payment",
-			"address": cardano.wallet._get_change_address(),
+			"address": wallet._get_change_address(),
 			"tx_hash": tx_hash
 		})
 		return tx_hash
 
-	func blockfrost_mint(cardano: Cardano) -> TransactionHash:
+	func blockfrost_mint(wallet: Wallet) -> TransactionHash:
 		var previous_tx_hash: TransactionHash = null
 		
-		await _provider.await_utxos_at(cardano.wallet._get_change_address(), null, 180)
+		await _provider.await_utxos_at(wallet._get_change_address(), null, 180)
 		for script_data in _script_data.mint:
 			var script = PlutusScript.create(script_data.bytes.hex_decode())
 			if script_data.invalid_redeemer != null:
 				await tx_fail_with(
-					cardano,
+					wallet,
 					func (tx: TxBuilder) -> void:
 						tx.mint_assets(
 							script,
@@ -353,7 +351,7 @@ class TestSdk extends GutTest:
 					"minting token with invalid redeemer"
 				)
 		previous_tx_hash = await tx_with(
-			cardano,
+			wallet,
 			func(tx: TxBuilder) -> void:
 				for script_data in _script_data.mint:
 					var script = PlutusScript.create(script_data.bytes.hex_decode())
@@ -367,7 +365,7 @@ class TestSdk extends GutTest:
 		await _provider.await_tx(previous_tx_hash)
 			
 		previous_tx_hash = await tx_with(
-			cardano,
+			wallet,
 			func(tx: TxBuilder) -> void:
 				for script_data in _script_data.mint:
 					var script = PlutusScript.create(script_data.bytes.hex_decode())
@@ -381,17 +379,17 @@ class TestSdk extends GutTest:
 		await _provider.await_tx(previous_tx_hash)
 		tx_test_finished.emit({
 			"name": "mint",
-			"address": cardano.wallet._get_change_address(),
+			"address": wallet._get_change_address(),
 			"tx_hash": previous_tx_hash
 		})
 		return previous_tx_hash
 
-	func blockfrost_spend_script(cardano: Cardano) -> TransactionHash:
+	func blockfrost_spend_script(wallet: Wallet) -> TransactionHash:
 		var previous_tx_hash: TransactionHash = null
 		
-		await _provider.await_utxos_at(cardano.wallet._get_change_address(), null, 180)
+		await _provider.await_utxos_at(wallet._get_change_address(), null, 180)
 		previous_tx_hash = await tx_with(
-			cardano,
+			wallet,
 			func(tx: TxBuilder) -> void:
 				for script_data in _script_data.spend:
 					var script = PlutusScript.create(
@@ -411,7 +409,7 @@ class TestSdk extends GutTest:
 		
 		if previous_tx_hash != null:
 			await _provider.await_utxos_at(
-				cardano.wallet._get_change_address(),
+				wallet._get_change_address(),
 				previous_tx_hash,
 				180
 			)
@@ -422,7 +420,7 @@ class TestSdk extends GutTest:
 				script_data.bytes.hex_decode()
 			)
 			var address = _provider.make_address(Credential.from_script(script))
-			var utxos := await _provider._get_utxos_at_address(address)
+			var utxos := await _provider.get_utxos_at_address(address)
 			var utxos_filtered = utxos.filter(
 				func(u: Utxo): return u.datum_info().has_datum()
 			).slice(0, 1)
@@ -430,7 +428,7 @@ class TestSdk extends GutTest:
 			assert_gt(utxos_filtered.size(), 0, "Script UTxO found") 
 			if script_data.invalid_redeemer != null:
 				tx_fail_with(
-					cardano,
+					wallet,
 					func(tx: TxBuilder) -> void:
 						tx.collect_from_script(
 							PlutusScriptSource.from_script(script),
@@ -446,7 +444,7 @@ class TestSdk extends GutTest:
 			})
 				
 		previous_tx_hash = await tx_with(
-			cardano,
+			wallet,
 			func(tx: TxBuilder) -> void:
 				for spend in spends:
 					tx.collect_from_script(
@@ -462,7 +460,7 @@ class TestSdk extends GutTest:
 		
 		tx_test_finished.emit({
 			"name": "spend script",
-			"address": cardano.wallet._get_change_address(),
+			"address": wallet._get_change_address(),
 			"tx_hash": previous_tx_hash
 		})
 		return previous_tx_hash
@@ -470,16 +468,11 @@ class TestSdk extends GutTest:
 	func test_blockfrost() -> void:
 		await init_blockfrost_tests()
 
-		var cardanos: Array[Cardano] = []
 		for test in blockfrost_tests:
 			var ix = blockfrost_tests.find(test)
 			var wallet := _wallets[ix]
-			var cardano := Cardano.new(wallet, _provider)
-			cardanos.push_back(cardano)
 			add_child(wallet)
-			add_child(cardano)
-			await _provider.got_protocol_parameters
-			test.call(cardano)
+			test.call(wallet)
 	
 		var results: Array[Dictionary] = []
 		while results.size() < blockfrost_tests.size():
@@ -500,7 +493,7 @@ class TestSdk extends GutTest:
 		assert_true(success, "All Blockfrost tests successfully completed")
 		
 		await tx_with(
-			cardanos[0],
+			_wallets[0],
 			func (tx: TxBuilder) -> void:
 				for test in blockfrost_tests:
 					var ix = blockfrost_tests.find(test)
@@ -520,6 +513,4 @@ class TestSdk extends GutTest:
 		for test in blockfrost_tests:
 			var ix = blockfrost_tests.find(test)
 			var wallet := _wallets[ix]
-			var cardano := cardanos[ix]
 			remove_child(wallet)
-			remove_child(cardano)
