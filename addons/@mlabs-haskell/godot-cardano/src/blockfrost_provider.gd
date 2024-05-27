@@ -52,6 +52,10 @@ class Request:
 		}
 		return "%s %s" % [method_to_string[_method()], _url()]
 		
+class GenesisRequest extends Request:
+	func _url() -> String:
+		return "genesis"
+		
 class ProtocolParametersRequest extends Request:
 	var _epoch: Epoch
 	
@@ -70,12 +74,23 @@ class EraSummariesRequest extends Request:
 
 class UtxosAtAddressRequest extends Request:
 	var _address: String
+	var _page: int
 	
-	func _init(address: String) -> void:
+	func _init(address: String, page := 1) -> void:
 		self._address = address
+		self._page = page
 		
 	func _url() -> String:
-		return "addresses/%s/utxos" % self._address
+		return "addresses/%s/utxos?page=%d" % [self._address, self._page]
+
+class DatumCborFromHash extends Request:
+	var _hash: String
+
+	func _init(datum_hash: String) -> void:
+		self._hash = datum_hash
+
+	func _url() -> String:
+		return "scripts/datum/%s/cbor" % self._hash
 		
 class SubmitTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
@@ -121,8 +136,7 @@ class TransactionRequest extends Request:
 
 	func _url() -> String:
 		return "txs/%s" % _tx_hash
-	
-var network: Network
+
 var api_key: String
 
 const network_endpoints: Dictionary = {
@@ -161,7 +175,9 @@ func blockfrost_request(request: Request) -> Variant:
 	
 	# TODO: handle error responses properly
 	if status_code != 200:
-		if status_code == 404:
+		# NOTE: return parsed content if response is expected to be handled,
+		#		this may be phased out
+		if status_code == 404 or status_code == 400:
 			return JSON.parse_string(content)
 		print("Blockfrost request failed with status code ", status_code, ". Response content: ")
 		print(content)
@@ -197,6 +213,23 @@ func _get_protocol_parameters() -> ProtocolParameters:
 	self.got_protocol_parameters.emit(params, cost_models)
 	return params
 
+func _get_network_genesis() -> NetworkGenesis:
+	var genesis_json: Dictionary = await blockfrost_request(GenesisRequest.new())
+	var genesis := NetworkGenesis.new(
+		genesis_json.active_slots_coefficient as Variant as int,
+		genesis_json.update_quorum as Variant as int,
+		genesis_json.max_lovelace_supply as Variant as String,
+		genesis_json.network_magic as Variant as int,
+		genesis_json.epoch_length as Variant as int,
+		genesis_json.system_start as Variant as int,
+		genesis_json.slots_per_kes_period as Variant as int,
+		genesis_json.slot_length as Variant as int,
+		genesis_json.max_kes_evolutions as Variant as int,
+		genesis_json.security_param as Variant as int,
+	)
+	self.got_network_genesis.emit(genesis)
+	return genesis
+	
 func utxo_assets(utxo: Dictionary) -> Dictionary:
 	var assets: Dictionary = {}
 	var amount: Array = utxo.amount
@@ -212,17 +245,37 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 				push_error("There was an error while reading the assets from a utxo", res.error)
 	)
 	return assets
-
-func _get_utxos_at_address(address: String) -> Array[Utxo]:
-	var utxos_response := await blockfrost_request(UtxosAtAddressRequest.new(address))
-	if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
-		return []
-		
-	var utxos_json: Array = utxos_response
+	
+func _get_utxos_at_address(address: Address) -> Array[Utxo]:
+	var utxos_json: Array = []
+	
+	var page := 1
+	while true:
+		var utxos_response := await blockfrost_request(
+			UtxosAtAddressRequest.new(address.to_bech32(), page)
+		)
+		if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
+			utxo_result.emit(UtxoResult.new(address, []))
+			return []
+		utxos_json.append_array(utxos_response)
+		if utxos_response.size() < 100:
+			break
+		page += 1
+	
 	var utxos: Array[Utxo] = []
 	
+	var data_map := {}
+	
+	for utxo in utxos_json:
+		var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
+		var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
+		var resolved_datum_str: String = ""
+		if inline_datum_str == "" and data_hash != "":
+			var resolve_result := await blockfrost_request(DatumCborFromHash.new(data_hash))
+			data_map[data_hash] = resolve_result.cbor
+	
 	utxos.assign(
-		utxos_json.map(
+		await utxos_json.map(
 			func (utxo: Dictionary) -> Utxo:
 				var assets: Dictionary = utxo_assets(utxo)
 				var coin: BigInt = BigInt.new(assets['lovelace'] as Variant as _BigInt)
@@ -230,23 +283,53 @@ func _get_utxos_at_address(address: String) -> Array[Utxo]:
 				var tx_hash: String = utxo.tx_hash
 				var tx_index: int = utxo.tx_index
 				var utxo_address: String = utxo.address
+				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
+				var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
+				var resolved_datum_str: String = ""
+				
+				if inline_datum_str == "" and data_hash != "" and data_map.has(data_hash):
+					resolved_datum_str = data_map.get(data_hash)
+					
+				var datum_info := self._build_datum_info(data_hash, inline_datum_str, resolved_datum_str)
 				
 				var result = Utxo.create(
 					tx_hash,
 					tx_index,
 					utxo_address,
 					coin.to_str(),
-					assets
+					assets,
+					datum_info
 				)
 				
 				if result.is_err():
 					push_error("Could not create UTxO: %s" % result.error)
 					return null
-					
+				
 				return result.value
 	))
-	
+	utxo_result.emit(UtxoResult.new(address, utxos))
 	return utxos
+	
+func _build_datum_info(
+	datum_hash: String,
+	datum_inline_str: String,
+	datum_resolved_str: String,
+) -> UtxoDatumInfo:
+	if datum_hash == "":
+		return UtxoDatumInfo.empty()
+	elif datum_inline_str == "":
+		if datum_resolved_str == "":
+			return UtxoDatumInfo.create_with_hash(datum_hash)
+		else:
+			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
+	else:
+		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
+
+func _get_datum_cbor(_datum_hash: String) -> Cbor:
+	var cbor_resp : Dictionary = await blockfrost_request(DatumCborFromHash.new(_datum_hash))
+	var cbor_hex : String = cbor_resp.cbor
+	var res := Cbor.deserialize(cbor_hex.hex_decode())
+	return null
 
 func _get_era_summaries() -> Array[EraSummary]:
 	var summaries_json: Array = await blockfrost_request(EraSummariesRequest.new())
@@ -275,16 +358,21 @@ func _get_era_summaries() -> Array[EraSummary]:
 	got_era_summaries.emit(summaries)
 	return summaries
 	
-func _submit_transaction(tx: Transaction) -> TransactionHash:
+func _submit_transaction(tx: Transaction) -> Provider.SubmitResult:
 	var result = await blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
-	if typeof(result) == TYPE_DICTIONARY or result == null:
-		return null
-	return TransactionHash.from_hex(result).value
+	if typeof(result) == TYPE_DICTIONARY:
+		return SubmitResult.new(_Result.err(result.message, ProviderStatus.SUBMIT_ERROR))
+	elif typeof(result) == null:
+		return SubmitResult.new(_Result.err("Unknown error while submitting", ProviderStatus.SUBMIT_ERROR))
+	return SubmitResult.new(_Result.ok(TransactionHash.from_hex(result).value))
 
 func _get_tx_status(tx_hash: TransactionHash) -> bool:
-	var tx_response: Dictionary = await blockfrost_request(TransactionRequest.new(tx_hash.to_hex()))
-	var status := TransactionStatus.new(tx_hash, false)
-	if tx_response.get('status_code', 200) == 200:
-		status.set_confirmed(true)
+	var tx_response: Dictionary = await blockfrost_request(
+		TransactionRequest.new(tx_hash.to_hex())
+	)
+	var status := TransactionStatus.new(
+		tx_hash,
+		tx_response.get('status_code', 200) == 200
+	)
 	tx_status.emit(status)
 	return status._confirmed

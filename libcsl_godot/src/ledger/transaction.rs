@@ -1,7 +1,8 @@
 use cardano_serialization_lib as CSL;
-use CSL::crypto::{ScriptHash, Vkeywitness, Vkeywitnesses};
+use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
-use CSL::plutus::{ExUnits, PlutusData, RedeemerTag};
+use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
+use CSL::tx_builder::tx_inputs_builder::{self};
 use CSL::utils::*;
 use CSL::{AssetName, TransactionInput, TransactionOutput};
 
@@ -62,7 +63,7 @@ impl MultiAsset {
         let mut assets: CSL::MultiAsset = CSL::MultiAsset::new();
         for (unit, amount) in dict.iter_shared().typed::<GString, Gd<BigInt>>() {
             assets.set_asset(
-                &ScriptHash::from_hex(
+                &CSL::crypto::ScriptHash::from_hex(
                     &unit
                         .to_string()
                         .get(0..56)
@@ -95,6 +96,10 @@ impl MultiAsset {
         Gd::from_object(MultiAsset {
             assets: CSL::MultiAsset::new(),
         })
+    }
+
+    pub fn to_value(&self) -> Value {
+        Value::new_from_assets(&self.assets)
     }
 }
 
@@ -158,6 +163,29 @@ pub struct Signature {
 }
 
 #[derive(GodotClass)]
+#[class(base=RefCounted, rename=_Credential)]
+pub struct Credential {
+    pub credential: CSL::address::StakeCredential,
+}
+
+#[godot_api]
+impl Credential {
+    #[func]
+    fn from_key_hash(hash: Gd<PubKeyHash>) -> Gd<Credential> {
+        Gd::from_object(Credential {
+            credential: CSL::address::StakeCredential::from_keyhash(&hash.bind().hash),
+        })
+    }
+
+    #[func]
+    fn from_script_hash(hash: Gd<ScriptHash>) -> Gd<Credential> {
+        Gd::from_object(Credential {
+            credential: CSL::address::StakeCredential::from_scripthash(&hash.bind().hash),
+        })
+    }
+}
+
+#[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Address)]
 pub struct Address {
     pub address: CSL::address::Address,
@@ -218,6 +246,32 @@ impl Address {
     pub fn _to_bech32(&self) -> Gd<GResult> {
         Self::to_gresult(self.to_bech32())
     }
+
+    #[func]
+    pub fn build(
+        network_id: u8,
+        payment_credential: Gd<Credential>,
+        mb_stake_credential: Option<Gd<Credential>>,
+    ) -> Gd<Address> {
+        let address = match mb_stake_credential {
+            Some(stake_cred) => Self {
+                address: CSL::address::BaseAddress::new(
+                    network_id,
+                    &payment_credential.bind().credential,
+                    &stake_cred.bind().credential,
+                )
+                .to_address(),
+            },
+            None => Self {
+                address: CSL::address::EnterpriseAddress::new(
+                    network_id,
+                    &payment_credential.bind().credential,
+                )
+                .to_address(),
+            },
+        };
+        Gd::from_object(address)
+    }
 }
 
 #[derive(Debug)]
@@ -237,23 +291,33 @@ pub struct Datum {
 impl Datum {
     #[func]
     pub fn none() -> Gd<Datum> {
-        return Gd::from_object(Datum {
+        Gd::from_object(Datum {
             datum: DatumValue::NoDatum,
-        });
+        })
     }
 
     #[func]
     pub fn hash(bytes: PackedByteArray) -> Gd<Datum> {
-        return Gd::from_object(Datum {
+        Gd::from_object(Datum {
             datum: DatumValue::Hash(bytes),
-        });
+        })
+    }
+
+    #[func]
+    pub fn hashed(bytes: PackedByteArray) -> Gd<Datum> {
+        let b = hash_plutus_data(&CSL::plutus::PlutusData::from_bytes(bytes.to_vec()).unwrap())
+            .to_bytes();
+        let hash_bytes: &[u8] = b.as_slice().into();
+        Gd::from_object(Datum {
+            datum: DatumValue::Hash(PackedByteArray::from(hash_bytes)),
+        })
     }
 
     #[func]
     pub fn inline(bytes: PackedByteArray) -> Gd<Datum> {
-        return Gd::from_object(Datum {
+        Gd::from_object(Datum {
             datum: DatumValue::Inline(bytes),
-        });
+        })
     }
 }
 
@@ -361,11 +425,129 @@ impl PlutusScript {
     }
 
     #[func]
-    fn hash(&self) -> PackedByteArray {
-        let hash = self.script.hash();
-        let bound = hash.to_bytes();
-        let bytes: &[u8] = bound.as_slice().into();
-        PackedByteArray::from(bytes)
+    fn hash(&self) -> Gd<ScriptHash> {
+        Gd::from_object(ScriptHash {
+            hash: self.script.hash(),
+        })
+    }
+
+    #[func]
+    fn hash_as_hex(&self) -> GString {
+        self.hash().bind().hash.to_hex().to_godot()
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=PlutusScriptSource)]
+pub struct PlutusScriptSource {
+    pub source: CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
+}
+
+#[godot_api]
+impl PlutusScriptSource {
+    #[func]
+    fn from_script(script: Gd<PlutusScript>) -> Gd<PlutusScriptSource> {
+        Gd::from_object(Self {
+            source: tx_inputs_builder::PlutusScriptSource::new(&script.bind().script),
+        })
+    }
+
+    // TODO: Add a version that picks up the script hash from the Utxo automatically
+    #[func]
+    fn from_ref(script_hash: GString, input: Gd<Utxo>) -> Gd<PlutusScriptSource> {
+        let hash = CSL::crypto::ScriptHash::from_hex(&script_hash.to_string())
+            .expect("Could not parse script hash");
+        Gd::from_object(Self {
+            source: tx_inputs_builder::PlutusScriptSource::new_ref_input_with_lang_ver(
+                &hash,
+                &input.bind().to_transaction_input(),
+                &Language::new_plutus_v2(),
+            ),
+        })
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=_PubKeyHash)]
+pub struct PubKeyHash {
+    pub hash: CSL::crypto::Ed25519KeyHash,
+}
+
+#[derive(Debug)]
+pub enum PubKeyHashError {
+    FromHexError(JsError),
+}
+
+impl GodotConvert for PubKeyHashError {
+    type Via = i64;
+}
+
+impl ToGodot for PubKeyHashError {
+    fn to_godot(&self) -> Self::Via {
+        use PubKeyHashError::*;
+        match self {
+            FromHexError(_) => 1,
+        }
+    }
+}
+
+impl FailsWith for PubKeyHash {
+    type E = PubKeyHashError;
+}
+
+#[godot_api]
+impl PubKeyHash {
+    pub fn from_hex(hex: String) -> Result<PubKeyHash, PubKeyHashError> {
+        let hash = CSL::crypto::Ed25519KeyHash::from_hex(hex.as_str())
+            .map_err(PubKeyHashError::FromHexError)?;
+        Ok(PubKeyHash { hash })
+    }
+
+    #[func]
+    pub fn _from_hex(hex: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(hex.to_string()))
+    }
+}
+
+#[derive(GodotClass, Debug)]
+#[class(base=RefCounted, rename=_ScriptHash)]
+pub struct ScriptHash {
+    pub hash: CSL::crypto::ScriptHash,
+}
+
+#[derive(Debug)]
+pub enum ScriptHashError {
+    FromHexError(JsError),
+}
+
+impl GodotConvert for ScriptHashError {
+    type Via = i64;
+}
+
+impl ToGodot for ScriptHashError {
+    fn to_godot(&self) -> Self::Via {
+        use ScriptHashError::*;
+        match self {
+            FromHexError(_) => 1,
+        }
+    }
+}
+
+impl FailsWith for ScriptHash {
+    type E = ScriptHashError;
+}
+
+#[godot_api]
+impl ScriptHash {
+    pub fn from_hex(hex: String) -> Result<ScriptHash, ScriptHashError> {
+        let hash = CSL::crypto::ScriptHash::from_hex(hex.as_str())
+            .map_err(ScriptHashError::FromHexError)?;
+        Ok(ScriptHash { hash })
+    }
+
+    #[func]
+    pub fn _from_hex(hex: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(hex.to_string()))
     }
 }
 
@@ -382,6 +564,8 @@ pub struct Utxo {
     pub coin: Gd<BigInt>,
     #[var(get)]
     pub assets: Gd<MultiAsset>,
+    #[var(get)]
+    pub datum_info: Gd<UtxoDatumInfo>,
 }
 
 #[godot_api]
@@ -393,6 +577,7 @@ impl Utxo {
         address: Gd<Address>,
         coin: Gd<BigInt>,
         assets: Gd<MultiAsset>,
+        datum_info: Gd<UtxoDatumInfo>,
     ) -> Gd<Utxo> {
         Gd::from_object(Self {
             tx_hash,
@@ -400,28 +585,179 @@ impl Utxo {
             address,
             coin,
             assets,
+            datum_info,
         })
     }
 
     pub fn to_transaction_unspent_output(&self) -> TransactionUnspentOutput {
-        TransactionUnspentOutput::new(
-            &TransactionInput::new(&self.tx_hash.bind().hash, self.output_index),
-            &TransactionOutput::new(
-                &self.address.bind().address,
-                &Value::new_with_assets(
-                    &to_bignum(
-                        self.coin
-                            .bind()
-                            .b
-                            .as_u64()
-                            .or(Some(BigNum::from(std::u64::MAX)))
-                            .unwrap()
-                            .into(),
-                    ),
-                    &self.assets.bind().assets,
+        let mut output = TransactionOutput::new(
+            &self.address.bind().address,
+            &Value::new_with_assets(
+                &to_bignum(
+                    self.coin
+                        .bind()
+                        .b
+                        .as_u64()
+                        .or(Some(BigNum::from(std::u64::MAX)))
+                        .unwrap()
+                        .into(),
                 ),
+                &self.assets.bind().assets,
             ),
+        );
+        let bound = self.get_datum_info();
+        let datum_info = bound.bind();
+
+        match (datum_info.data_hash.clone(), datum_info.datum_value.clone()) {
+            (_, Some(UtxoDatumValue::Inline(inline_datum))) => {
+                output.set_plutus_data(
+                    &PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
+                );
+            }
+            (Some(datum_hash), _) => {
+                output.set_data_hash(&DataHash::from_hex(datum_hash.to_string().as_str()).unwrap());
+            }
+            _ => (),
+        }
+        TransactionUnspentOutput::new(&self.to_transaction_input(), &output)
+    }
+
+    pub fn to_transaction_input(&self) -> TransactionInput {
+        TransactionInput::new(&self.tx_hash.bind().hash, self.output_index)
+    }
+
+    // TODO: Add error handling
+    pub fn to_datum(&self) -> Option<UtxoDatumValue> {
+        let datum_info = self.datum_info.bind();
+        match (&datum_info.data_hash, datum_info.datum_value.clone()) {
+            // no datum is needed nor provided
+            (None, None) => None,
+            // a datum is needed and easily provided since it is inline or resolved
+            (_, Some(d)) => Some(d),
+            // a datum is needed but we only have the hash, we need to retrieve it
+            // using the provider
+            // TODO
+            (Some(_h), None) => {
+                todo!()
+            }
+        }
+    }
+
+    pub fn to_value(&self) -> Value {
+        Value::new_with_assets(
+            &self
+                .coin
+                .bind()
+                .b
+                .as_u64()
+                .expect("too much lovelace in UTxO"),
+            &self.assets.bind().assets,
         )
+    }
+}
+
+// FIXME?: is this redundant with `Datum`? Should they be combined?
+#[derive(Debug, Clone)]
+pub enum UtxoDatumValue {
+    Inline(GString),
+    Resolved(GString),
+}
+
+#[derive(GodotClass)]
+#[class(base=RefCounted)]
+pub struct UtxoDatumInfo {
+    pub data_hash: Option<GString>,
+    pub datum_value: Option<UtxoDatumValue>,
+}
+
+#[derive(Debug)]
+pub enum DatumInfoError {
+    NoDatum,
+    DatumNotInline,
+}
+
+impl GodotConvert for DatumInfoError {
+    type Via = i64;
+}
+
+impl ToGodot for DatumInfoError {
+    fn to_godot(&self) -> Self::Via {
+        use DatumInfoError::*;
+        match self {
+            NoDatum => 1,
+            DatumNotInline => 2,
+        }
+    }
+}
+
+impl FailsWith for UtxoDatumInfo {
+    type E = DatumInfoError;
+}
+
+#[godot_api]
+impl UtxoDatumInfo {
+    #[func]
+    pub fn empty() -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: None,
+            datum_value: None,
+        })
+    }
+    #[func]
+    pub fn create_with_hash(data_hash: GString) -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: Some(data_hash),
+            datum_value: None,
+        })
+    }
+
+    #[func]
+    pub fn create_with_resolved_datum(
+        data_hash: GString,
+        resolved_datum: GString,
+    ) -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: Some(data_hash),
+            datum_value: Some(UtxoDatumValue::Resolved(resolved_datum)),
+        })
+    }
+
+    #[func]
+    pub fn create_with_inline_datum(
+        data_hash: GString,
+        inline_datum: GString,
+    ) -> Gd<UtxoDatumInfo> {
+        Gd::from_object(UtxoDatumInfo {
+            data_hash: Some(data_hash),
+            datum_value: Some(UtxoDatumValue::Inline(inline_datum)),
+        })
+    }
+
+    #[func]
+    pub fn has_datum(&self) -> bool {
+        self.data_hash.is_some()
+    }
+
+    #[func]
+    pub fn has_datum_inline(&self) -> bool {
+        match self.datum_value {
+            Some(UtxoDatumValue::Inline(_)) => true,
+            _ => false,
+        }
+    }
+
+    #[func]
+    pub fn datum_hash(&self) -> Gd<GResult> {
+        Self::to_gresult(self.data_hash.clone().ok_or(DatumInfoError::NoDatum))
+    }
+
+    #[func]
+    pub fn inline_datum(&self) -> Gd<GResult> {
+        let result = match self.datum_value.clone() {
+            Some(UtxoDatumValue::Inline(d)) => Ok(d.clone()),
+            _ => Err(DatumInfoError::DatumNotInline),
+        };
+        Self::to_gresult(result)
     }
 }
 

@@ -39,3 +39,19 @@ func to_bech32() -> String:
 			
 func to_hex() -> String:
 	return _address._to_hex()
+
+func _to_string() -> String:
+	return to_bech32()
+	
+static func build(
+	network_id: int,
+	payment_cred: Credential,
+	stake_cred: Credential = null
+) -> Address:
+	return new(
+		_Address.build(
+			network_id,
+			payment_cred._credential,
+			stake_cred._credential if stake_cred else null
+		)
+	)

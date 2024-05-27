@@ -90,3 +90,6 @@ static func from_data(v: Variant) -> ExampleDatum:
 
 func _to_string() -> String:
 	return "(%s, %s, %s, %s, %s, %s)" % [_void, _msg, _active, _int, _big_int, _extra_data]
+
+func eq(other: ExampleDatum) -> bool:
+	return JSON.stringify(self) == JSON.stringify(other)

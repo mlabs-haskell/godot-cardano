@@ -1,8 +1,8 @@
-name: integration-test
+name: preview-test
 on: push
 
 jobs:
-  release:
+  test:
     runs-on: "ubuntu-22.04"
     permissions:
       contents: write
@@ -19,9 +19,11 @@ jobs:
           skipPush: true
 
       - name: Download / Build
-        run: nix build .#test
+        run: nix build .#preview-integration-test
 
-      - name: Run Integration Test
+      - name: Run Integration Test on Public Preview Testnet
         run: |
           [ -z "${{ secrets.TESTNET_SEED_PHRASE }}" ] && echo "Secret is available."
-          nix run .#test
+          nix run -L .#preview-integration-test
+        env:
+          TESTNET_SEED_PHRASE: '${{ secrets.TESTNET_SEED_PHRASE }}'

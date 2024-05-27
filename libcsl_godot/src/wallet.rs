@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 
 use bip32::{Language, Mnemonic};
 use cardano_serialization_lib::address::Address as CSLAddress;
-use cardano_serialization_lib::address::{BaseAddress, NetworkInfo, StakeCredential};
+use cardano_serialization_lib::address::{BaseAddress, StakeCredential};
 use cardano_serialization_lib::crypto::{Bip32PrivateKey, Bip32PublicKey};
 use cardano_serialization_lib::error::JsError;
 use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
@@ -34,7 +34,7 @@ use cardano_message_signing as cms;
 /// `SingleAddressWalletStore`, so mutating the wallet (by adding or removing
 /// accounts) is in that struct's scope.
 #[derive(GodotClass)]
-#[class(base=Object, rename=_SingleAddressWallet)]
+#[class(base=RefCounted, rename=_SingleAddressWallet)]
 pub struct SingleAddressWallet {
     encrypted_master_private_key: Vec<u8>,
     salt: Vec<u8>,
@@ -43,6 +43,7 @@ pub struct SingleAddressWallet {
     accounts: BTreeMap<u32, AccountInfo>,
     // Currently selected account
     account_info: AccountInfo,
+    network_id: u8,
 }
 
 #[derive(Debug)]
@@ -162,7 +163,7 @@ impl SingleAddressWallet {
 
     pub fn get_address(&self) -> Gd<Address> {
         Gd::from_object(Address {
-            address: address_from_key(&self.account_info.public_key),
+            address: address_from_key(self.network_id, &self.account_info.public_key),
         })
     }
 
@@ -290,6 +291,7 @@ impl SingleAddressWalletStore {
         account_index: u32,
         account_name: String,
         account_description: String,
+        network_id: u8,
     ) -> Result<SingleAddressWalletImportResult, SingleAddressWalletStoreError> {
         // We obtain the master private key with the mnemonic and the user
         // password
@@ -309,6 +311,7 @@ impl SingleAddressWalletStore {
             account_index,
             account_name,
             account_description,
+            network_id,
         )
     }
 
@@ -321,6 +324,7 @@ impl SingleAddressWalletStore {
         account_index: u32,
         account_name: String,
         account_description: String,
+        network_id: u8,
     ) -> Result<SingleAddressWalletCreateResult, SingleAddressWalletStoreError> {
         // Widely considered to be a good cryptographic source of entropy:
         // https://rust-random.github.io/book/guide-rngs.html
@@ -337,6 +341,7 @@ impl SingleAddressWalletStore {
             account_index,
             account_name,
             account_description,
+            network_id,
         )?;
         Ok(SingleAddressWalletCreateResult {
             wallet_store,
@@ -352,6 +357,7 @@ impl SingleAddressWalletStore {
         account_index: u32,
         account_name: String,
         account_description: String,
+        network_id: u8,
     ) -> Result<SingleAddressWalletImportResult, SingleAddressWalletStoreError> {
         let master_private_key =
             Bip32PrivateKey::from_bip39_entropy(entropy, phrase_password.as_slice())
@@ -424,7 +430,7 @@ impl SingleAddressWalletStore {
         // is necessary.
         let mut account_infos = BTreeMap::new();
         let public_key = duplicate_key(&account_pub_key);
-        let address = address_from_key(&public_key);
+        let address = address_from_key(network_id, &public_key);
         let address_bech32 = address.to_bech32(None)?.to_godot();
         let account_info = AccountInfo {
             index: account_index,
@@ -443,6 +449,7 @@ impl SingleAddressWalletStore {
             &scrypt_params,
             account_info,
             account_infos,
+            network_id,
         );
 
         Ok(SingleAddressWalletImportResult {
@@ -459,6 +466,7 @@ impl SingleAddressWalletStore {
         account_index: u32,
         account_name: String,
         account_description: String,
+        network_id: u8,
     ) -> Gd<GResult> {
         Self::to_gresult_class(Self::import_from_seedphrase(
             phrase,
@@ -467,6 +475,7 @@ impl SingleAddressWalletStore {
             account_index,
             account_name,
             account_description,
+            network_id,
         ))
     }
 
@@ -476,12 +485,14 @@ impl SingleAddressWalletStore {
         account_index: u32,
         account_name: String,
         account_description: String,
+        network_id: u8,
     ) -> Gd<GResult> {
         Self::to_gresult_class(Self::create(
             wallet_password,
             account_index,
             account_name,
             account_description,
+            network_id,
         ))
     }
 
@@ -491,6 +502,7 @@ impl SingleAddressWalletStore {
     pub fn get_wallet(
         &self,
         account_index: u32,
+        network_id: u8,
     ) -> Result<SingleAddressWallet, SingleAddressWalletStoreError> {
         // We must create the pbes2 params to validate the parameters
         let scrypt_params =
@@ -507,7 +519,7 @@ impl SingleAddressWalletStore {
         // At this point, we know the parameters work.
         // We must also parse the accounts' public keys and obtain the current
         // key
-        let account_infos = Self::make_account_info_map(&self.accounts)?;
+        let account_infos = Self::make_account_info_map(network_id, &self.accounts)?;
         let account_info = account_infos.get(&account_index).ok_or(
             SingleAddressWalletStoreError::AccountNotFound(account_index),
         )?;
@@ -519,12 +531,13 @@ impl SingleAddressWalletStore {
             &scrypt_params,
             account_info.to_owned(),
             account_infos,
+            network_id,
         ))
     }
 
     #[func]
-    pub fn _get_wallet(&self, account_index: u32) -> Gd<GResult> {
-        Self::to_gresult_class(self.get_wallet(account_index))
+    pub fn _get_wallet(&self, account_index: u32, network_id: u8) -> Gd<GResult> {
+        Self::to_gresult_class(self.get_wallet(account_index, network_id))
     }
 
     /// This method *does not* validate that the contents of
@@ -536,6 +549,7 @@ impl SingleAddressWalletStore {
         scrypt_params: &scrypt::Params,
         account_info: AccountInfo,
         account_infos: BTreeMap<u32, AccountInfo>,
+        network_id: u8,
     ) -> SingleAddressWallet {
         SingleAddressWallet {
             encrypted_master_private_key: Vec::from(encrypted_master_key),
@@ -544,11 +558,13 @@ impl SingleAddressWalletStore {
             scrypt_params: scrypt_params.clone(),
             account_info,
             accounts: account_infos,
+            network_id,
         }
     }
 
     // Parse accounts as public keys.
     fn make_account_info_map(
+        network_id: u8,
         accounts: &Array<Gd<Account>>,
     ) -> Result<BTreeMap<u32, AccountInfo>, SingleAddressWalletStoreError> {
         let mut account_infos = BTreeMap::new();
@@ -556,7 +572,7 @@ impl SingleAddressWalletStore {
             let account = account.bind();
             let public_key = Bip32PublicKey::from_bytes(account.public_key.as_slice())
                 .map_err(|e| SingleAddressWalletStoreError::Bip32Error(e))?;
-            let address = address_from_key(&public_key);
+            let address = address_from_key(network_id, &public_key);
             let address_bech32 = address
                 .to_bech32(None)
                 .map_err(|e| SingleAddressWalletStoreError::Bip32Error(e))?
@@ -761,17 +777,11 @@ fn duplicate_key(k: &Bip32PublicKey) -> Bip32PublicKey {
 }
 
 // Takes the account key
-fn address_from_key(key: &Bip32PublicKey) -> CSLAddress {
+fn address_from_key(network_id: u8, key: &Bip32PublicKey) -> CSLAddress {
     let spend = key.derive(0).unwrap().derive(0).unwrap();
     let stake = key.derive(2).unwrap().derive(0).unwrap();
     let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
     let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
 
-    // TODO: We should not hardcode the network
-    BaseAddress::new(
-        NetworkInfo::testnet_preview().network_id(),
-        &spend_cred,
-        &stake_cred,
-    )
-    .to_address()
+    BaseAddress::new(network_id, &spend_cred, &stake_cred).to_address()
 }

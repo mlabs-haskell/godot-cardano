@@ -4,7 +4,7 @@ class_name TransactionHash
 
 var _transaction_hash: _TransactionHash
 
-enum Status { SUCCESS = 0, BECH32_ERROR = 1 }
+enum Status { SUCCESS = 0, INVALID_HASH = 1 }
 
 func _init(transaction_hash: _TransactionHash):
 	_transaction_hash = transaction_hash
@@ -22,3 +22,6 @@ static func from_hex(hash: String) -> FromHexResult:
 	
 func to_hex() -> String:
 	return _transaction_hash.to_hex()
+
+func _to_string() -> String:
+	return to_hex()

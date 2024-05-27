@@ -82,3 +82,19 @@ static func wrap(v: Variant) -> Variant:
 				return BigInt.new(v)
 			return v
 		_: return v
+
+static func serialize(v: Variant, strict: bool = true) -> Cbor.SerializeResult:
+	return Cbor.serialize(unwrap(v, strict), strict)
+
+static func deserialize(bytes: PackedByteArray) -> Cbor.DeserializeResult:
+	return Cbor.deserialize(bytes)
+
+# currently incomplete and only used for test cases
+static func from_json(json: Dictionary) -> Variant:
+	if json.has("list"):
+		return json.list.map(PlutusData.from_json)
+	if json.has("bytes"):
+		return json.bytes.hex_decode()
+	if json.has("int"):
+		return BigInt.from_str(json.int).value
+	return null

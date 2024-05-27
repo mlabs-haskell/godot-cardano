@@ -19,9 +19,17 @@ func total_lovelace() -> BigInt:
 		BigInt.zero()
 	)
 
-func _sign_transaction(password: String, _transaction: Transaction) -> Signature:
+class SignTxResult extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: Signature:
+		get: return _res.unsafe_value() as Signature
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
+		
+func _sign_transaction(password: String, _transaction: Transaction) -> SignTxResult:
 	return null
-	
+
 class MnemonicWallet extends Wallet:
 	var provider: Provider
 	var single_address_wallet: SingleAddressWallet
@@ -84,23 +92,17 @@ class MnemonicWallet extends Wallet:
 	## It will also update the cached utxos and reset the timer.
 	func _get_updated_utxos() -> Array[Utxo]:
 		self.timer.stop()
-		var address_bech32 = single_address_wallet.get_address_bech32()
-		self.utxos = await self.provider._get_utxos_at_address(address_bech32)
+		self.utxos = await self.provider._get_utxos_at_address(single_address_wallet.get_address())
 		got_updated_utxos.emit(self.utxos)
-		self.timer.start()
+		if is_inside_tree():
+			self.timer.start()
 		return self.utxos
 		
 	func _get_change_address() -> Address:
 		return single_address_wallet.get_address()
 		
-	func _sign_transaction(password: String, transaction: Transaction) -> Signature:
-		var res := single_address_wallet._sign_transaction(password, transaction)
-		if res.is_ok():
-			return res.value
-		else:
-			# TODO: Do not fail, return error
-			push_error("Could not sign transaction, found error", res.error)
-			return
+	func _sign_transaction(password: String, transaction: Transaction) -> SignTxResult:
+		return single_address_wallet._sign_transaction(password, transaction)
 
 	func add_account(account_index: int, password: String):
 		single_address_wallet.add_account(account_index, password)
