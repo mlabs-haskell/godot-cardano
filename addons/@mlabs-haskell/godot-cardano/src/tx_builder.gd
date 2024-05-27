@@ -261,8 +261,13 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 ## will not have been evaluated and will have inaccurate script execution units,
 ## which may cause the transaction to fail at submission and potentially consume
 ## the provided collateral.
-func balance() -> BalanceResult:
-	var wallet_utxos: Array[Utxo] = await _wallet._get_updated_utxos() if _wallet != null else ([] as Array[Utxo])
+func balance(utxos: Array[Utxo] = []) -> BalanceResult:
+	var wallet_utxos: Array[Utxo] = []
+	if utxos.size() > 0:
+		wallet_utxos = utxos
+	elif _wallet != null:
+		wallet_utxos = await _wallet._get_updated_utxos()
+		
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
@@ -293,13 +298,19 @@ func balance() -> BalanceResult:
 		_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
 	)
 	
-func complete() -> CompleteResult:
-	var wallet_utxos: Array[Utxo] = await _wallet._get_updated_utxos() if _wallet != null else ([] as Array[Utxo])
+func complete(utxos: Array[Utxo] = []) -> CompleteResult:#
+	var wallet_utxos: Array[Utxo] = []
+	if utxos.size() > 0:
+		wallet_utxos = utxos
+	elif _wallet != null:
+		wallet_utxos = await _wallet._get_updated_utxos()
+		
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
-	var additional_utxos: Array[Utxo] = [] # TODO
+	# TODO: accept UTxOs which may not be in the ledger for balancing/evaluation
+	var additional_utxos: Array[Utxo] = []
 	
 	if wallet_utxos.size() == 0:
 		_results.push_back(
