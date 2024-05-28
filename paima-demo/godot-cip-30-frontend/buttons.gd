@@ -78,7 +78,7 @@ func add_paima_game_buttons(window):
 	
 
 func test_step_right():
-	# TODO: unsafe - need to check world boundaries
+	# TODO: unsafe, but enough for tests - need to check world boundaries
 	_paima_middleware.submit_moves(_paima_middleware.get_x() + 1, 0)
 	
 	
@@ -103,7 +103,6 @@ func test_sing():
 	prints("Test sig COSE key: ", sign_res.value._cose_key_hex())
 	prints("Test sig COSE sig1: ", sign_res.value._cose_sig1_hex())
 
-# TODO: add address to be CIP-30 compliant
 func sign_data(signing_address, payload):
 	return _godot_wallet.single_address_wallet.sign_data("", signing_address, payload);
 

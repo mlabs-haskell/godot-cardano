@@ -18,8 +18,6 @@ func _init(window) -> void:
 	assert(_middleware)
 	_endpoints = _middleware.endpoints
 	assert(_endpoints)
-#
-
 
 ## Login
 ### The func
@@ -33,9 +31,13 @@ var _on_login_js = JavaScriptBridge.create_callback(_on_login)
 func _on_login(args):
 	print("setting _paima_wallet")
 	var wallet = args[0]
-	_paima_wallet = wallet
-	print("_paima_wallet set")
-	update_user_stats()
+	if wallet && wallet.success:
+		_paima_wallet = wallet
+		print("GD: middleware: paima_wallet set")
+		update_user_stats()
+	else:
+		prints("GD: middleware: Paima login error: wallet not set!")
+		console.log("Paima wallet login result:", wallet)
 
 ## Join world
 ### The func
@@ -51,7 +53,7 @@ func _on_join_world(args):
 ## Update status
 ### The func
 func update_user_stats():
-	if _paima_wallet && _paima_wallet.success:
+	if _wallet_is_set:
 		prints("GD: getting user stats")
 		_endpoints.getUserStats(_paima_wallet.result.walletAddress).then(_on_stats_received_js)
 	else:
@@ -66,7 +68,6 @@ func _on_stats_received(args):
 ## Submit moves
 ### The func
 func submit_moves(x, y):
-	prints("wallet success: ", _paima_wallet.success)
 	_endpoints.submitMoves(x, y).then(_on_moves_submitted_js)
 
 ### Callback
@@ -78,8 +79,9 @@ func _on_moves_submitted(args):
 func show_wallet():
 	console.log("Paima wallet: ", _paima_wallet)
 
-
 ## Helpers
+func _wallet_is_set():
+	return  _paima_wallet && _paima_wallet.success
 
 func get_x(): # TODO: null handling
 	return _user_stats.stats.x
@@ -87,12 +89,11 @@ func get_x(): # TODO: null handling
 func get_y(): # TODO: null handling
 	return _user_stats.stats.y
 
-## TODO: looks like we'll need to inject our own `cardano` object if there is no ohter wallets in browser
 func mk_wallet_info():
 	var pref = new_js_obj()
 	pref.name = "godot"
 	var info = new_js_obj()
-	info.mode = 3 #todo: defines WalletMode.Cardano in Paima, how can it be puleld out of there?
+	info.mode = 3 # todo: defines WalletMode.Cardano in Paima, how can it be puleld out of there?
 	info.preferBatchedMode = true
 	info.preference = pref
 	return info
