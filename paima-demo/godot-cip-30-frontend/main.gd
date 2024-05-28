@@ -35,7 +35,7 @@ func init_cardano_wallet():
 
 func _on_godot_wallet_ready():
 	init_buttons()
-	Cip30Callbacks.new(godot_wallet).addt_to(window)
+	Cip30Callbacks.new(godot_wallet).add_to(window)
 
 func init_buttons():
 	var buttons = Buttons.new(godot_wallet, window)

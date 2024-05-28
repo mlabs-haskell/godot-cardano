@@ -1,5 +1,7 @@
 extends Node
 # If `RefCounted` is used, then GDScript callbacks stop working - they are not called at all.
+# Probably coz references to callbacks are lost (see below).
+# (?) Alternative is to keep reference to `RefCounted` on root node (main.gd)
 
 ## Provides CIP-30 compliant functions for Godot wallet.
 ## Used to add GDScript callbacks wrapped with JavaScriptBridge into `window.cardano.godot` Object.
@@ -23,7 +25,7 @@ func _init(godot_wallet):
 # TODO: CIP-30 compliant errors
 # CIP-30 callbacks
 ## Adding to `window`
-func addt_to(window):
+func add_to(window):
 	if !window:
 		print("GD: Browser 'window' not found - skip adding CIP-30 callbacks")
 		return
