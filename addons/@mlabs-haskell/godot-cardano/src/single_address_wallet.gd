@@ -34,20 +34,12 @@ func _sign_transaction(password: String, tx: Transaction) -> Wallet.SignTxResult
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
 	)
 
-class SignDataError extends Result:
-	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
-	var value: DataSignature:
-		get: return _res.unsafe_value() as DataSignature
-	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
-	var error: String:
-		get: return _res.unsafe_error()
-
 ## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
-func sign_data(password: String, signing_address: String, data: String) -> SignDataError:
+func sign_data(password: String, signing_address: String, data: String) -> Wallet.SignDataResult:
 	var own_address = self.get_address()
 	if (signing_address != own_address.to_hex() &&  signing_address != own_address.to_bech32()):
-		return SignDataError.new(_Result.err("Address do not match", 0)) # TODO: proper tag
-	return SignDataError.new(
+		return Wallet.SignDataResult.new(_Result.err("Address do not match", 0)) # TODO: proper tag
+	return Wallet.SignDataResult.new(
 	_wallet._sign_data(password.to_utf8_buffer(), data, _wallet_loader._network)
 	)
 

@@ -30,6 +30,14 @@ class SignTxResult extends Result:
 func _sign_transaction(password: String, _transaction: Transaction) -> SignTxResult:
 	return null
 
+class SignDataResult extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: DataSignature:
+		get: return _res.unsafe_value() as DataSignature
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
+
 class MnemonicWallet extends Wallet:
 	var provider: Provider
 	var single_address_wallet: SingleAddressWallet
