@@ -42,7 +42,6 @@ class SignDataError extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 
-# TODO: CIP-30 compliant error
 ## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
 func sign_data(password: String, signing_address: String, data: String) -> SignDataError:
 	var own_address = self.get_address()

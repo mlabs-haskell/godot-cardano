@@ -38,10 +38,11 @@ fn mk_cose_1_sig(
     address: &Address,
 ) -> Result<COSESign1, JsError> {
     let mut protected_headers = HeaderMap::new();
+    // algorithm header
     let algorithm_id = Label::from_algorithm_id(algorithm_id);
     protected_headers.set_algorithm_id(&algorithm_id);
 
-    // - address
+    // address header
     let addr_label = Label::new_text("address".to_owned());
     let addr_hex_cbor = cbor::CBORValue::new_bytes(address.to_bytes());
     protected_headers.set_header(&addr_label, &addr_hex_cbor)?;

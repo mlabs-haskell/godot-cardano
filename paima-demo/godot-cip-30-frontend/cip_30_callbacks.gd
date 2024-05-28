@@ -51,9 +51,9 @@ func _cb_get_unused_addresses(args):
 func _cb_sign_data(args):
 	prints("GD: _cb_sign_data")
 	var promise_callback: JavaScriptObject = args[0]
-	var signing_address = args[1]
-	var cbor_string = args[2]
-	var sign_res = _godot_wallet.single_address_wallet.sign_data("", signing_address, cbor_string)
+	var signing_address: String = args[1]
+	var bytes_hex: String = args[2]
+	var sign_res = _godot_wallet.single_address_wallet.sign_data("", signing_address, bytes_hex)
 	var signResult = JavaScriptBridge.create_object("Object")
 	signResult.key = sign_res.value._cose_key_hex()
 	signResult.signature = sign_res.value._cose_sig1_hex()

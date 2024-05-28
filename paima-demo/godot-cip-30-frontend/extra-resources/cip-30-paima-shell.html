@@ -207,15 +207,20 @@
 	</script>
 	<script src="index.js"></script>
 	<script type="module">
-		// Setup Paima endpoints
+		// NOTE: Paima integration
+		// Setup Paima endpoints so they can be acquired and called from GDScript
+		// Middleware os placed to proper directory after build by `make distribute-middleware`
+		// See README for details 
 		import endpoints, { WalletMode } from './paima/paimaMiddleware.js';
 		window.paima = {
 			endpoints: endpoints,
 		};
 
-		// Setup CIP-30 API for cardano-godot
+		// NOTE: Paima integration
+		// Setup CIP-30 API for cardano-godot using script defined above
 		initCip30Godot();
 
+		// NOTE: Paima integration
 		// Code from default Godot HTML shell (unchanged)
 		const GODOT_CONFIG = { "args": [], "canvasResizePolicy": 2, "executable": "index", "experimentalVK": false, "fileSizes": { "index.pck": 65872, "index.wasm": 2866393 }, "focusCanvas": true, "gdextensionLibs": ["csl_godot.wasm"] };
 		const engine = new Engine(GODOT_CONFIG);

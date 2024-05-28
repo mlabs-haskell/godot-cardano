@@ -53,6 +53,7 @@ pub enum SingleAddressWalletError {
     Bech32Error(JsError),
     NonExistentAccount(u32),
     DataSignCip30Error(cms::error::JsError),
+    PayloadDecodeError(hex::FromHexError),
 }
 
 impl GodotConvert for SingleAddressWalletError {
@@ -68,6 +69,7 @@ impl ToGodot for SingleAddressWalletError {
             Bech32Error(_) => 3,
             NonExistentAccount(_) => 4,
             DataSignCip30Error(_) => 5,
+            PayloadDecodeError(_) => 6,
         }
     }
 }
@@ -132,13 +134,11 @@ impl SingleAddressWallet {
     pub fn sign_data(
         &self,
         password: PackedByteArray,
-        cbor_string: String,
+        bytes_hex: String,
         network_id: u8,
     ) -> Result<DataSignature, SingleAddressWalletError> {
         let pbes2_params = self.get_pbes2_params();
-
-        let data = hex::decode(cbor_string).expect("CBOR decoding failed");
-
+        let data = hex::decode(bytes_hex).map_err(SingleAddressWalletError::PayloadDecodeError)?;
         let res = with_account_private_key(
             pbes2_params,
             self.encrypted_master_private_key.as_slice(),
@@ -161,10 +161,10 @@ impl SingleAddressWallet {
     fn _sign_data(
         &self,
         password: PackedByteArray,
-        cbor_string: String,
+        bytes_hex: String,
         network_id: u8,
     ) -> Gd<GResult> {
-        Self::to_gresult_class(self.sign_data(password, cbor_string, network_id))
+        Self::to_gresult_class(self.sign_data(password, bytes_hex, network_id))
     }
 
     pub fn get_address(&self) -> Gd<Address> {

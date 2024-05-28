@@ -4,10 +4,10 @@ class_name PaimaMiddleware
 
 var console = JavaScriptBridge.get_interface("console")
 
-var _middleware
-var _endpoints
-var _paima_wallet
-var _user_stats
+var _middleware # JS Object
+var _endpoints # JS Object
+var _paima_wallet # JS Object
+var _player_stats # JS Object
 
 
 #TODO: figure out endpoints type 
@@ -53,7 +53,7 @@ func _on_join_world(args):
 ## Update status
 ### The func
 func update_user_stats():
-	if _wallet_is_set:
+	if _wallet_is_set():
 		prints("GD: getting user stats")
 		_endpoints.getUserStats(_paima_wallet.result.walletAddress).then(_on_stats_received_js)
 	else:
@@ -62,7 +62,7 @@ func update_user_stats():
 ### Callback
 var _on_stats_received_js = JavaScriptBridge.create_callback(_on_stats_received)
 func _on_stats_received(args):
-	_user_stats = args[0]
+	_player_stats = args[0]
 	console.log("User stats ", args[0])
 
 ## Submit moves
@@ -80,14 +80,17 @@ func show_wallet():
 	console.log("Paima wallet: ", _paima_wallet)
 
 ## Helpers
+func has_player_stats():
+	return _player_stats && _player_stats.stats
+
 func _wallet_is_set():
 	return  _paima_wallet && _paima_wallet.success
 
 func get_x(): # TODO: null handling
-	return _user_stats.stats.x
+	return _player_stats.stats.x
 	
 func get_y(): # TODO: null handling
-	return _user_stats.stats.y
+	return _player_stats.stats.y
 
 func mk_wallet_info():
 	var pref = new_js_obj()

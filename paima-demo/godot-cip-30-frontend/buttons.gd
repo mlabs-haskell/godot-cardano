@@ -19,13 +19,9 @@ func _init(godot_wallet, window):
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	prints("_ready buttons")
-
-	
 	if _window && _window.paima:
 		print("init Paima")
 		add_paima_game_buttons(_window)
-	
 	if _godot_wallet:
 		add_test_sign_button()
 #
@@ -74,14 +70,11 @@ func add_paima_game_buttons(window):
 	showWalletB.text = "Show Paima wallet"
 	showWalletB.pressed.connect(_paima_middleware.show_wallet)
 	add_child(showWalletB)
-	
-	
 
 func test_step_right():
 	# TODO: unsafe, but enough for tests - need to check world boundaries
 	_paima_middleware.submit_moves(_paima_middleware.get_x() + 1, 0)
-	
-	
+
 func add_test_sign_button():
 	var sep = Label.new()
 	sep.text = "Godot wallet debug buttons"
@@ -121,7 +114,7 @@ func _process(delta):
 		if _paima_middleware._paima_wallet:
 			joinB.disabled = false
 			loginB.disabled = true
-		if _paima_middleware._user_stats && _paima_middleware._user_stats.stats: # TODO: make a function for middleware wrapper
+		if _paima_middleware.has_player_stats():
 			player_pos_button.disabled = false
 			joinB.disabled = true
 			stepRightB.disabled = false
