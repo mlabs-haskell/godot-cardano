@@ -285,9 +285,7 @@ class TestSdk extends GutTest:
 		)
 		or_quit(status)
 		gut.p('Test wallets funded')
-		remove_child(wallet)
 		wallet.queue_free()
-		remove_child(cardano)
 		cardano.queue_free()
 
 	func test_invalid_signature() -> void:
@@ -516,7 +514,5 @@ class TestSdk extends GutTest:
 			var ix = blockfrost_tests.find(test)
 			var wallet := _wallets[ix]
 			var cardano := cardanos[ix]
-			remove_child(wallet)
 			wallet.queue_free()
-			remove_child(cardano)
 			cardano.queue_free()

@@ -164,7 +164,6 @@ func blockfrost_request(request: Request) -> Variant:
 	
 	if status != OK:
 		print("Creating Blockfrost request failed: %s, %s" % [status, request])
-		remove_child(http_request)
 		http_request.queue_free()
 		return null
 
@@ -172,7 +171,6 @@ func blockfrost_request(request: Request) -> Variant:
 	var status_code : int = result[1]
 	var content_bytes : PackedByteArray = result[3]
 	var content := content_bytes.get_string_from_utf8()
-	remove_child(http_request)
 	http_request.queue_free()
 	
 	# TODO: handle error responses properly

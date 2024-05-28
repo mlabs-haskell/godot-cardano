@@ -163,7 +163,7 @@ func await_response(
 	for c in connections:
 		timer.timeout.disconnect(c['callable'])
 	timer.stop()
-	remove_child(timer)
+	timer.queue_free()
 	return status
 	
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
