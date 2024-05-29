@@ -15,6 +15,8 @@
   - [Custom HTML shell](#custom-html-shell)
     - [Note on CIP-30 callbacks](#note-on-cip-30-callbacks)
   - [CIP-30 API](#cip-30-api)
+    - [Note #1](#note-1)
+    - [Note #2](#note-2)
 
 This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by `cardano-godot`.
 
@@ -23,6 +25,7 @@ This is combination of Paima's "open-world" template and Godot project that serv
 - Figure out multithreading+WASM issue to not to block main loop when initializing wallet and signing
 - Figure out what is required to rename `csl_godot.wasm` to match other extensions names. Currently if WASM filename does not match `name` in `config.toml`, WASM will fail to load with `file not found`. Maybe changing name in custom HTML shell `GODOT_CONFIG.gdextensionLibs` is sufficient
 - CIP-30 compliant errors
+- Possible improvement: reduce the [spread of CIP-30 API initialization across multiple source files](#note-1)
 - Is there any other way to get access to Paima middleware besides adding it to global state in `window`?
 
 ## Prerequisites
@@ -136,6 +139,10 @@ Currently implemented:
 
 - CIP-30 compliant errors
 
-🛠️ Currently, CIP-30 setup is split between [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (marked by `NOTE: CIP-30 integration` comments). It should be possible to do custom HTML shell part in GDScript also, but most certainly require a lot of whapping using `JavaScriptBridge` and associated debugging.
+### Note #1
 
-🛠️ Definition of  `JavaScriptBridge` callbacks should be done with care and exactly match examples from tutorial, as things tend to break silently here.
+Currently, CIP-30 setup is split between [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (marked by `NOTE: CIP-30 integration` comments). It should be possible to do custom HTML shell part in GDScript also, but most certainly require a lot of whapping using `JavaScriptBridge` and associated debugging.
+
+### Note #2
+
+Definition of  `JavaScriptBridge` callbacks should be done with care and exactly match examples from tutorial, as things tend to break silently here.
