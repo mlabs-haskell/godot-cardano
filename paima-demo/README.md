@@ -1,6 +1,7 @@
 # Godot-cardano and Paima's "Open World" prototype
 
 - [Godot-cardano and Paima's "Open World" prototype](#godot-cardano-and-paimas-open-world-prototype)
+  - [TODOs](#todos)
   - [Prerequisites](#prerequisites)
   - [Setting up the demo](#setting-up-the-demo)
     - [Add `addons`](#add-addons)
@@ -11,9 +12,18 @@
     - [Start Paima node and required infrastructure](#start-paima-node-and-required-infrastructure)
     - [Starting frontend](#starting-frontend)
   - [Notes](#notes)
-  - [TODO](#todo)
+  - [Custom HTML shell](#custom-html-shell)
+    - [Note on CIP-30 callbacks](#note-on-cip-30-callbacks)
+  - [CIP-30 API](#cip-30-api)
 
-This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware.
+This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by `cardano-godot`.
+
+## TODOs
+
+- Figure out multithreading+WASM issue to not to block main loop when initializing wallet and signing
+- Figure out what is required to rename `csl_godot.wasm` to match other extensions names. Currently if WASM filename does not match `name` in `config.toml`, WASM will fail to load with `file not found`. Maybe changing name in custom HTML shell `GODOT_CONFIG.gdextensionLibs` is sufficient
+- CIP-30 compliant errors
+- Is there any other way to get access to Paima middleware besides adding it to global state in `window`?
 
 ## Prerequisites
 
@@ -40,13 +50,21 @@ This is combination of Paima's "open-world" template and Godot project that serv
 3. `cargo +nightly build -Zbuild-std --target wasm32-unknown-emscripten`
 4. Copy or link `libcsl_godot/target/wasm32-unknown-emscripten/debug/csl_godot.wasm` to `addons/@mlabs-haskell/godot-cardano/bin`
 
+Optional: to prevent Godot editor from signaling bunch of errors, `.so` library can be compiled and added to `addons/@mlabs-haskell/godot-cardano/bin`:
+
+   1. `cd libcsl_godot`
+   2. `cargo build`
+   3. (in case of Linux) Copy or link `libcsl_godot/target/debug/libcsl_godot.so` to `addons/@mlabs-haskell/godot-cardano/bin` as `libcsl_godot.linux.template_debug.x86_64.so`
+
+If `.so` is added, project can be run from Godot editor, but only one button to test signing will be shown in UI.
+
 ### Generate and setup Paima template and Batcher
 
 From fresh repo proceed with following steps:
 
-1. Copy or link to root paima engine as `paima-engine`
+1. Copy or link to root Paima engine as `paima-engine`
 2. `make init` (goes through initialization process according to the [open-world-readme](./open-world/README.md); tested in Linux,some extra flags are required for macOS, see the readme; if there is some "red" messages about vulnerabilities it should be ok
-3. `make replace-env-file`. ⚠️ This command changes `.env.localhost`, generated from `./open-world/.env.example`, to properly edited version - `.env.localhost.godot`. It adds proper `BATCHER_URI`, fixes `BATCHER_DB_HOST` (see generated [open-world/.env.example](./open-world/.env.example) for comparison). It is important to make this replace before the next one, or the middleware that will be built next, will miss some important settings.
+3. `make replace-env-file`. ⚠️ This command changes `.env.localhost`, generated from `./open-world/.env.example`, to properly edited version - `.env.localhost.godot`. It adds proper `BATCHER_URI`, changes `BATCHER_DB_HOST` (see generated [open-world/.env.example](./open-world/.env.example) for comparison). It is important to make this replace before the next step, or the middleware that will be built next, will miss some important settings.
 4. `make paima-middleware`
 5. `make init-batcher` - requests `sudo` to make batcher script (`./batcher/start.sh`) executable. ⚠️ `./batcher/.env.localhost` also changed according to `.env.localhost.godot`
 6. `make webserver-dir`
@@ -54,8 +72,8 @@ From fresh repo proceed with following steps:
 
 ### Export Godot demo project
 
-1. Open `godot-cip-30-frontend` in Godot
-2. Set Blockfrost token in `paima-demo/godot-cip-30-frontend/main.gd` - look for `const token: String = "[UNSET]"`. Token should be for `mainnet` as Paima currnetly supports only `mainnet` addresses
+1. Open `godot-cip-30-frontend` in Godot (if `.so` library is not compiled and added to the project, editor will report a lot of errors, but web-export should work w/o issues regardless)
+2. Set Blockfrost token in `paima-demo/godot-cip-30-frontend/main.gd` - look for `const token: String = "[UNSET]"`.  Token should be for `mainnet` as Paima currently supports only `mainnet` addresses. Seed phrase is hardcoded there, but can be changed if needed.
 3. Do web-export to `paima-demo/web-server/godot-web-export/index.html`. The project already have web-export config, but just in case make sure that in the web-export form:
    1. `Custom HTML Shell` is set to `res://extra-resources/cip-30-paima-shell.html`
    2. `Extensions Support` is `On`
@@ -64,7 +82,7 @@ From fresh repo proceed with following steps:
 
 ### Start Paima node and required infrastructure
 
-ℹ️ Following commands require Docker and `node + npm`
+📝 Following commands require Docker and `node + npm`
 
 1. `make start-db` (will keep running in  terminal)
 2. `make start-chain` (will keep running in  terminal)
@@ -78,11 +96,46 @@ From fresh repo proceed with following steps:
 
 ## Notes
 
-1. Any changes to Paima middleware and realated packages source code should be followed by `make paima-middleware` and `make distribute-middleware`
+1. Any changes to Paima middleware and related packages source code should be followed by `make paima-middleware` and `make distribute-middleware`
 
-## TODO
+## Custom HTML shell
 
-- [ ] Docs about calling JS Promice's callback in GDScript callback to reposnd CIP-30 queries, if no better way will be found
-- [ ] Docs about custom HTML shell
-- [ ] Figure out multithreading to not to block main loop
-- [ ] CIP-30 compliant errors
+Custom HTML Shell ([source](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html)) is used for WEB-export. Essentially, it is small extension of default one  that Godot generates (additions can be found by `NOTE: Paima integration` and `NOTE: CIP-30 integration` comments). It serves two purposes:
+
+  1. Adds Paima middleware endpoints to the `window.paima` so they can be accessed from GDScript
+  2. Wraps GDScript CIP-30 callbacks from `window.cardano.godot.callbacks` (which are set from GDScript) to provide Promise-based CIP-30 API for `window.cardano.godot`
+
+### Note on CIP-30 callbacks
+
+It is not quite clear at the moment how to "properly" get returned value from GDScript callbacks wrapped with `JavaScriptBridge` (see [godotengine forum](https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)). The one way, is to set returned value to some object either available globally or passed as an argument to GDScript callback (see also [here](https://godotengine.org/article/godot-web-progress-report-9/)). After some experiments current solution is implemented as follows:
+
+1. On GDScript side:
+   1. Callbacks are created in [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and added to the `window.cardano.godot.callbacks` *after engine starts*
+   2. As first argument (`args[0]`) all this callbacks receive `resolve` callback of JS `Promise` (more on this below)
+   3. When GDScript callback finishes work an need to return result, it calls `resolve` callback passed as `args[0]` using the following code: `promise_callback.call("call", promise_callback.this, value_to_return)`
+2. On JS side script was added to [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (see `NOTE: CIP-30 integration` comments) which does couple things:
+   1. Adds CIP-30 compliant `window.cardano.godot` object *before engine starts*.
+   2. Adds `window.cardano.godot.callbacks` object *before engine starts*.
+   3. Adds CIP-30 API functions to `window.cardano.godot`. To enable communication with wallet, callbacks from `window.cardano.godot.callbacks` are wrapped here in such a way that:
+      1. `Promise` is created via `Promise.withResolvers()`
+      2. `resolve` is passed to GDScript callback (from `window.cardano.godot.callbacks`) as first argument (will become `args[0]`)
+      3. `Promise` instance is returned to the caller
+
+So this way, when GDScript callback will execute `promise_callback.call("call", promise_callback.this, value_to_return)`, `Promise` will be resolved and returned value can be obtained on JS side. It also naturally fits into `Promise` based CIP-30 API.
+
+## CIP-30 API
+
+Currently implemented:
+
+- `enable()`
+- `getUsedAddresses()` (always returns array of single element)
+- `getUnusedAddresses()` (always returns empty array)
+- `signData()`
+
+⚠️ Not implemented:
+
+- CIP-30 compliant errors
+
+🛠️ Currently, CIP-30 setup is split between [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (marked by `NOTE: CIP-30 integration` comments). It should be possible to do custom HTML shell part in GDScript also, but most certainly require a lot of whapping using `JavaScriptBridge` and associated debugging.
+
+🛠️ Definition of  `JavaScriptBridge` callbacks should be done with care and exactly match examples from tutorial, as things tend to break silently here.

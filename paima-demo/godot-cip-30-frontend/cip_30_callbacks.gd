@@ -14,7 +14,7 @@ class_name Cip30Callbacks
 var _godot_wallet
 
 # This references must be kept
-# See expample: https://docs.godotengine.org/en/stable/classes/class_javascriptobject.html#javascriptobject
+# See example: https://docs.godotengine.org/en/stable/classes/class_javascriptobject.html#javascriptobject
 var _js_cb_get_unused_addresses = JavaScriptBridge.create_callback(_cb_get_unused_addresses)
 var _js_cb_get_used_addresses = JavaScriptBridge.create_callback(_cb_get_used_addresses)
 var _js_cb_sign_data = JavaScriptBridge.create_callback(_cb_sign_data)
@@ -29,7 +29,7 @@ func add_to(window):
 	if !window:
 		print("GD: Browser 'window' not found - skip adding CIP-30 callbacks")
 		return
-	# `window.cardano.godot` Object is created via custom HTML shell and expeted to be not null
+	# `window.cardano.godot` Object is created via custom HTML shell and expected to be not null
 	# see res://extra-resources/cip-30-paima-shell.html
 	window.cardano.godot.callbacks.get_used_addresses = _js_cb_get_used_addresses
 	window.cardano.godot.callbacks.get_unused_addresses = _js_cb_get_unused_addresses
