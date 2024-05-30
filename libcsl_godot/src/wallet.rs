@@ -156,6 +156,16 @@ impl SingleAddressWallet {
     fn _switch_account(&mut self, account_index: u32) -> Gd<GResult> {
         Self::to_gresult(self.switch_account(account_index))
     }
+
+    // list account indices
+    #[func]
+    pub fn _accounts(&self) -> Array<u32> {
+        self.accounts
+            .keys()
+            .cloned()
+            .collect::<Array<u32>>()
+            .into_godot()
+    }
 }
 
 /// The backing storage of a `SingleAddressWallet`.
@@ -202,6 +212,7 @@ pub enum SingleAddressWalletStoreError {
     AccountNotFound(u32),
     AttributeNotFoundInResource(StringName),
     AttributeWithWrongTypeInResource(StringName),
+    NoAccountsInWallet,
 }
 
 impl GodotConvert for SingleAddressWalletStoreError {
@@ -220,6 +231,7 @@ impl ToGodot for SingleAddressWalletStoreError {
             AccountNotFound(_) => 6,
             AttributeNotFoundInResource(_) => 7,
             AttributeWithWrongTypeInResource(_) => 8,
+            NoAccountsInWallet => 9,
         }
     }
 }
@@ -327,6 +339,11 @@ impl SingleAddressWalletStore {
                 .collect::<Result<Array<Gd<Account>>, SingleAddressWalletStoreError>>()
         }?;
 
+        // use first account found in wallet or fail
+        let first_account = accounts
+            .try_get(0)
+            .ok_or(SingleAddressWalletStoreError::NoAccountsInWallet)?;
+
         // create wallet store
         let wallet_store = Self {
             encrypted_master_private_key: get_attr("encrypted_master_private_key", &resource)?,
@@ -339,7 +356,7 @@ impl SingleAddressWalletStore {
         };
 
         // obtain a wallet
-        let wallet = wallet_store.get_wallet(0, network_id)?;
+        let wallet = wallet_store.get_wallet(first_account.bind().index, network_id)?;
 
         Ok(SingleAddressWalletImportResult {
             wallet_store: Gd::from_object(wallet_store),

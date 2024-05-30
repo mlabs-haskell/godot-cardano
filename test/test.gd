@@ -61,7 +61,7 @@ class TestWallets extends GutTest:
 		var data: Dictionary = JSON.parse_string(data_json)
 		_wallets = data.wallets
 	
-	func test_create_and_import(
+	func test_create_and_import_seedphrase(
 		account_index: int = use_parameters([0,12])
 	) -> void:
 		var create_result := SingleAddressWalletLoader.create(
@@ -89,9 +89,9 @@ class TestWallets extends GutTest:
 			import_result.is_ok(),
 			"Import created wallet with account %d" % account_index
 		)
-		
+		var single_address_wallet := import_result.value.wallet
 		var wallet := Wallet.MnemonicWallet.new(
-			import_result.value.wallet,
+			single_address_wallet,
 			null,
 			false
 		)
@@ -102,7 +102,56 @@ class TestWallets extends GutTest:
 		)
 		wallet.free()
 		
-	func test_wallet_import() -> void:
+	func test_create_export_and_import_resource(
+		account_index: int = use_parameters([0,5,13])
+	) -> void:
+		# Create new wallet with account 0
+		var create_result := SingleAddressWalletLoader.create(
+			"1234",
+			0,
+			"",
+			"",
+			ProviderApi.Network.PREVIEW
+		)
+		assert_true(
+			create_result.is_ok(),
+			"Create new wallet with account %d" % 0
+		)
+		var wallet := create_result.value.wallet
+		
+		# Add account_index to the wallet and switch to it
+		var add_account_res := create_result.value.wallet.add_account(account_index, "1234")
+		assert_true(
+			add_account_res.is_ok()
+			, "Added account %d" % account_index
+		)
+		wallet = add_account_res.value
+		wallet.switch_account(account_index)
+		
+		# Export the wallet
+		var wallet_resource := wallet.export()
+		
+		# Import the wallet
+		var import_result := await SingleAddressWalletLoader\
+				.new(ProviderApi.Network.PREVIEW)\
+				.import_from_resource(wallet_resource)
+				
+		assert_true(
+			import_result.is_ok(),
+			"Imported wallet from resource"
+		)
+		var imported_wallet := import_result.value.wallet
+		
+		# Switch to the same account_index
+		imported_wallet.switch_account(account_index)
+		
+		# Test
+		assert_eq(
+			wallet.get_address_bech32(),
+			imported_wallet.get_address_bech32()
+		)
+		
+	func test_wallet_import_seedphrase() -> void:
 		var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 		for wallet_data: Dictionary in _wallets:
 			var seed_phrase: String = wallet_data['seedPhrase']
@@ -477,7 +526,7 @@ class TestSdk extends GutTest:
 			if result.tx_hash == null:
 				push_error("Test failed: %s" % result.name)
 				continue
-			var status := await _provider.await_utxos_at(
+			var _status := await _provider.await_utxos_at(
 				result.address,
 				result.tx_hash,
 				180

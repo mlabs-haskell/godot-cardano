@@ -12,6 +12,7 @@ enum Status {
 	ACCOUNT_NOT_FOUND = 6,
 	ATTRIBUTE_NOT_FOUND_IN_RESOURCE = 7,
 	ATTRIBUTE_WITH_WRONG_TYPE_IN_RESOURCE = 8,
+	NO_ACCOUNTS_IN_WALLET = 9,
 }
 
 ## Emitted when [method SingleAddressWalletStore.import_from_seedphrase]
@@ -205,7 +206,7 @@ func _wrap_import_from_resource(resource: SingleAddressWalletResource) -> void:
 			SingleAddressWalletLoader.new(_network),
 			_SingleAddressWalletStore._import_from_resource(
 				resource,
-				1 if _network == Provider.Network.MAINNET else 0))
+				1 if _network == ProviderApi.Network.MAINNET else 0))
 		call_deferred("emit_signal", "import_completed", res)
 			
 ## The output of creating a wallet. It consists of a [member WalletCreation.seed_phrase] and a
