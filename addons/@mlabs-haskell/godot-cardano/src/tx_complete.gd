@@ -1,8 +1,9 @@
 class_name TxComplete
 extends Node
 
-var _cardano: Cardano = null
 var _transaction: Transaction = null
+var _provider: Provider
+var _wallet: Wallet
 
 var _results: Array[Result]
 
@@ -16,11 +17,12 @@ class SubmitResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 
-func _init(cardano: Cardano, transaction: Transaction) -> void:
-	_cardano = cardano
+func _init(provider: Provider, transaction: Transaction, wallet: Wallet = null) -> void:
 	_transaction = transaction
+	_provider = provider
+	_wallet = wallet
 
-func sign(password: String, wallet: Wallet = _cardano.wallet) -> TxComplete:		
+func sign(password: String, wallet: Wallet = _wallet) -> TxComplete:		
 	var sign_result := wallet._sign_transaction(password, _transaction)
 	_results.push_back(sign_result)
 	if sign_result.is_ok():
@@ -37,7 +39,7 @@ func sign(password: String, wallet: Wallet = _cardano.wallet) -> TxComplete:
 func submit() -> SubmitResult:
 	var error := _results.any(func (result: Result) -> bool: return result.is_err())
 	if not error:
-		var submit_result := await _cardano.provider._submit_transaction(_transaction)
+		var submit_result := await _provider.submit_transaction(_transaction)
 		if submit_result.is_ok():
 			return SubmitResult.new(_Result.ok(submit_result.value))
 		else:
