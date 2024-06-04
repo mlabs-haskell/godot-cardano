@@ -27,6 +27,9 @@ func get_address() -> Address:
 ## Get the account's address as a BECH32-encoded [String].
 func get_address_bech32() -> String:
 	return _wallet._get_address_bech32()
+	
+func get_address_hex() -> String:
+	return get_address().to_hex()
 
 ## Sign the given [Transaction] and obtain a [Signature]
 func _sign_transaction(password: String, tx: Transaction) -> Wallet.SignTxResult:
@@ -35,12 +38,9 @@ func _sign_transaction(password: String, tx: Transaction) -> Wallet.SignTxResult
 	)
 
 ## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
-func sign_data(password: String, signing_address: String, data: String) -> Wallet.SignDataResult:
-	var own_address = self.get_address()
-	if (signing_address != own_address.to_hex() &&  signing_address != own_address.to_bech32()):
-		return Wallet.SignDataResult.new(_Result.err("Address do not match", 0)) # TODO: proper tag
+func sign_data(password: String, data: String) -> Wallet.SignDataResult:
 	return Wallet.SignDataResult.new(
-	_wallet._sign_data(password.to_utf8_buffer(), data, _wallet_loader._network)
+		_wallet._sign_data(password.to_utf8_buffer(), data.hex_decode())
 	)
 
 ## Adds an account to this wallet's store with the given index

@@ -202,7 +202,7 @@
 
 		function wrapSignCb(cb, address, message) {
 			let { promise, resolve, reject } = Promise.withResolvers();
-			cb(resolve, address, message);
+			cb(resolve, reject, address, message);
 			return promise;
 		}
 	</script>

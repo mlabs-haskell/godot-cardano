@@ -31,11 +31,11 @@ This is combination of Paima's "open-world" template and Godot project that serv
 ## Prerequisites
 
 - `Docker` (required to start testnet an other infra for Paima)
-- `paima-engine`. Tested with `paima-engine-linux-2.3.0`).
+- `paima-engine`. Tested with `paima-engine-linux-2.3.0`.
 - Rust (nightly). Tested with `cargo 1.77.1 (e52e36006 2024-03-26)`.
-- `emscripten` for WASM and WEB-export. See [Godot-rust book](https://godot-rust.github.io/book/toolchain/export-web.html). Tested with `emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.39 (36f871819b566281d160470a1ec4515f379e9f77)`)
+- `emscripten` for WASM and WEB-export. See [Godot-rust book](https://godot-rust.github.io/book/toolchain/export-web.html). Tested with `emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.39 (36f871819b566281d160470a1ec4515f379e9f77)`
 - `node` and `npm` - used a lot by Paima setup (see [Makefile](./Makefile) and generated Paima READMEs). Tested with `node v20.12.2` and `npm 10.5.0`
-- Godot. Tested with `Godot_v4.2.1-stable_linux.x86_64` (extra flag that I had tu use: `--rendering-driver opengl3`). [WEB-export docs](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html)
+- Godot. Tested with `Godot_v4.2.1-stable_linux.x86_64` (extra flag that I had to use: `--rendering-driver opengl3`). [WEB-export docs](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html)
 - `python` - to run web-server with required CORS headers (script taken from [godot manual `Tip` section](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#serving-the-files))
 
 `node`, `npm` and `python` are available via `flake.nix` in the root of the current dir.
@@ -76,8 +76,7 @@ From fresh repo proceed with following steps:
 ### Export Godot demo project
 
 1. Open `godot-cip-30-frontend` in Godot (if `.so` library is not compiled and added to the project, editor will report a lot of errors, but web-export should work w/o issues regardless)
-2. Set Blockfrost token in `paima-demo/godot-cip-30-frontend/main.gd` - look for `const token: String = "[UNSET]"`.  Token should be for `mainnet` as Paima currently supports only `mainnet` addresses. Seed phrase is hardcoded there, but can be changed if needed.
-3. Do web-export to `paima-demo/web-server/godot-web-export/index.html`. The project already have web-export config, but just in case make sure that in the web-export form:
+2. Do web-export to `paima-demo/web-server/godot-web-export/index.html`. The project already have web-export config, but just in case make sure that in the web-export form:
    1. `Custom HTML Shell` is set to `res://extra-resources/cip-30-paima-shell.html`
    2. `Extensions Support` is `On`
 
@@ -114,7 +113,7 @@ It is not quite clear at the moment how to "properly" get returned value from GD
 
 1. On GDScript side:
    1. Callbacks are created in [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and added to the `window.cardano.godot.callbacks` *after engine starts*
-   2. As first argument (`args[0]`) all this callbacks receive `resolve` callback of JS `Promise` (more on this below)
+   2. As first argument - `args[0]`, all this callbacks receive `resolve` callback of JS `Promise` (more on this below). For data signing callback, additionally `reject` is passed to `args[1]`
    3. When GDScript callback finishes work an need to return result, it calls `resolve` callback passed as `args[0]` using the following code: `promise_callback.call("call", promise_callback.this, value_to_return)`
 2. On JS side script was added to [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (see `NOTE: CIP-30 integration` comments) which does couple things:
    1. Adds CIP-30 compliant `window.cardano.godot` object *before engine starts*.

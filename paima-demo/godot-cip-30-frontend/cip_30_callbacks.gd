@@ -11,7 +11,7 @@ extends Node
 ## (see https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)
 
 class_name Cip30Callbacks
-var _godot_wallet
+var _godot_wallet: SingleAddressWallet
 
 # This references must be kept
 # See example: https://docs.godotengine.org/en/stable/classes/class_javascriptobject.html#javascriptobject
@@ -39,25 +39,53 @@ func add_to(window):
 func _cb_get_used_addresses(args):
 	prints("GD: _cb_get_used_addresses")
 	var addresses = JavaScriptBridge.create_object("Array", 1)
-	addresses[0] = _godot_wallet.single_address_wallet.get_address().to_hex()
-	var promise_callback: JavaScriptObject = args[0]
-	promise_callback.call("call", promise_callback.this, addresses)
+	addresses[0] = _godot_wallet.get_address_hex()
+	var promise_resolve: JavaScriptObject = args[0]
+	promise_resolve.call("call", promise_resolve.this, addresses)
 
 func _cb_get_unused_addresses(args):
 	var addresses = JavaScriptBridge.create_object("Array", 0)
-	var promise_callback: JavaScriptObject = args[0]
-	promise_callback.call("call", promise_callback.this, addresses)
+	var promise_resolve: JavaScriptObject = args[0]
+	promise_resolve.call("call", promise_resolve.this, addresses)
 
+# TODO: CIP-30 sign errors
+#DataSignErrorCode {
+	#ProofGeneration: 1,
+	#AddressNotPK: 2,
+	#UserDeclined: 3,
+#}
+#type DataSignError = {
+	#code: DataSignErrorCode,
+	#info: String
+#}
 func _cb_sign_data(args):
-	prints("GD: _cb_sign_data")
-	var promise_callback: JavaScriptObject = args[0]
-	var signing_address: String = args[1]
-	var bytes_hex: String = args[2]
-	var sign_res = _godot_wallet.single_address_wallet.sign_data("", signing_address, bytes_hex)
-	var signResult = JavaScriptBridge.create_object("Object")
-	signResult.key = sign_res.value._cose_key_hex()
-	signResult.signature = sign_res.value._cose_sig1_hex()
-	promise_callback.call("call", promise_callback.this, signResult)
+	var promise_resolve: JavaScriptObject = args[0]
+	var promise_reject: JavaScriptObject = args[1]
+	var signing_address: String = args[2]
+	var data_hex: String = args[3]
+	
+	# TODO: If we want proper CIP-30 support, we should parse address to pub key and 
+	# differentiate between ProofGeneration and AddressNotPK erors
+	if !_address_matches_own(signing_address):
+		var sign_error = JavaScriptBridge.create_object("Object")
+		sign_error.code = 1
+		sign_error.info = "Wallet can't sign data - addres does not belong to the wallet, or not properly encoded (expecting hex)"
+		promise_reject.call("call", promise_reject.this, sign_error)
+		return
+	
+	prints("GD:CIP-30:sign data:", "address: ", signing_address, ", data hex: ", data_hex)
+	var sign_result = _godot_wallet.sign_data("", data_hex)
+	promise_resolve.call("call", promise_resolve.this, _mk_sign_response(sign_result))
+
+func _address_matches_own(address: String):
+	var own_address = _godot_wallet.get_address_hex()
+	return address != own_address
+
+func _mk_sign_response(sign_result):
+	var sign_response = JavaScriptBridge.create_object("Object")
+	sign_response.key = sign_result.value._cose_key_hex()
+	sign_response.signature = sign_result.value._cose_sig1_hex()
+	return sign_response
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

@@ -1,8 +1,5 @@
 use cardano_message_signing as cms;
-use cardano_serialization_lib::{
-    address::Address,
-    crypto::{Bip32PrivateKey, Bip32PublicKey},
-};
+use cardano_serialization_lib::crypto::{Bip32PrivateKey, Bip32PublicKey};
 use cms::{
     builders, cbor,
     error::JsError,
@@ -16,15 +13,15 @@ pub struct DataSignatureCOSE1 {
 }
 
 pub fn sign_data(
-    payload: Vec<u8>,
     spending_private_key: &Bip32PrivateKey,
-    address: &Address,
+    address: Vec<u8>,
+    payload: Vec<u8>,
 ) -> Result<DataSignatureCOSE1, JsError> {
     let spending_pub_key: Bip32PublicKey = spending_private_key.to_public();
     let algorithm_id = builders::AlgorithmId::EdDSA;
 
     let cose_key = mk_cose_key(&spending_pub_key, algorithm_id)?;
-    let cose_sig1 = mk_cose_1_sig(payload, spending_private_key, algorithm_id, address)?;
+    let cose_sig1 = mk_cose_1_sig(spending_private_key, address, payload, algorithm_id)?;
     Ok(DataSignatureCOSE1 {
         cose_key,
         cose_sig1,
@@ -32,10 +29,10 @@ pub fn sign_data(
 }
 
 fn mk_cose_1_sig(
-    payload: Vec<u8>,
     spending_private_key: &Bip32PrivateKey,
+    address: Vec<u8>,
+    payload: Vec<u8>,
     algorithm_id: builders::AlgorithmId,
-    address: &Address,
 ) -> Result<COSESign1, JsError> {
     let mut protected_headers = HeaderMap::new();
     // algorithm header
@@ -44,7 +41,7 @@ fn mk_cose_1_sig(
 
     // address header
     let addr_label = Label::new_text("address".to_owned());
-    let addr_hex_cbor = cbor::CBORValue::new_bytes(address.to_bytes());
+    let addr_hex_cbor = cbor::CBORValue::new_bytes(address);
     protected_headers.set_header(&addr_label, &addr_hex_cbor)?;
 
     // cose_sign1

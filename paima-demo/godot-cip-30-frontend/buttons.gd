@@ -2,7 +2,7 @@ extends GridContainer
 
 class_name Buttons
 
-var _godot_wallet
+var _godot_wallet: SingleAddressWallet
 var _paima_middleware
 var _window
 
@@ -13,7 +13,7 @@ var stepRightB
 
 var player_pos_button
 
-func _init(godot_wallet, window):
+func _init(godot_wallet: SingleAddressWallet, window):
 	_godot_wallet = godot_wallet
 	_window = window
 
@@ -56,7 +56,7 @@ func add_paima_game_buttons(window):
 	# Button to refresh and show player posiotion
 	player_pos_button = Button.new()
 	player_pos_button.text = "Player position: N/A"
-	player_pos_button.pressed.connect(_paima_middleware.update_user_stats)
+	player_pos_button.pressed.connect(_paima_middleware.update_player_stats)
 	player_pos_button.disabled = true
 	add_child(player_pos_button)
 	
@@ -67,8 +67,8 @@ func add_paima_game_buttons(window):
 	
 	# Show Paima wallet
 	var showWalletB = Button.new()
-	showWalletB.text = "Show Paima wallet"
-	showWalletB.pressed.connect(_paima_middleware.show_wallet)
+	showWalletB.text = "Show Paima status"
+	showWalletB.pressed.connect(_paima_middleware.show_status)
 	add_child(showWalletB)
 
 func test_step_right():
@@ -86,10 +86,14 @@ func add_test_sign_button():
 	add_child(testSignB)
 
 func test_sing():
-	const test_data = "676f646f742d74657374"
-	prints("Signing known test data - hex of 'godot-test' string: ", test_data)
-	var signing_address = _godot_wallet.single_address_wallet.get_address().to_bech32()
-	var sign_res = sign_data(signing_address, test_data)
+	const test_data = "godot-test"
+	var test_hex = test_data.to_utf8_buffer().hex_encode()
+	prints("Signing known test data - hex of '", test_data, "': ", test_hex)
+	
+	var signing_address = _godot_wallet.get_address().to_bech32()
+	prints("Test sig address hex: ", _godot_wallet.get_address().to_hex())
+	prints("Test sig address bech32: ", signing_address)
+	var sign_res = sign_data(signing_address, test_hex)
 	if sign_res.is_err():
 		prints("Failed to sign data: ", sign_res.error)
 		return
@@ -97,7 +101,7 @@ func test_sing():
 	prints("Test sig COSE sig1: ", sign_res.value._cose_sig1_hex())
 
 func sign_data(signing_address, payload):
-	return _godot_wallet.single_address_wallet.sign_data("", signing_address, payload);
+	return _godot_wallet.sign_data("", payload);
 
 var since_last_stats_refresh = 0 
 var stats_refresh_period = 3 # seconds
@@ -108,8 +112,8 @@ func _process(delta):
 		since_last_stats_refresh = since_last_stats_refresh + delta
 		if since_last_stats_refresh > stats_refresh_period:
 			since_last_stats_refresh = 0
-			if _paima_middleware._user_stats:
-				_paima_middleware.update_user_stats()
+			if _paima_middleware._player_stats:
+				_paima_middleware.update_player_stats()
 		
 		if _paima_middleware._paima_wallet:
 			joinB.disabled = false

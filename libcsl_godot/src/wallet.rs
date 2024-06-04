@@ -53,7 +53,6 @@ pub enum SingleAddressWalletError {
     Bech32Error(JsError),
     NonExistentAccount(u32),
     DataSignCip30Error(cms::error::JsError),
-    PayloadDecodeError(hex::FromHexError),
 }
 
 impl GodotConvert for SingleAddressWalletError {
@@ -69,7 +68,6 @@ impl ToGodot for SingleAddressWalletError {
             Bech32Error(_) => 3,
             NonExistentAccount(_) => 4,
             DataSignCip30Error(_) => 5,
-            PayloadDecodeError(_) => 6,
         }
     }
 }
@@ -129,26 +127,27 @@ impl SingleAddressWallet {
         Self::to_gresult_class(self.sign_transaction(password, gtx))
     }
 
-    // Sign a transaction using the given account's key. This operation requires
+    // Sign a data using the given account's key. This operation requires
     // the wallet password.
     pub fn sign_data(
         &self,
-        password: PackedByteArray,
-        bytes_hex: String,
-        network_id: u8,
+        password: Vec<u8>,
+        data: Vec<u8>,
     ) -> Result<DataSignature, SingleAddressWalletError> {
         let pbes2_params = self.get_pbes2_params();
-        let data = hex::decode(bytes_hex).map_err(SingleAddressWalletError::PayloadDecodeError)?;
         let res = with_account_private_key(
             pbes2_params,
             self.encrypted_master_private_key.as_slice(),
-            password.to_vec().as_slice(),
+            password.as_slice(),
             self.account_info.index,
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0);
-                let address = address_from_key(network_id, &account_private_key.to_public());
-                cip_8_sign::sign_data(data.clone(), &spend_key, &address)
-                    .map_err(SingleAddressWalletError::DataSignCip30Error)
+                cip_8_sign::sign_data(
+                    &spend_key,
+                    self.get_base_address().to_bytes(),
+                    data.to_vec(),
+                )
+                .map_err(SingleAddressWalletError::DataSignCip30Error)
             },
         );
         match res {
@@ -158,18 +157,17 @@ impl SingleAddressWallet {
     }
 
     #[func]
-    fn _sign_data(
-        &self,
-        password: PackedByteArray,
-        bytes_hex: String,
-        network_id: u8,
-    ) -> Gd<GResult> {
-        Self::to_gresult_class(self.sign_data(password, bytes_hex, network_id))
+    fn _sign_data(&self, password: PackedByteArray, data: PackedByteArray) -> Gd<GResult> {
+        Self::to_gresult_class(self.sign_data(password.to_vec(), data.to_vec()))
+    }
+
+    pub fn get_base_address(&self) -> CSLAddress {
+        address_from_key(self.network_id, &self.account_info.public_key)
     }
 
     pub fn get_address(&self) -> Gd<Address> {
         Gd::from_object(Address {
-            address: address_from_key(self.network_id, &self.account_info.public_key),
+            address: self.get_base_address(),
         })
     }
 
