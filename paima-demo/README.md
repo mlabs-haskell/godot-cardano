@@ -17,6 +17,7 @@
   - [CIP-30 API](#cip-30-api)
     - [Note #1](#note-1)
     - [Note #2](#note-2)
+    - [Note #3: Sign data test output](#note-3-sign-data-test-output)
 
 This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by `cardano-godot`.
 
@@ -48,6 +49,8 @@ This is combination of Paima's "open-world" template and Godot project that serv
 
 ### Compile WASM
 
+📝 Working directory should be: `libcsl_godot`.
+
 1. `cd libcsl_godot`
 2. Make sure emscripten is in PATH: `emcc --version`
 3. `cargo +nightly build -Zbuild-std --target wasm32-unknown-emscripten`
@@ -63,7 +66,9 @@ If `.so` is added, project can be run from Godot editor, but only one button to 
 
 ### Generate and setup Paima template and Batcher
 
-From fresh repo proceed with following steps:
+📝 Following commands require `node + npm`.
+
+📝 Working directory should be: `paima-demo`.
 
 1. Copy or link to root Paima engine as `paima-engine`
 2. `make init` (goes through initialization process according to the [open-world-readme](./open-world/README.md); tested in Linux,some extra flags are required for macOS, see the readme; if there is some "red" messages about vulnerabilities it should be ok
@@ -75,16 +80,20 @@ From fresh repo proceed with following steps:
 
 ### Export Godot demo project
 
-1. Open `godot-cip-30-frontend` in Godot (if `.so` library is not compiled and added to the project, editor will report a lot of errors, but web-export should work w/o issues regardless)
+1. Open `paima-demo/godot-cip-30-frontend` in Godot. If `.so` library is not compiled and added to the project, editor will report a lot of errors, but web-export should work w/o issues regardless. If `.so` was compiled, you can run the project from the editor to check that library and addons work as expected - UI should show single button `Test data sign`. When button is pressed (and if the wallet seed phrase was not change) you should see *exactly* [this output](#note-3-sign-data-test-output)
 2. Do web-export to `paima-demo/web-server/godot-web-export/index.html`. The project already have web-export config, but just in case make sure that in the web-export form:
    1. `Custom HTML Shell` is set to `res://extra-resources/cip-30-paima-shell.html`
    2. `Extensions Support` is `On`
+
+It should is possible to run web-exported demo already via `make godot-website` and going to `http://localhost:8060/index.html`. `Test data sign` button should work, and (unless the wallet seed phrase was changed) will output to the browser console *exactly* [this output](#note-3-sign-data-test-output).
 
 ## Running the demo
 
 ### Start Paima node and required infrastructure
 
-📝 Following commands require Docker and `node + npm`
+📝 Following commands require Docker and `node + npm`.
+
+📝 Working directory should be: `paima-demo`.
 
 1. `make start-db` (will keep running in  terminal)
 2. `make start-chain` (will keep running in  terminal)
@@ -145,3 +154,27 @@ Currently, CIP-30 setup is split between [cip_30_callbacks.gd](./godot-cip-30-fr
 ### Note #2
 
 Definition of  `JavaScriptBridge` callbacks should be done with care and exactly match examples from tutorial, as things tend to break silently here.
+
+### Note #3: Sign data test output
+
+Reference output produced during test data signing.
+
+Seed phrase:
+
+```text
+camp fly lazy street predict cousin pen science during nut hammer pool palace play vague divide tower option relax need clinic chapter common coast
+```
+
+Test string: `godot-test`
+
+String hex of `godot-test` that will be signed (required by CIP-30 API): `676f646f742d74657374`
+
+Sign data output:
+
+```text
+Signing known test data - hex of godot-test :  676f646f742d74657374
+Test sig address hex:  01ed172afa5d54ba09671a4adfeb506d6da4efb0aafbea340dc7988bd4f14d9c745eafc9ff4f3f51a518d7f245d02ef7b7902c299a5cdd2c1a
+Test sig address bech32:  addr1q8k3w2h6t42t5zt8rf9dl66sd4k6fmas4ta75dqdc7vgh483fkw8gh40e8l5706355vd0uj96qh00dus9s5e5hxa9sdqhrw0uy
+Test sig COSE key:  a4010103272006215820f37625a801a522d7ef31ae93d34bfe77e64102fbf7f48dbb0f00b2f94bccc064
+Test sig COSE sig1:  845846a201276761646472657373583901ed172afa5d54ba09671a4adfeb506d6da4efb0aafbea340dc7988bd4f14d9c745eafc9ff4f3f51a518d7f245d02ef7b7902c299a5cdd2c1aa166686173686564f44a676f646f742d7465737458404c42599cfe5d9da0dc38b0e5c8b54220dc7109410b3c6943874c36f6522009b4b33fbe7b97adfa5f4dccd550ff8fa5441bb9b07f17af3d87fae1fadbdb714408
+```

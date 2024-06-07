@@ -10,6 +10,7 @@ var wallet
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	print("GD: starting cardano-godot Paima demo")
 	init_cardano_wallet()
 
 func init_cardano_wallet():

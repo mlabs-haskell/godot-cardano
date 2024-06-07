@@ -88,7 +88,7 @@ func add_test_sign_button():
 func test_sing():
 	const test_data = "godot-test"
 	var test_hex = test_data.to_utf8_buffer().hex_encode()
-	prints("Signing known test data - hex of '", test_data, "': ", test_hex)
+	prints("Signing known test data - hex of", test_data, ": ", test_hex)
 	
 	var signing_address = _godot_wallet.get_address().to_bech32()
 	prints("Test sig address hex: ", _godot_wallet.get_address().to_hex())
