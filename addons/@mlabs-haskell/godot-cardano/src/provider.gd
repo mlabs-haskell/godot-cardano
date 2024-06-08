@@ -2,142 +2,80 @@ extends Node
 
 class_name Provider
 
-enum ProviderStatus { SUCCESS = 0, SUBMIT_ERROR = 1 }
+## This signal is emitted shortly after getting the protocol parameters from the
+## blockchain, after object initialization.
+signal got_tx_builder(initialized: bool)
 
-class SubmitResult extends Result:
-	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
-	var value: TransactionHash:
-		get: return _res.unsafe_value() as TransactionHash
-	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
-	var error: String:
-		get: return _res.unsafe_error()
-
-class NetworkGenesis:
-	var _active_slots_coefficient: float
-	var _update_quorum: int
-	var _max_lovelace_supply: String
-	var _network_magic: int
-	var _epoch_length: int
-	var _system_start: int
-	var _slots_per_kes_period: int
-	var _slot_length: int
-	var _max_kes_evolutions: int
-	var _security_param: int
-	
-	func _init(
-		active_slots_coefficient: float,
-		update_quorum: int,
-		max_lovelace_supply: String,
-		network_magic: int,
-		epoch_length: int,
-		system_start: int,
-		slots_per_kes_period: int,
-		slot_length: int,
-		max_kes_evolutions: int,
-		security_param: int,
-	):
-		_active_slots_coefficient = active_slots_coefficient
-		_update_quorum = update_quorum
-		_max_lovelace_supply = max_lovelace_supply
-		_network_magic = network_magic
-		_epoch_length = epoch_length
-		_system_start = system_start
-		_slots_per_kes_period = slots_per_kes_period
-		_slot_length = slot_length
-		_max_kes_evolutions = max_kes_evolutions
-		_security_param = security_param
-	
-class EraTime:
-	var _time: int
-	var _slot: int
-	var _epoch: int
-	
-	func _init(time: int, slot: int, epoch: int) -> void:
-		_time = time
-		_slot = slot
-		_epoch = epoch
-
-class EraParameters:
-	var _epoch_length: int
-	var _slot_length: int
-	var _safe_zone: int
-	
-	func _init(epoch_length: int, slot_length: int, safe_zone: int) -> void:
-		_epoch_length = epoch_length
-		_slot_length = slot_length
-		_safe_zone = safe_zone
+var _provider_api: ProviderApi
+var _network_genesis: ProviderApi.NetworkGenesis
+var _protocol_params: ProtocolParameters
+var _era_summaries: Array[ProviderApi.EraSummary]
+var _cost_models: CostModels
 		
-class EraSummary:
-	var _start: EraTime
-	var _end: EraTime
-	var _parameters: EraParameters
-	
-	func _init(
-		start: EraTime,
-		end: EraTime,
-		parameters: EraParameters,
-	) -> void:
-		_start = start
-		_end = end
-		_parameters = parameters
+func _init(provider_api: ProviderApi) -> void:
+	_provider_api = provider_api
+	if provider_api.got_network_genesis.connect(_on_got_network_genesis) == ERR_INVALID_PARAMETER:
+		push_error("Failed to connect provider's 'got_network_genesis' signal ")
+	if provider_api.got_protocol_parameters.connect(_on_got_protocol_parameters) == ERR_INVALID_PARAMETER:
+		push_error("Failed to connect provider's 'got_protocol_parameters' signal ")
+	if provider_api.got_era_summaries.connect(_on_got_era_summaries) == ERR_INVALID_PARAMETER:
+		push_error("Failed to connect provider's 'got_era_summaries' signal ")
 
-class TransactionStatus:
-	var _tx_hash: TransactionHash
-	var _confirmed: bool
-	
-	func _init(tx_hash: TransactionHash, confirmed: bool) -> void:
-		_tx_hash = tx_hash
-		_confirmed = confirmed
-	
-	func set_confirmed(confirmed: bool) -> void:
-		_confirmed = confirmed
+func _ready() -> void:
+	_provider_api._get_network_genesis()
+	_provider_api._get_protocol_parameters()
+	_provider_api._get_era_summaries()
 
-class UtxoResult:
-	var _address: Address
-	var _utxos: Array[Utxo]
-	
-	func _init(address: Address, utxos: Array[Utxo]) -> void:
-		_address = address
-		_utxos = utxos
+func _on_got_network_genesis(
+	genesis: ProviderApi.NetworkGenesis
+) -> void:
+	_network_genesis = genesis
 
-signal got_network_genesis(genesis: NetworkGenesis)
-signal got_protocol_parameters(
-	parameters: ProtocolParameters,
+func _on_got_protocol_parameters(
+	params: ProtocolParameters,
 	cost_models: CostModels
-)
-signal got_era_summaries(summaries: Array[EraSummary])
-signal tx_status(status: TransactionStatus)
-signal utxo_result(result: UtxoResult)
-signal _empty()
+) -> void:
+	_protocol_params = params
+	_cost_models = cost_models
 
-enum Network {MAINNET, PREVIEW, PREPROD, CUSTOM}
-
-var network: Network
-
-func _init() -> void:
-	pass
-
-func _get_network_genesis() -> NetworkGenesis:
-	return null
+func new_tx() -> TxBuilder.CreateResult:
+	var create_result := await TxBuilder.create(self)
+	if create_result.is_ok():
+		var builder := create_result.value
+		if _era_summaries.size() > 0:
+			builder.set_slot_config(
+				_era_summaries[-1]._start._time,
+				_era_summaries[-1]._start._slot,
+				_era_summaries[-1]._parameters._slot_length,
+			)
+		if _cost_models != null:
+			builder.set_cost_models(_cost_models)
+	return create_result
 	
-func _get_protocol_parameters() -> ProtocolParameters:
-	return null
+func _on_got_era_summaries(summaries: Array[ProviderApi.EraSummary]) -> void:
+	_era_summaries = summaries
 
-func _get_utxos_at_address(_address: Address) -> Array[Utxo]:
-	return []
+func time_to_slot(time: int) -> int:
+	# FIXME: should return a `Result`?
+	if _network_genesis == null:
+		return -1
 
-func _submit_transaction(tx: Transaction) -> SubmitResult:
-	return SubmitResult.new(_Result.ok(tx.hash()))
+	for era in _era_summaries:
+		var era_start_time := _network_genesis._system_start + era._start._time
+		var era_end_time := _network_genesis._system_start + era._end._time
+		if time > era_start_time and time < era_end_time:
+			var time_in_era := time - era_start_time
+			return time_in_era / era._parameters._slot_length + era._start._slot
+	
+	return -1
 
-func _get_datum_cbor(_datum_hash: String) -> Cbor:
-	return null
+func get_protocol_parameters() -> ProtocolParameters:
+	if _protocol_params == null:
+		await _provider_api.got_protocol_parameters
+	return _protocol_params
 
-func _get_era_summaries() -> Array[EraSummary]:
-	await _empty
-	return []
-
-func _get_tx_status(tx_hash: TransactionHash) -> bool:
-	return false
+func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
+	return await _provider_api._submit_transaction(tx)
 	
 func await_response(
 	f: Callable,
@@ -169,10 +107,10 @@ func await_response(
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 	print("Waiting for transaction %s..." % tx_hash.to_hex())
 	var confirmed = await await_response(
-		func () -> void: _get_tx_status(tx_hash),
-		func (result: TransactionStatus) -> bool:
+		func () -> void: _provider_api._get_tx_status(tx_hash),
+		func (result: ProviderApi.TransactionStatus) -> bool:
 			return result._tx_hash == tx_hash and result._confirmed,
-		tx_status,
+		_provider_api.tx_status,
 		timeout
 	)
 	if confirmed:
@@ -186,8 +124,8 @@ func await_utxos_at(
 ) -> bool:
 	print("Waiting for UTxOs at %s..." % address.to_bech32())
 	return await await_response(
-		func () -> void: _get_utxos_at_address(address),
-		func (result: UtxoResult) -> bool:
+		func () -> void: _provider_api._get_utxos_at_address(address),
+		func (result: ProviderApi.UtxoResult) -> bool:
 			var found_utxos = false
 			if from_tx == null:
 				found_utxos = result._utxos != []
@@ -197,25 +135,17 @@ func await_utxos_at(
 						return utxo.tx_hash().to_hex() == from_tx.to_hex()
 				)
 			return result._address.to_bech32() == address.to_bech32() and found_utxos,
-		utxo_result,
+		_provider_api.utxo_result,
 		5,
 		timeout
 	)
 
 func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Address:
-	return Address.build(1 if network == Network.MAINNET else 0, payment_cred, stake_cred)
+	return Address.build(
+		1 if _provider_api.network == ProviderApi.Network.MAINNET else 0,
+		payment_cred,
+		stake_cred
+	)
 
-func _build_datum_info(
-	datum_hash: String,
-	datum_inline_str: String,
-	datum_resolved_str: String,
-) -> UtxoDatumInfo:
-	if datum_hash == "":
-		return UtxoDatumInfo.empty()
-	elif datum_inline_str == "":
-		if datum_resolved_str == "":
-			return UtxoDatumInfo.create_with_hash(datum_hash)
-		else:
-			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
-	else:
-		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
+func get_utxos_at_address(address: Address) -> Array[Utxo]:
+	return await _provider_api._get_utxos_at_address(address)

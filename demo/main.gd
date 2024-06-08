@@ -4,10 +4,9 @@ extends Node2D
 var mint_token_conf: MintCip68Pair
 
 var provider: Provider
-var cardano: Cardano = null
 var wallet: Wallet.MnemonicWallet = null
 var correct_password: String = ""
-var loader := SingleAddressWalletLoader.new(Provider.Network.PREVIEW)
+var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 
 @onready
 var wallet_details: RichTextLabel = %WalletDetails
@@ -44,10 +43,12 @@ func _ready() -> void:
 		.get_as_text(true)\
 		.replace("\n", "")
 
-	provider = BlockfrostProvider.new(
-		Provider.Network.PREVIEW,
+	var provider_api := BlockfrostProviderApi.new(
+		ProviderApi.Network.PREVIEW,
 		token
 	)
+	provider = Provider.new(provider_api)
+	add_child(provider_api)
 	add_child(provider)
 	wallet_details.text = "No wallet set"
 	
@@ -60,7 +61,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if wallet != null:
 		timers_details.text = "Timer: %.2f" % wallet.time_left
-		timers_details.text += "\nSlot: %d" % cardano.time_to_slot(Time.get_unix_time_from_system())
+		timers_details.text += "\nSlot: %d" % provider.time_to_slot(Time.get_unix_time_from_system())
 
 func _on_wallet_set() -> void:
 	var _ret := self.wallet.got_updated_utxos.connect(_on_utxos_updated)
@@ -74,7 +75,7 @@ func _on_utxos_updated(utxos: Array[Utxo]) -> void:
 		func (acc: BigInt, utxo: Utxo) -> BigInt: return acc.add(utxo.coin()),
 		BigInt.zero()
 	)
-	wallet_details.text = "Using wallet %s" % cardano.wallet._get_change_address().to_bech32()
+	wallet_details.text = "Using wallet %s" % wallet._get_change_address().to_bech32()
 	if num_utxos > 0:
 		wallet_details.text += "\n\nFound %s UTxOs with %s lovelace" % [str(num_utxos), total_lovelace.to_str()]
 		send_ada_button.disabled = false
@@ -86,7 +87,7 @@ func _on_set_wallet_button_pressed() -> void:
 	_create_wallet_from_seedphrase(phrase_input.text)
 
 func _on_generate_new_wallet_pressed():	
-	var old_text := set_button.text
+	var old_text := generate_button.text
 	generate_button.text = "Generating wallet..."
 	set_button.disabled = true
 	generate_button.disabled = true
@@ -95,7 +96,7 @@ func _on_generate_new_wallet_pressed():
 		0,
 		"",
 		"",
-		Provider.Network.PREVIEW
+		ProviderApi.Network.PREVIEW
 	)
 	if create_result.is_ok():	
 		phrase_input.text = create_result.value.seed_phrase
@@ -103,9 +104,10 @@ func _on_generate_new_wallet_pressed():
 	else:
 		push_error("Creating wallet failed: %s" % create_result.error)
 	set_button.text = old_text
+	generate_button.text = old_text
 	set_button.disabled = false
 	generate_button.disabled = false
-		
+
 func _on_send_ada_button_pressed() -> void:
 	var amount_result: BigInt.ConversionResult = BigInt.from_str(amount_input.text)
 	
@@ -119,13 +121,15 @@ func _on_send_ada_button_pressed() -> void:
 		push_error("There was an error while parsing the address: %s", address_result.error)
 		return
 		
-	var create_tx_result := cardano.new_tx()
+	var create_tx_result := await wallet.new_tx()
 	
 	if create_tx_result.is_err():
 		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
 		return
 		
 	var tx := create_tx_result.value
+	print(tx)
+	print(tx._wallet)
 	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
@@ -151,7 +155,7 @@ func _on_mint_token_button_pressed() -> void:
 	var address := address_result.value
 	
 	# Create TX builder
-	var create_tx_result := cardano.new_tx()
+	var create_tx_result := await wallet.new_tx()
 	if create_tx_result.is_err():
 		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
 		return
@@ -195,14 +199,11 @@ func _on_mint_token_button_pressed() -> void:
 func set_wallet(key_ring: SingleAddressWallet):
 	if wallet != null:
 		wallet.queue_free()
-		cardano.queue_free()
-		
+
 	wallet = Wallet.MnemonicWallet.new(key_ring, provider)
 	add_child(wallet)
 	correct_password = password_input.text
 	password_warning.text = ""
-	cardano = Cardano.new(wallet, provider)
-	add_child(cardano)
 	_on_wallet_set()
 	
 # Asynchronously load the wallet from a seedphrase
@@ -227,7 +228,7 @@ func _create_wallet_from_seedphrase(seedphrase: String) -> void:
 	generate_button.disabled = false
 
 func _on_create_script_output_pressed():
-	var tx := cardano.new_tx()
+	var tx := await wallet.new_tx()
 	if tx.is_err():
 		push_error("could not create tx_builder", tx.error)
 		return
@@ -253,10 +254,10 @@ func _on_create_script_output_pressed():
 
 func _on_consume_script_input_pressed():
 	var script_address = provider.make_address(Credential.from_script(test_spend_script))
-	var utxos := await provider._get_utxos_at_address(script_address)
+	var utxos := await provider.get_utxos_at_address(script_address)
 	var utxos_filtered = utxos.filter(func(u: Utxo): return u.datum_info().has_datum())
 
-	var tx_result := cardano.new_tx()
+	var tx_result := await wallet.new_tx()
 	if tx_result.is_err():
 		push_error("could not create tx_builder", tx_result.error)
 		return

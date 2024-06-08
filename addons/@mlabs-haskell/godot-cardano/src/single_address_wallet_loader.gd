@@ -19,13 +19,13 @@ signal import_completed(res: WalletImportResult)
 ## May be null if no wallet was loaded
 var _wallet_store : _SingleAddressWalletStore
 
-var _network: Provider.Network
+var _network: ProviderApi.Network
 
 # Used when importing
 var thread: Thread
 
 func _init(
-	network: Provider.Network,
+	network: ProviderApi.Network,
 	wallet_store: _SingleAddressWalletStore = null,
 ) -> void:
 	_wallet_store = wallet_store
@@ -50,7 +50,7 @@ class GetWalletError extends Result:
 func get_wallet(account_index: int) -> GetWalletError:
 	var get_wallet_result = _wallet_store._get_wallet(
 		account_index,
-		1 if _network == Provider.Network.MAINNET else 0
+		1 if _network == ProviderApi.Network.MAINNET else 0
 	)
 	return GetWalletError.new(self, get_wallet_result)
 
@@ -144,12 +144,12 @@ func _wrap_import_from_seedphrase(
 				account_index,
 				name,
 				account_description,
-				1 if _network == Provider.Network.MAINNET else 0))
+				1 if _network == ProviderApi.Network.MAINNET else 0))
 		call_deferred("emit_signal", "import_completed", res)
 			
 class WalletCreation extends RefCounted:
 	var _create_res: _SingleAddressWalletCreateResult
-	var _network: Provider.Network
+	var _network: ProviderApi.Network
 	var wallet: SingleAddressWallet:
 		get: return SingleAddressWallet.new(
 			_create_res.wallet,
@@ -158,12 +158,12 @@ class WalletCreation extends RefCounted:
 	var seed_phrase: String:
 		get: return _create_res.seed_phrase
 	
-	func _init(create_res: _SingleAddressWalletCreateResult, network: Provider.Network):
+	func _init(create_res: _SingleAddressWalletCreateResult, network: ProviderApi.Network):
 		_create_res = create_res
 		_network = network
 			
 class WalletCreationResult extends Result:
-	var _network: Provider.Network
+	var _network: ProviderApi.Network
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: WalletCreation:
 		get: return WalletCreation.new(_res.unsafe_value() as _SingleAddressWalletCreateResult, _network)
@@ -171,7 +171,7 @@ class WalletCreationResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 		
-	func _init(network: Provider.Network, res: _Result):
+	func _init(network: ProviderApi.Network, res: _Result):
 		super(res)
 		_network = network
 
@@ -184,7 +184,7 @@ static func create(
 	account_index: int,
 	name: String,
 	account_description,
-	network: Provider.Network) -> WalletCreationResult:
+	network: ProviderApi.Network) -> WalletCreationResult:
 	return WalletCreationResult.new(
 		network,
 		_SingleAddressWalletStore._create(
@@ -192,7 +192,7 @@ static func create(
 			account_index,
 			name,
 			account_description,
-			1 if network == Provider.Network.MAINNET else 0
+			1 if network == ProviderApi.Network.MAINNET else 0
 		)
 	)
 		

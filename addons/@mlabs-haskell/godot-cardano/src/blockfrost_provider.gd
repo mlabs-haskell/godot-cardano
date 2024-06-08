@@ -1,6 +1,6 @@
-extends Provider
+extends ProviderApi
 
-class_name BlockfrostProvider
+class_name BlockfrostProviderApi
 
 class Epoch extends Abstract:
 	const _abstract_name := "Epoch"
@@ -343,7 +343,7 @@ func _get_era_summaries() -> Array[EraSummary]:
 	got_era_summaries.emit(summaries)
 	return summaries
 	
-func _submit_transaction(tx: Transaction) -> Provider.SubmitResult:
+func _submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
 	var result = await blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
 	if typeof(result) == TYPE_DICTIONARY:
 		return SubmitResult.new(_Result.err(result.message, ProviderStatus.SUBMIT_ERROR))
