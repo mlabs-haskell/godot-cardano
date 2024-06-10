@@ -1,5 +1,4 @@
 extends Node
-
 class_name ProviderApi
 
 enum ProviderStatus { SUCCESS = 0, SUBMIT_ERROR = 1 }
@@ -35,7 +34,7 @@ class NetworkGenesis:
 		slot_length: int,
 		max_kes_evolutions: int,
 		security_param: int,
-	):
+	) -> void:
 		_active_slots_coefficient = active_slots_coefficient
 		_update_quorum = update_quorum
 		_max_lovelace_supply = max_lovelace_supply
@@ -92,7 +91,21 @@ class TransactionStatus:
 	func set_confirmed(confirmed: bool) -> void:
 		_confirmed = confirmed
 
-class UtxoResult:
+class UtxosWithAssetResult:
+	var _asset: AssetClass
+	var _utxos: Array[Utxo]
+	
+	func _init(asset: AssetClass, utxos: Array[Utxo]) -> void:
+		_asset = asset
+		_utxos = utxos
+
+class UtxoByOutRefResult:
+	var _utxo: Utxo
+	
+	func _init(utxo: Utxo) -> void:
+		_utxo = utxo
+
+class UtxosAtAddressResult:
 	var _address: Address
 	var _utxos: Array[Utxo]
 	
@@ -106,8 +119,10 @@ signal got_protocol_parameters(
 	cost_models: CostModels
 )
 signal got_era_summaries(summaries: Array[EraSummary])
-signal tx_status(status: TransactionStatus)
-signal utxo_result(result: UtxoResult)
+signal got_tx_status(status: TransactionStatus)
+signal got_utxos_at_address(result: UtxosAtAddressResult)
+signal got_utxos_with_asset(result: UtxosWithAssetResult)
+signal got_utxos_by_out_ref(result: UtxoByOutRefResult)
 signal _empty()
 
 enum Network {MAINNET, PREVIEW, PREPROD, CUSTOM}
@@ -118,24 +133,37 @@ func _init() -> void:
 	pass
 
 func _get_network_genesis() -> NetworkGenesis:
+	await _empty
 	return null
 	
 func _get_protocol_parameters() -> ProtocolParameters:
+	await _empty
 	return null
 
 func _get_utxos_at_address(_address: Address) -> Array[Utxo]:
+	await _empty
 	return []
 
+func _get_utxos_with_asset(_asset: AssetClass) -> Array[Utxo]:
+	await _empty
+	return []
+
+func _get_utxo_by_out_ref(_tx_hash: TransactionHash, _output_index: int) -> Utxo:
+	await _empty
+	return null
+
 func _submit_transaction(tx: Transaction) -> SubmitResult:
+	await _empty
 	return SubmitResult.new(_Result.ok(tx.hash()))
 
-func _get_datum_cbor(_datum_hash: String) -> Cbor:
-	return null
+func _get_datum_cbor(_datum_hash: String) -> PackedByteArray:
+	await _empty
+	return PackedByteArray([])
 
 func _get_era_summaries() -> Array[EraSummary]:
 	await _empty
 	return []
 
-func _get_tx_status(tx_hash: TransactionHash) -> bool:
+func _get_tx_status(_tx_hash: TransactionHash) -> bool:
+	await _empty
 	return false
-

@@ -257,6 +257,10 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 	_builder._add_required_signer(pub_key_hash._pub_key_hash)
 	return self
 
+func add_reference_input(utxo: Utxo) -> TxBuilder:
+	_builder._add_reference_input(utxo._utxo)
+	return self
+
 ## Only balance the transaction and return the result. The resulting transaction
 ## will not have been evaluated and will have inaccurate script execution units,
 ## which may cause the transaction to fail at submission and potentially consume

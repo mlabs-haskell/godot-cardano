@@ -415,6 +415,12 @@ impl GTxBuilder {
     }
 
     #[func]
+    fn _add_reference_input(&mut self, input: Gd<Utxo>) {
+        self.tx_builder
+            .add_reference_input(&input.bind().deref().to_transaction_input());
+    }
+
+    #[func]
     fn valid_after(&mut self, slot: u64) {
         self.tx_builder
             .set_validity_start_interval_bignum(BigNum::from(slot))
@@ -637,8 +643,6 @@ impl GTxBuilder {
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
     ) -> Result<Transaction, TxBuilderError> {
-        // FIXME: Why is the mint builder recreated when they can be overwritten?
-        self.mint_builder = MintBuilder::new();
         let inputs = self.inputs_builder.inputs();
         let input_witnesses = self.inputs_builder.get_plutus_input_scripts();
         let mut replaced_inputs = InputsWithScriptWitness::new();
