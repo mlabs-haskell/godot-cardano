@@ -16,3 +16,5 @@ var scrypt_r: int
 var scrypt_p: int
 @export
 var aes_iv: PackedByteArray
+@export
+var salt: PackedByteArray

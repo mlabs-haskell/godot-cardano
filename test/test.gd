@@ -125,8 +125,8 @@ class TestWallets extends GutTest:
 			add_account_res.is_ok()
 			, "Added account %d" % account_index
 		)
-		wallet = add_account_res.value
-		wallet.switch_account(account_index)
+		var account_added : Account = add_account_res.value
+		wallet.switch_account(account_added)
 		
 		# Export the wallet
 		var wallet_resource := wallet.export()
@@ -143,7 +143,7 @@ class TestWallets extends GutTest:
 		var imported_wallet := import_result.value.wallet
 		
 		# Switch to the same account_index
-		imported_wallet.switch_account(account_index)
+		imported_wallet.switch_account(account_added)
 		
 		# Test
 		assert_eq(
@@ -176,8 +176,10 @@ class TestWallets extends GutTest:
 				)
 				var index: int = account_data['index']
 				var address: String = account_data['address']
-				wallet.add_account(index, "1234")
-				wallet.switch_account(index)
+				var add_account_res := wallet.add_account(index, "1234")
+				assert(add_account_res.is_ok())
+				var added_account := add_account_res.value
+				wallet.switch_account(added_account)
 
 				assert_eq(address, wallet._get_change_address().to_bech32())
 				wallet.free()
