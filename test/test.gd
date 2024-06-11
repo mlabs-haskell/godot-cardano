@@ -15,7 +15,7 @@ class TestData extends GutTest:
 		var data_json := FileAccess.get_file_as_string("res://test_data.json")
 		var data: Dictionary = JSON.parse_string(data_json)
 		_cbor_data = data.cbor
-
+			
 	func test_cbor_ints(case=use_parameters(_cbor_data.ints)) -> void:
 		var from_str_result := BigInt.from_str(case.value.int)
 		assert(from_str_result.is_ok())
@@ -100,6 +100,7 @@ class TestWallets extends GutTest:
 			create_result.value.wallet.get_address_bech32(),
 			wallet._get_change_address().to_bech32()
 		)
+		wallet.free()
 		
 	func test_wallet_import() -> void:
 		var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
@@ -130,7 +131,8 @@ class TestWallets extends GutTest:
 				wallet.switch_account(index)
 
 				assert_eq(address, wallet._get_change_address().to_bech32())
-		
+				wallet.free()
+
 class TestSdk extends GutTest:
 	signal tx_test_finished(result: Dictionary)
 	
@@ -148,6 +150,17 @@ class TestSdk extends GutTest:
 		var data_json := FileAccess.get_file_as_string("res://test_data.json")
 		var data: Dictionary = JSON.parse_string(data_json)
 		_script_data = data.scripts
+
+		or_quit(FileAccess.file_exists("res://preview_token.txt"), "No Blockfrost token available")
+		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
+		
+		var provider_api = BlockfrostProviderApi.new(
+			ProviderApi.Network.PREVIEW,
+			preview_token,
+		)
+		add_child(provider_api)
+		_provider = Provider.new(provider_api)
+		add_child(_provider)
 
 	func or_quit(test: bool, msg: String = "") -> void:
 		if not test:
@@ -216,22 +229,11 @@ class TestSdk extends GutTest:
 			assert_true(result.is_err(), "Build %s tx fails" % test_name)
 
 	func init_blockfrost_tests() -> void:
-		or_quit(FileAccess.file_exists("res://preview_token.txt"), "No Blockfrost token available")
-		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		var funding_wallet := await load_funding_wallet()
-		
-		var provider_api = BlockfrostProviderApi.new(
-			ProviderApi.Network.PREVIEW,
-			preview_token,
-		)
-		add_child(provider_api)
-		_provider = Provider.new(provider_api)
-		add_child(_provider)
+
 		var wallet := Wallet.MnemonicWallet.new(funding_wallet, _provider)
 		add_child(wallet)
 		_funding_address = wallet._get_change_address()
-		
-		await provider_api.got_protocol_parameters
 		
 		for _t: Callable in blockfrost_tests:
 			var create_result := SingleAddressWalletLoader.create(
@@ -282,25 +284,15 @@ class TestSdk extends GutTest:
 		)
 		or_quit(status)
 		gut.p('Test wallets funded')
-		remove_child(wallet)
+		wallet.queue_free()
 
 	func test_invalid_signature() -> void:
-		or_quit(FileAccess.file_exists("res://preview_token.txt"), "No Blockfrost token available")
-		var preview_token := FileAccess.get_file_as_string("res://preview_token.txt").strip_edges()
 		var funding_wallet := await load_funding_wallet()
-		
-		var provider_api := BlockfrostProviderApi.new(
-			ProviderApi.Network.PREVIEW,
-			preview_token,
-		)
-		add_child(provider_api)
-		_provider = Provider.new(provider_api)
-		add_child(_provider)
+
 		var wallet := Wallet.MnemonicWallet.new(funding_wallet, _provider)
 		_funding_address = wallet._get_change_address()
 		add_child(wallet)
 		
-		await provider_api.got_protocol_parameters
 		await wallet._get_updated_utxos()
 		var create_tx_result := await wallet.new_tx()
 		assert_true(create_tx_result.is_ok(), "Create test wallet funding tx")
@@ -317,7 +309,7 @@ class TestSdk extends GutTest:
 				)
 		else:
 			print("Failed to create transaction: %s" % create_tx_result.error)
-		remove_child(wallet)
+		wallet.queue_free()
 
 	func blockfrost_payment(wallet: Wallet) -> TransactionHash:
 		await _provider.await_utxos_at(wallet._get_change_address(), null, 180)
@@ -513,4 +505,4 @@ class TestSdk extends GutTest:
 		for test in blockfrost_tests:
 			var ix = blockfrost_tests.find(test)
 			var wallet := _wallets[ix]
-			remove_child(wallet)
+			wallet.queue_free()

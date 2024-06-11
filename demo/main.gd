@@ -50,7 +50,6 @@ func _ready() -> void:
 	provider = Provider.new(provider_api)
 	add_child(provider_api)
 	add_child(provider)
-	add_child(loader)
 	wallet_details.text = "No wallet set"
 	
 	# if a seed phrase file is available, we load the seed phrase from there
@@ -199,7 +198,6 @@ func _on_mint_token_button_pressed() -> void:
 
 func set_wallet(key_ring: SingleAddressWallet):
 	if wallet != null:
-		remove_child(wallet)
 		wallet.queue_free()
 
 	wallet = Wallet.MnemonicWallet.new(key_ring, provider)

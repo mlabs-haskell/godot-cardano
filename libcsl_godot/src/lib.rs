@@ -88,7 +88,7 @@ impl ProtocolParameters {
 }
 
 #[derive(GodotClass)]
-#[class(base=Node, rename=_TxBuilder)]
+#[class(base=RefCounted, rename=_TxBuilder)]
 struct GTxBuilder {
     tx_builder: TransactionBuilder,
     protocol_parameters: ProtocolParameters,

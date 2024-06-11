@@ -12,3 +12,4 @@ preview_token.txt
 result*
 */.godot/
 .pre-commit-config.yaml
+*/.home/
