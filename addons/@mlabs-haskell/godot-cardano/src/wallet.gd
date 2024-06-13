@@ -115,8 +115,8 @@ class MnemonicWallet extends Wallet:
 	func add_account(account_index: int, password: String) -> SingleAddressWallet.AddAccountResult:
 		return _single_address_wallet.add_account(account_index, password)
 		
-	func switch_account(account: Account):
-		_single_address_wallet.switch_account(account)
+	func switch_account(account: Account) -> int:
+		return _single_address_wallet.switch_account(account)
 
 	func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
 		@warning_ignore("redundant_await")

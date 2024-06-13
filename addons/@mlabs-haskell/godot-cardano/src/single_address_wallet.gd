@@ -47,9 +47,6 @@ class AddAccountResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 
-	func _init(res: _Result):
-		super(res)
-
 ## Switch to the account with the given `account_index`. It may fail if no such account
 ## exists. It returns the account index when it succeeds.
 func switch_account(account: Account) -> int:
