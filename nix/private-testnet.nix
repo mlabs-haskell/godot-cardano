@@ -72,10 +72,10 @@
 
           echo Source UTxO: "$txHash#$txIdx"
 
-          fundAddress=$PRIVATE_TESTNET_PAYMENT_ADDRESS
+          fundAddress=''${1-''${PRIVATE_TESTNET_PAYMENT_ADDRESS?"No wallet address provided for funding"}}
           fundLovelace=$(echo "$PRIVATE_TESTNET_FUND_ADA_AMOUNT*1000000"|${pkgs.bc}/bin/bc)
 
-          echo && echo "Sending $PRIVATE_TESTNET_FUND_ADA_AMOUNT ADA to $PRIVATE_TESTNET_PAYMENT_ADDRESS" && echo
+          echo && echo "Sending $PRIVATE_TESTNET_FUND_ADA_AMOUNT ADA to $fundAddress" && echo
 
           ${self'.packages.cardano-cli.exePath} \
             latest transaction build \

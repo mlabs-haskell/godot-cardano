@@ -1,5 +1,5 @@
 class_name TxComplete
-extends Node
+extends RefCounted
 
 var _transaction: Transaction = null
 var _provider: Provider

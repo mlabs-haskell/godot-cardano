@@ -167,3 +167,18 @@ func _get_era_summaries() -> Array[EraSummary]:
 func _get_tx_status(_tx_hash: TransactionHash) -> bool:
 	await _empty
 	return false
+
+func _build_datum_info(
+	datum_hash: String,
+	datum_inline_str: String,
+	datum_resolved_str: String,
+) -> UtxoDatumInfo:
+	if datum_hash == "":
+		return UtxoDatumInfo.empty()
+	elif datum_inline_str == "":
+		if datum_resolved_str == "":
+			return UtxoDatumInfo.create_with_hash(datum_hash)
+		else:
+			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
+	else:
+		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
