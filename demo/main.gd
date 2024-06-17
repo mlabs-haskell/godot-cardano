@@ -127,15 +127,10 @@ func _on_send_ada_button_pressed() -> void:
 	if create_tx_result.is_err():
 		push_error("There was an error while creating the transaction: %s", create_tx_result.error)
 		return
-
-	
-	var reference_input = await provider.get_utxo_by_out_ref(
-		TransactionHash.from_hex("4d2a5ac4e9f8e4329ae829618a7e6ac3f08f165a9037405b54937877580abd92").value,
-		0
-	)
-
+		
 	var tx := create_tx_result.value
-	tx.add_reference_input(reference_input)
+	print(tx)
+	print(tx._wallet)
 	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
@@ -181,7 +176,7 @@ func _on_mint_token_button_pressed() -> void:
 	if minted_value_result.is_err():
 		push_error("Could not created minted value from dictionary: ", minted_value_result.error)
 	var minted_value := minted_value_result.value
-		
+	
 	# Send both tokens to myself and set its corresponding metadata
 	tx.pay_to_address_with_datum(
 		address,
