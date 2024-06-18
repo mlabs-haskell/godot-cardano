@@ -14,14 +14,16 @@ class CreateResult extends Result:
 	
 	func _init(results: ArrayResult):
 		super(results._res)
-		_utxo = _Utxo.create(
-			(results.value[0] as TransactionHash)._transaction_hash,
-			results.value[1],
-			(results.value[2] as Address)._address,
-			(results.value[3] as BigInt)._b,
-			(results.value[4] as MultiAsset)._multi_asset,
-			(results.value[5])
-		)
+		
+		if results.is_ok():
+			_utxo = _Utxo.create(
+				(results.value[0] as TransactionHash)._transaction_hash,
+				results.value[1],
+				(results.value[2] as Address)._address,
+				(results.value[3] as BigInt)._b,
+				(results.value[4] as MultiAsset)._multi_asset,
+				(results.value[5])
+			)
 		
 var _utxo : _Utxo
 
@@ -51,7 +53,7 @@ static func create(
 	assets: Dictionary,
 	datum_info: UtxoDatumInfo
 ) -> CreateResult:
-	var results = Result.sequence([
+	var results := Result.sequence([
 		TransactionHash.from_hex(tx_hash),
 		Result.Ok.new(output_index),
 		Address.from_bech32(address),

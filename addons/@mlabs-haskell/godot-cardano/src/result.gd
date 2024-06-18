@@ -57,7 +57,7 @@ static func sequence(results: Array[Result]) -> ArrayResult:
 	var _results: Array = []
 	for result: Result in results:
 		if result.is_err():
-			return ArrayResult.new(result.error)
+			return ArrayResult.new(_Result.err(result.error, 1))
 		else:
 			_results.push_back(result.value)
 	return ArrayResult.new(_Result.ok(_results))

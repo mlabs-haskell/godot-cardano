@@ -4,6 +4,7 @@ class_name Wallet
 
 signal got_updated_utxos(utxos: Array[Utxo])
 
+var _provider: Provider
 var active: bool = false
 
 func _get_utxos() -> Array[Utxo]:
@@ -19,6 +20,14 @@ func total_lovelace() -> BigInt:
 		BigInt.zero()
 	)
 
+func new_tx() -> TxBuilder.CreateResult:
+	var create_result := await _provider.new_tx()
+	
+	if create_result.is_ok():
+		create_result.value.set_wallet(self)
+
+	return create_result
+
 class SignTxResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: Signature:
@@ -31,8 +40,7 @@ func _sign_transaction(password: String, _transaction: Transaction) -> SignTxRes
 	return null
 
 class MnemonicWallet extends Wallet:
-	var provider: Provider
-	var single_address_wallet: SingleAddressWallet
+	var _single_address_wallet: SingleAddressWallet
 
 	@export
 	var utxos_update_age: float = 30
@@ -51,12 +59,12 @@ class MnemonicWallet extends Wallet:
 	var utxos: Array[Utxo] = []
 		
 	func _init(
-		single_address_wallet_: SingleAddressWallet, 
-		provider_: Provider,
+		single_address_wallet: SingleAddressWallet, 
+		provider: Provider,
 		auto_update_utxos: bool = true
 	) -> void:
-		self.provider = provider_
-		self.single_address_wallet = single_address_wallet_
+		_provider = provider
+		_single_address_wallet = single_address_wallet
 		self.active = true
 		# Connect and start the timer
 		timer = Timer.new()
@@ -92,20 +100,49 @@ class MnemonicWallet extends Wallet:
 	## It will also update the cached utxos and reset the timer.
 	func _get_updated_utxos() -> Array[Utxo]:
 		self.timer.stop()
-		self.utxos = await self.provider._get_utxos_at_address(single_address_wallet.get_address())
+		self.utxos = await _provider.get_utxos_at_address(_single_address_wallet.get_address())
 		got_updated_utxos.emit(self.utxos)
 		if is_inside_tree():
 			self.timer.start()
 		return self.utxos
 		
 	func _get_change_address() -> Address:
-		return single_address_wallet.get_address()
+		return _single_address_wallet.get_address()
 		
 	func _sign_transaction(password: String, transaction: Transaction) -> SignTxResult:
-		return single_address_wallet._sign_transaction(password, transaction)
+		return _single_address_wallet._sign_transaction(password, transaction)
 
-	func add_account(account_index: int, password: String):
-		single_address_wallet.add_account(account_index, password)
+	func add_account(account_index: int, password: String) -> SingleAddressWallet.AddAccountResult:
+		return _single_address_wallet.add_account(account_index, password)
 		
-	func switch_account(account_index: int):
-		single_address_wallet.switch_account(account_index)
+	func switch_account(account: Account) -> int:
+		return _single_address_wallet.switch_account(account)
+
+	func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
+		@warning_ignore("redundant_await")
+		var change_address := await _get_change_address()
+		@warning_ignore("redundant_await")
+		var utxos := await _get_utxos()
+		var total_lovelace := await total_lovelace()
+		
+		if amount.gt(total_lovelace):
+			print("Error: not enough lovelace in wallet")
+			return
+		
+		var address_result = Address.from_bech32(recipient)
+		
+		if address_result.is_err():
+			push_error("Failed to decode address bech32: %s" % address_result.error)
+			return
+			
+		var create_result := await new_tx()
+		
+		if create_result.is_err():
+			push_error("Could not create new transaction")
+			return
+		
+		var builder := create_result.value
+		builder.pay_to_address(address_result.value, amount, MultiAsset.empty())
+		var transaction := await builder.complete()
+		transaction.sign(password)
+		transaction.submit()
