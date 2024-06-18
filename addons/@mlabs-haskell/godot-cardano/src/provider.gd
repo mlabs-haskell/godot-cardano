@@ -1,5 +1,4 @@
 extends Node
-
 class_name Provider
 
 ## This signal is emitted shortly after getting the protocol parameters from the
@@ -77,13 +76,13 @@ func get_protocol_parameters() -> ProtocolParameters:
 func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
 	return await _provider_api._submit_transaction(tx)
 	
-func await_response(
+func _await_response(
 	f: Callable,
 	check: Callable,
 	s: Signal,
 	interval: float = 2.5,
 	timeout := 60
-):	
+	) -> bool:
 	var start := Time.get_ticks_msec()
 	var timer := Timer.new()
 	timer.one_shot = false
@@ -93,24 +92,21 @@ func await_response(
 	timer.start()
 	var status := false
 	while true:
-		var r = await s
+		var r: Variant = await s
 		status = status or check.call(r)
-		if status or (Time.get_ticks_msec() - start) / 1000 > timeout:
+		if status or (Time.get_ticks_msec() - start) / 1000.0 > timeout:
 			break
-	var connections: Array = timer.timeout.get_connections() 
-	for c in connections:
-		timer.timeout.disconnect(c['callable'])
 	timer.stop()
 	timer.queue_free()
 	return status
 	
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 	print("Waiting for transaction %s..." % tx_hash.to_hex())
-	var confirmed = await await_response(
+	var confirmed := await _await_response(
 		func () -> void: _provider_api._get_tx_status(tx_hash),
 		func (result: ProviderApi.TransactionStatus) -> bool:
 			return result._tx_hash == tx_hash and result._confirmed,
-		_provider_api.tx_status,
+		_provider_api.got_tx_status,
 		timeout
 	)
 	if confirmed:
@@ -123,10 +119,10 @@ func await_utxos_at(
 	timeout := 60
 ) -> bool:
 	print("Waiting for UTxOs at %s..." % address.to_bech32())
-	return await await_response(
+	return await _await_response(
 		func () -> void: _provider_api._get_utxos_at_address(address),
-		func (result: ProviderApi.UtxoResult) -> bool:
-			var found_utxos = false
+		func (result: ProviderApi.UtxosAtAddressResult) -> bool:
+			var found_utxos := false
 			if from_tx == null:
 				found_utxos = result._utxos != []
 			else:
@@ -135,7 +131,7 @@ func await_utxos_at(
 						return utxo.tx_hash().to_hex() == from_tx.to_hex()
 				)
 			return result._address.to_bech32() == address.to_bech32() and found_utxos,
-		_provider_api.utxo_result,
+		_provider_api.got_utxos_at_address,
 		5,
 		timeout
 	)
@@ -149,3 +145,9 @@ func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Ad
 
 func get_utxos_at_address(address: Address) -> Array[Utxo]:
 	return await _provider_api._get_utxos_at_address(address)
+
+func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
+	return await _provider_api._get_utxos_with_asset(asset)
+
+func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
+	return await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)
