@@ -59,6 +59,8 @@ markdown_extensions:
 
 nav:
   - README: index.md
+  - GDScript Reference:
+#REFERENCE
 
 extra:
   homepage: https://mlabs-haskell.github.io/godot-cardano/
