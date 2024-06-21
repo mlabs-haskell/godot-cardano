@@ -4,7 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    gut = { url = "github:bitwes/gut/v9.2.0"; flake = false; };
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     hercules-ci-effects.url = "github:hercules-ci/hercules-ci-effects";
@@ -12,7 +11,14 @@
     devshell.url = "github:numtide/devshell";
     devshell.inputs.nixpkgs.follows = "nixpkgs";
 
-    # plutip test
+    # godot tests
+    gut = { url = "github:bitwes/gut/v9.2.0"; flake = false; };
+
+    # docs
+    gdscript-docs-maker.url = "github:GDQuest/gdscript-docs-maker";
+    gdscript-docs-maker.flake = false;
+
+    # private testnet integration tests
     cardano-nix.url = "github:mlabs-haskell/cardano.nix";
     # TODO: use cardano.nix after kupo and plutip are merged there
     plutip.url = "github:mlabs-haskell/plutip";
