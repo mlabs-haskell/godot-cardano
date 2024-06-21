@@ -34,5 +34,5 @@ class SerializeResult extends Result:
 static func deserialize(bytes: PackedByteArray) -> DeserializeResult:
 	return DeserializeResult.new(_Cbor._to_variant(bytes))
 
-static func serialize(data: Variant, strict := false) -> SerializeResult:
+static func serialize(data: Variant) -> SerializeResult:
 	return SerializeResult.new(_Cbor._from_variant(data))

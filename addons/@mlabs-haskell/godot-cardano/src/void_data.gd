@@ -1,12 +1,12 @@
 class_name VoidData
 extends RefCounted
 
-func to_data(_strict := false) -> Variant:
+func to_data(_strict := false) -> PlutusData:
 	return Constr.new(BigInt.from_int(0), [])
 
 static func from_data(v: Variant) -> VoidData:
-	assert(is_instance_of(v, Constr))
-	var constr = v as Constr
+	assert(v is Constr)
+	var constr: Constr = v
 	assert(constr._constructor.eq(BigInt.zero()) && constr._fields.size() == 0)
 	return VoidData.new()
 

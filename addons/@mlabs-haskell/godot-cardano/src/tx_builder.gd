@@ -122,10 +122,10 @@ func pay_to_address_with_datum(
 	address: Address,
 	coin: BigInt,
 	assets: MultiAsset,
-	datum: Variant
+	datum: PlutusData
 ) -> TxBuilder:
-	var serialize_result := Cbor.serialize(PlutusData.unwrap(datum, true), true)
-
+	var serialize_result := PlutusData.serialize(datum)
+	
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
 	else:
@@ -142,9 +142,9 @@ func pay_to_address_with_datum_hash(
 	address: Address,
 	coin: BigInt,
 	assets: MultiAsset,
-	datum: Variant
+	datum: PlutusData
 ) -> TxBuilder:
-	var serialize_result := Cbor.serialize(PlutusData.unwrap(datum, true), true)
+	var serialize_result := PlutusData.serialize(datum)
 
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
@@ -161,9 +161,9 @@ func pay_to_address_with_datum_hash(
 func mint_assets(
 	minting_policy: PlutusScript,
 	tokens: Array[MintToken],
-	redeemer: Variant
+	redeemer: PlutusData
 ) -> TxBuilder:
-	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
+	var serialize_result: Cbor.SerializeResult = PlutusData.serialize(redeemer)
 	
 	_results.push_back(serialize_result)
 	if serialize_result.is_err():
@@ -191,8 +191,8 @@ func mint_assets(
 	
 func mint_cip68_pair(
 	minting_policy: PlutusScript
-	, redeemer: Variant
-	, conf: MintCip68Pair) -> TxBuilder:
+	, redeemer: PlutusData
+	, conf: MintCip68) -> TxBuilder:
 		mint_assets(
 			minting_policy, 
 			[ TxBuilder.MintToken.new(conf.get_user_token_name(), BigInt.one()),
@@ -200,7 +200,37 @@ func mint_cip68_pair(
 		redeemer)
 		
 		return self
+
+func pay_cip68_ref_token(
+	minting_policy: PlutusScript,
+	address: Address,
+	conf: MintCip68
+) -> TxBuilder:
+	var assets = MultiAsset.empty()
+	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), BigInt.one())
+	pay_to_address_with_datum(address, BigInt.zero(), assets, conf.to_data())
+	return self
+
+func pay_cip68_user_tokens(
+	minting_policy: PlutusScript,
+	address: Address,
+	conf: MintCip68
+) -> TxBuilder:
+	var assets = MultiAsset.empty()
+	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), conf.get_quantity())
+	pay_to_address(address, BigInt.zero(), assets)
+	return self
 	
+func pay_cip68_user_tokens_with_datum(
+	minting_policy: PlutusScript,
+	address: Address,
+	datum: PlutusData,
+	conf: MintCip68
+) -> TxBuilder:
+	var assets = MultiAsset.empty()
+	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), conf.get_quantity())
+	pay_to_address_with_datum(address, BigInt.zero(), assets, datum)
+	return self
 
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	var _utxos: Array[_Utxo] = []
@@ -213,9 +243,9 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 func collect_from_script(
 	plutus_script_source: PlutusScriptSource,
 	utxos: Array[Utxo],
-	redeemer: Variant
+	redeemer: PlutusData
 ) -> TxBuilder:
-	var serialize_result: Cbor.SerializeResult = Cbor.serialize(PlutusData.unwrap(redeemer, true), true)
+	var serialize_result: Cbor.SerializeResult = PlutusData.serialize(redeemer)
 	
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(

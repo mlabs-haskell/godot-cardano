@@ -18,20 +18,22 @@ class TestData extends GutTest:
 			
 	func test_cbor_ints(case=use_parameters(_cbor_data.ints)) -> void:
 		var from_str_result := BigInt.from_str(case.value.int)
-		assert(from_str_result.is_ok())
+		assert_true(from_str_result.is_ok())
 		if from_str_result.is_ok():
 			var serialize_result := PlutusData.serialize(from_str_result.value)
-			assert(serialize_result.is_ok())
+			assert_true(serialize_result.is_ok())
 			if serialize_result.is_ok():
 				assert_eq(serialize_result.value.hex_encode(), case.hex_bytes)
 
 	func test_cbor_lists(case=use_parameters(_cbor_data.lists)):
 		var serialize_result := PlutusData.serialize(PlutusData.from_json(case.value))
+		assert_true(serialize_result.is_ok())
 		if serialize_result.is_ok():
 			assert_eq(serialize_result.value.hex_encode(), case.hex_bytes)
 			
 	func test_cbor_bytearrays(case=use_parameters(_cbor_data.bytearrays)):
 		var serialize_result := PlutusData.serialize(PlutusData.from_json(case.value))
+		assert_true(serialize_result.is_ok())
 		if serialize_result.is_ok():
 			assert_eq(serialize_result.value.hex_encode(), case.hex_bytes)
 
@@ -39,11 +41,11 @@ class TestData extends GutTest:
 		var strict := true
 		var before := ExampleDatum.new()
 		var bytes_result := PlutusData.serialize(before.to_data())
-		assert(bytes_result.is_ok(), "Example datum serializes")
+		assert_true(bytes_result.is_ok(), "Example datum serializes")
 		if bytes_result.is_ok():
 			var data_result := Cbor.deserialize(bytes_result.value)
 
-			assert(data_result.is_ok(), "Example datum deserializes")
+			assert_true(data_result.is_ok(), "Example datum deserializes")
 			if data_result.is_ok():
 				var after := ExampleDatum.from_data(data_result.value)
 				assert_true(before.eq(after), "Example datum unchanged after deserializing")
