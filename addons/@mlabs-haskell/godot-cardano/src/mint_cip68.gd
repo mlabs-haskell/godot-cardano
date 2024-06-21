@@ -84,16 +84,18 @@ var extra_plutus_data: PlutusData = VoidData.new().to_data():
 				return PlutusData.from_json(json)
 		return extra_plutus_data
 	set(v):
-		assert(PlutusData.serialize(v).is_ok()
+		assert(v.serialize().is_ok()
 		, "Failed to serialize of extra_plutus_data")
 		extra_plutus_data = v
 enum ExtraPlutusDataType {
 	INT,
 	BYTES,
 	JSON_FILE,
-	JSON_INLINE
+	JSON_INLINE,
+	CBOR_HEX
 }
 
+# TODO: Use _set and _get instead of allocating data where possible
 @export_category("Extra Plutus Data")
 @export
 var extra_plutus_data_type: ExtraPlutusDataType = 0:
@@ -137,7 +139,28 @@ var extra_plutus_data_as_utf8: String:
 	set(v):
 		extra_plutus_data_bytes = v.to_utf8_buffer()
 
-		
+var extra_plutus_data_cbor: PackedByteArray:
+	get:
+		var result = extra_plutus_data.serialize()
+		if result.is_ok():
+			return result.value
+		push_error("Failed to serialize PlutusData: %s" % result.error)
+		return PackedByteArray()
+	set(v):
+		var result = PlutusData.deserialize(v)
+		if result.is_ok():
+			extra_plutus_data = result.value
+			extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
+			extra_plutus_data_json_path = ""
+@export
+# FIXME: Currently this doesn't work if you put one character at a time.
+var extra_plutus_data_cbor_hex: String:
+	get:
+		return extra_plutus_data_cbor.hex_encode()
+	set(v):
+		if (v.length() % 2 == 0):
+			extra_plutus_data_cbor = v.hex_decode()
+
 @export_multiline
 var extra_plutus_data_json: String:
 	get:
@@ -148,7 +171,8 @@ var extra_plutus_data_json: String:
 		var parsed := PlutusData.from_json(json.data)
 		if parsed == null:
 			return extra_plutus_data_json
-		return JSON.stringify(extra_plutus_data.to_json(), "  ")
+		var from_data = JSON.stringify(extra_plutus_data.to_json(), "  ")
+		return from_data
 	set(v):
 		var json := JSON.parse_string(v)
 		extra_plutus_data_json = v
@@ -293,6 +317,7 @@ func _validate_property(property):
 		property.name == 'extra_plutus_data_as_utf8' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
 		property.name == 'extra_plutus_data_json_path' and extra_plutus_data_type != ExtraPlutusDataType.JSON_FILE,
 		property.name == 'extra_plutus_data_json' and extra_plutus_data_type != ExtraPlutusDataType.JSON_INLINE,
+		property.name == 'extra_plutus_data_cbor_hex' and extra_plutus_data_type != ExtraPlutusDataType.CBOR_HEX,
 	]
 	var readonly_conditions: Array[bool] = [
 		property.name == 'extra_plutus_data_json' and FileAccess.file_exists(extra_plutus_data_json_path)

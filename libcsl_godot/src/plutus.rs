@@ -46,20 +46,6 @@ struct Bytes {
     bytes: PackedByteArray,
 }
 
-#[derive(GodotClass)]
-#[class(base=RefCounted, rename=_PlutusData)]
-struct PlutusData {
-    data: Variant,
-}
-
-#[godot_api]
-impl PlutusData {
-    #[func]
-    fn get_data(&mut self) -> Variant {
-        self.data.clone()
-    }
-}
-
 #[derive(GodotClass, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[class(init, base=RefCounted, rename=_Cbor)]
 struct Cbor {}
@@ -235,17 +221,15 @@ impl Cbor {
         }
     }
 
-    fn to_variant(bytes: PackedByteArray) -> Result<PlutusData, CborError> {
+    fn to_variant(bytes: PackedByteArray) -> Result<Variant, CborError> {
         let vec = bytes.to_vec();
         let mut raw = Deserializer::from(Cursor::new(vec));
-        Ok(PlutusData {
-            data: Self::decode_variant(&mut raw)?,
-        })
+        Ok(Self::decode_variant(&mut raw)?)
     }
 
     #[func]
     fn _to_variant(bytes: PackedByteArray) -> Gd<GResult> {
-        Self::to_gresult_class(Self::to_variant(bytes))
+        Self::to_gresult(Self::to_variant(bytes))
     }
 
     fn encode_variant(
@@ -325,4 +309,11 @@ impl Cbor {
     fn _from_variant(variant: Variant) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_variant(variant))
     }
+}
+
+// FIXME: shouldn't fail if provided with `PlutusData` types from GDScript,
+// better to handle errors anyway
+pub fn to_aiken(data: Variant) -> uplc::PlutusData {
+    let bytes = Cbor::from_variant(data).unwrap().bytes.to_vec();
+    return uplc::plutus_data(bytes.as_slice()).unwrap();
 }

@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="MintCip68Pair" load_steps=4 format=3 uid="uid://cmmhqwc7tx8d3"]
+[gd_resource type="Resource" script_class="MintCip68" load_steps=4 format=3 uid="uid://cmmhqwc7tx8d3"]
 
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/file_details.gd" id="1_phy2b"]
-[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/mint_cip68_pair.gd" id="2_imx8k"]
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/mint_cip68.gd" id="2_imx8k"]
 
 [sub_resource type="Resource" id="Resource_b2m7s"]
 resource_local_to_scene = true
@@ -26,4 +26,13 @@ non_standard_metadata = {
 "Green": 128,
 "Red": 128
 }
-extra_plutus_data = {}
+extra_plutus_data_type = 0
+extra_plutus_data_int = 0
+extra_plutus_data_bytes = PackedByteArray()
+extra_plutus_data_as_hex = ""
+extra_plutus_data_as_utf8 = ""
+extra_plutus_data_cbor_hex = "40"
+extra_plutus_data_json = ""
+extra_plutus_data_json_path = ""
+fungible = false
+initial_quantity = 1

@@ -7,8 +7,6 @@ var encrypted_master_private_key: PackedByteArray
 @export
 var accounts: Array[AccountResource]
 @export
-var scrypt_salt: PackedByteArray
-@export
 var scrypt_log_n: int
 @export
 var scrypt_r: int

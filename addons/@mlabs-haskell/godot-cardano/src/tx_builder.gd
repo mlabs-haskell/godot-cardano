@@ -124,7 +124,7 @@ func pay_to_address_with_datum(
 	assets: MultiAsset,
 	datum: PlutusData
 ) -> TxBuilder:
-	var serialize_result := PlutusData.serialize(datum)
+	var serialize_result := datum.serialize()
 	
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
@@ -144,7 +144,7 @@ func pay_to_address_with_datum_hash(
 	assets: MultiAsset,
 	datum: PlutusData
 ) -> TxBuilder:
-	var serialize_result := PlutusData.serialize(datum)
+	var serialize_result := datum.serialize()
 
 	if serialize_result.is_err():
 		_results.push_back(serialize_result)
@@ -163,7 +163,7 @@ func mint_assets(
 	tokens: Array[MintToken],
 	redeemer: PlutusData
 ) -> TxBuilder:
-	var serialize_result: Cbor.SerializeResult = PlutusData.serialize(redeemer)
+	var serialize_result: Cbor.SerializeResult = redeemer.serialize()
 	
 	_results.push_back(serialize_result)
 	if serialize_result.is_err():
@@ -245,7 +245,7 @@ func collect_from_script(
 	utxos: Array[Utxo],
 	redeemer: PlutusData
 ) -> TxBuilder:
-	var serialize_result: Cbor.SerializeResult = PlutusData.serialize(redeemer)
+	var serialize_result: Cbor.SerializeResult = redeemer.serialize()
 	
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(

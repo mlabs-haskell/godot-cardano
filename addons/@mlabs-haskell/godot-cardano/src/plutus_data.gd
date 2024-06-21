@@ -32,13 +32,10 @@ static func wrap(v: Variant) -> PlutusData:
 			return PlutusBytes.new(v)
 		_: return null
 
-static func serialize(v: PlutusData) -> Cbor.SerializeResult:
-	return Cbor.serialize(v._unwrap())
-
 static func deserialize(bytes: PackedByteArray) -> Cbor.DeserializeResult:
 	return Cbor.deserialize(bytes)
 
-## Converts parse JSON to PlutusData
+## Converts parsed JSON to PlutusData
 static func from_json(json: Dictionary) -> PlutusData:
 	if json.has("constructor") and json.has("fields"):
 		var constructor := BigInt.from_int(json.constructor)
@@ -84,6 +81,12 @@ static func from_json(json: Dictionary) -> PlutusData:
 			return result
 	return null
 
+static func apply_script_parameters(
+	script: PlutusScript,
+	params: Array[PlutusData]
+) -> PlutusScript:
+	return script._apply_params(params.map(func (x): return x._unwrap()))
+
 func to_json() -> Dictionary:
 	return _to_json()
 
@@ -95,3 +98,6 @@ func _to_json() -> Dictionary:
 
 func _to_string() -> String:
 	return "%s" % _unwrap()
+
+func serialize() -> Cbor.SerializeResult:
+	return Cbor.serialize(_unwrap())
