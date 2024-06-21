@@ -34,6 +34,7 @@
         }
         {
           category = "godot";
+          name = "godot4";
           package = self'.packages.godot;
         }
         {
