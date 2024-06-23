@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="MintCip68" load_steps=2 format=3 uid="uid://b380hblcibwyy"]
+
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/mint_cip68.gd" id="1_h3rpn"]
+
+[resource]
+script = ExtResource("1_h3rpn")
+token_name = PackedByteArray(73, 116, 101, 109, 53)
+token_name_as_hex = "4974656d35"
+token_name_as_utf8 = "Item5"
+name = "Item5"
+image = "http://example.com/image.jpg"
+media_type = "image/jpeg"
+description = ""
+file_details = Array[Resource("res://addons/@mlabs-haskell/godot-cardano/src/file_details.gd")]([])
+non_standard_metadata = {
+"Blue": 0,
+"Green": 255,
+"Red": 255
+}
+extra_plutus_data_type = 0
+extra_plutus_data_int = 500000000
+extra_plutus_data_bytes = PackedByteArray()
+extra_plutus_data_as_hex = ""
+extra_plutus_data_as_utf8 = ""
+extra_plutus_data_cbor_hex = "1a1dcd6500"
+extra_plutus_data_json = "{
+  \"int\": \"500000000\"
+}"
+extra_plutus_data_json_path = ""
+fungible = false
+initial_quantity = 1

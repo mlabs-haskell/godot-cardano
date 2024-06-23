@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://f358od1ky5cm"]
+[gd_scene load_steps=5 format=3 uid="uid://c0giihu7nv70b"]
 
 [ext_resource type="PackedScene" uid="uid://cmtq3bljeruha" path="res://inventory_item.tscn" id="1_ekyv2"]
 [ext_resource type="Script" path="res://confirm_button.gd" id="2_wj2ry"]
@@ -41,19 +41,16 @@ color = Color(0.161079, 0.983541, 0.574101, 1)
 [node name="_PanelContainer_10" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
 layout_mode = 2
 item_name = "Item 1"
-sku = 1
 color = Color(0.808554, 0.0566542, 0.512233, 1)
 
 [node name="_PanelContainer_12" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
 layout_mode = 2
 item_name = "Item 2"
-sku = 2
 color = Color(0.0425754, 0.242668, 0.496777, 1)
 
 [node name="_PanelContainer_13" parent="ScrollContainer/UserItemContainer" instance=ExtResource("1_ekyv2")]
 layout_mode = 2
 item_name = "Item 3"
-sku = 3
 color = Color(0.599166, 0.5591, 0.241384, 1)
 
 [node name="Control" type="PanelContainer" parent="."]

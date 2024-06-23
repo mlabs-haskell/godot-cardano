@@ -10,8 +10,10 @@ offset_right = 128.0
 offset_bottom = 128.0
 script = ExtResource("1_ypmq7")
 price = NodePath("Price")
+color = Color(1, 1, 0, 1)
 
 [node name="Sprite" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 0, 1)
 texture = ExtResource("2_6n6wd")
 centered = false
 

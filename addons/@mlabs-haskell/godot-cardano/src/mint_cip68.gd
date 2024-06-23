@@ -223,7 +223,7 @@ func get_quantity() -> BigInt:
 	
 ## The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data].
 ## The CIP25 metadata follows its own rules.
-func to_data(_strict: bool = true) -> Variant:
+func to_data() -> Variant:
 	# We add the standard fields on top of the non-standard ones, overwriting.
 	var cip25_metadata := non_standard_metadata
 	cip25_metadata["name"] = name

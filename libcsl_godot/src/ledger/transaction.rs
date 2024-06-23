@@ -1291,4 +1291,12 @@ impl Transaction {
     fn _evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<GResult> {
         Self::to_gresult_class(self.evaluate(gutxos))
     }
+
+    #[func]
+    fn to_json(&self) -> GString {
+        self.transaction
+            .to_json()
+            .unwrap_or("null".to_string())
+            .into_godot()
+    }
 }

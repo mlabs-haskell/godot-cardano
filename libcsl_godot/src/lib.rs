@@ -101,6 +101,7 @@ struct GTxBuilder {
     minted_assets:
         BTreeMap<CSL::crypto::ScriptHash, (CSL::plutus::PlutusScript, Dictionary, PackedByteArray)>,
     data: BTreeSet<PlutusData>,
+    previous_build: Option<CSL::Transaction>,
 }
 
 #[derive(Debug)]
@@ -231,6 +232,7 @@ impl GTxBuilder {
 
             minted_assets: BTreeMap::new(),
             data: BTreeSet::new(),
+            previous_build: None,
         })
     }
 
@@ -544,7 +546,6 @@ impl GTxBuilder {
         &mut self,
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<Address>,
-        complete: bool,
     ) -> Result<Transaction, TxBuilderError> {
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         let mut tx_builder = self.tx_builder.clone();
@@ -557,13 +558,10 @@ impl GTxBuilder {
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
 
-        let fee = if complete {
-            match tx_builder.min_fee() {
-                Ok(fee) => fee.into(),
-                Err(_) => 0,
-            }
-        } else {
-            2_000_000u64
+        let fee = match self.previous_build.as_ref().map(|tx| tx.body().fee()) {
+            Some(fee) => fee.into(),
+            // overestimate fee for preliminary passes and change calculation
+            None => 2_000_000u64,
         };
         if self.uses_plutus_scripts {
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
@@ -600,18 +598,25 @@ impl GTxBuilder {
                 &BigNum::from(min_collateral),
                 &change_address.bind().address,
             )?;
+        }
+
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::RandomImproveMultiAsset)?;
+
+        if self.uses_plutus_scripts {
             tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
 
-        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
         tx_builder.add_change_if_needed(&change_address.bind().address)?;
+
         let tx = tx_builder.build_tx()?;
 
         let mut witnesses = tx.witness_set();
         let vkey_witnesses = Vkeywitnesses::new();
         witnesses.set_vkeys(&vkey_witnesses);
+        let transaction = CSL::Transaction::new(&tx.body(), &witnesses, None);
+        self.previous_build = Some(transaction.clone());
         Ok(Transaction {
-            transaction: CSL::Transaction::new(&tx.body(), &witnesses, None),
+            transaction,
             max_ex_units: self.max_ex_units,
             slot_config: self.slot_config,
             cost_models: self.cost_models.clone(),
@@ -624,7 +629,7 @@ impl GTxBuilder {
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<Address>,
     ) -> Gd<GResult> {
-        Self::to_gresult_class(self.balance_and_assemble(gutxos, change_address, false))
+        Self::to_gresult_class(self.balance_and_assemble(gutxos, change_address))
     }
 
     fn complete(
@@ -633,7 +638,6 @@ impl GTxBuilder {
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
     ) -> Result<Transaction, TxBuilderError> {
-        let inputs = self.inputs_builder.inputs();
         let input_witnesses = self.inputs_builder.get_plutus_input_scripts();
         let mut replaced_inputs = InputsWithScriptWitness::new();
         let mut script_input_index = 0;
@@ -657,7 +661,7 @@ impl GTxBuilder {
                 }
                 CSL::plutus::RedeemerTagKind::Spend => {
                     let index: u64 = bound.index().into();
-                    let input = inputs.get(
+                    let input = self.previous_build.clone().unwrap().body().inputs().get(
                         index
                             .try_into()
                             .map_err(|_| TxBuilderError::UnknownRedeemerIndex(index))?,
@@ -691,7 +695,7 @@ impl GTxBuilder {
         }
         self.inputs_builder
             .add_required_script_input_witnesses(&replaced_inputs);
-        self.balance_and_assemble(gutxos, change_address, true)
+        self.balance_and_assemble(gutxos, change_address)
     }
 
     #[func]

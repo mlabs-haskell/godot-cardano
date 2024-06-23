@@ -10,6 +10,7 @@ var display_inventory: bool = false
 var selected_item: InventoryItem = null
 var selection_stylebox: StyleBox = null
 var unselected_stylebox: StyleBox = null
+var update_timer: Timer = null
 
 var cip68_data: Array[MintCip68] = []
 
@@ -47,7 +48,7 @@ func _ready():
 	for child in container_children:
 		child.queue_free()
 	
-	var update_timer := Timer.new()
+	update_timer = Timer.new()
 	update_timer.autostart = true
 	update_timer.wait_time = 40
 	update_timer.one_shot = false
@@ -62,25 +63,11 @@ func _ready():
 				shop_assets.merge(utxo.assets())
 			shop_items = []
 			for conf: MintCip68 in cip68_data:
-				var data: Cip68Datum = await provider.get_cip68_datum(conf, minting_policy)
-				if data != null:
-					var item := ShopItem.instantiate() as ShopItem
-					item.item_name = data.name()
-					item.price.b = data.get_extra_plutus_data()
-					item.stock = shop_assets.get_asset_quantity(
-						conf.make_user_asset_class(minting_policy)
-					).to_int()
-					item.conf = conf
-					var red: BigInt = data.get_metadata("Red")
-					var green: BigInt = data.get_metadata("Green")
-					var blue: BigInt = data.get_metadata("Blue")
-					item.color = Color(
-						red.to_int() / 255.0,
-						green.to_int() / 255.0,
-						blue.to_int() / 255.0
-					)
-					item.item_bought.connect(_on_buy_shop_item)
-					shop_items.push_back(item)
+				var item := await cip68_to_item(conf)
+				item.stock = shop_assets.get_asset_quantity(
+					conf.make_user_asset_class(minting_policy)
+				).to_int()
+				shop_items.push_back(item)
 				
 			container_children = item_container.get_children()
 			for child in container_children:
@@ -88,10 +75,39 @@ func _ready():
 				
 			for item in shop_items:
 				item_container.add_child(item)
+			
+			var wallet_utxos: Array[Utxo] = await WalletSingleton.wallet._get_updated_utxos()
+			wallet_utxos.sort_custom(
+				func (a: Utxo, b: Utxo) -> bool:
+					return a.tx_hash().to_hex() < b.tx_hash().to_hex() or a.output_index() < b.output_index()
+			)
+			
+			for child in %UserItemContainer.get_children():
+				child.queue_free()
+
+			for utxo in wallet_utxos:
+				for conf: MintCip68 in cip68_data:
+					var quantity := utxo.assets().get_asset_quantity(
+						conf.make_user_asset_class(minting_policy)
+					)
+					for i in range(quantity.to_int()):
+						var user_item: InventoryItem = InventoryItem.instantiate()
+						user_item.from_item(await cip68_to_item(conf, true))
+						user_item.add_theme_stylebox_override(
+							"panel",
+							unselected_stylebox
+						)
+						user_item.item_selected.connect(_on_select_inventory_item)
+						%UserItemContainer.add_child(user_item)
+						user_item.gui_input # TODO: remember what this means?
 	)
 	add_child(update_timer)
 	WalletSingleton.wallet_ready.connect(
 		func ():
+			shop_script = PlutusData.apply_script_parameters(
+				shop_script,
+				[PlutusBytes.new(WalletSingleton.wallet.get_payment_pub_key_hash().to_bytes())]
+			)
 			await WalletSingleton.wallet.got_updated_utxos
 			update_timer.timeout.emit()
 	)
@@ -138,12 +154,10 @@ func _on_main_screen_gui_input(event: InputEvent) -> void:
 		display_inventory = false
 
 func _on_selected_item_sell_button_confirmed() -> void:
-	%UserItemContainer.remove_child(selected_item)
-	shop_items[selected_item.sku].stock += 1
-	#user_funds = user_funds.add(selected_item.price.b)
 	var new_message = UserMessage.instantiate()
 	new_message.set_message("+%s t₳" % selected_item.price.b.format_price())
 	new_message.set_color(Color.GREEN)
+	buy_item(selected_item.conf, -1)
 	add_child(new_message)
 	deselect_item()
 		
@@ -155,16 +169,7 @@ func _on_buy_shop_item(item: ShopItem):
 	else:
 		new_message.set_message("-%s t₳" % item.price.b.format_price())
 		new_message.set_color(Color.GOLD)
-		var user_item: InventoryItem = InventoryItem.instantiate()
-		user_item.from_item(item as Item)
-		user_item.add_theme_stylebox_override(
-			"panel",
-			unselected_stylebox
-		)
-		user_item.item_selected.connect(_on_select_inventory_item)
-		%UserItemContainer.add_child(user_item)
-		user_item.gui_input
-		buy_item(item.conf)
+		buy_item(item.conf, 1)
 	add_child(new_message)
 	
 func _on_select_inventory_item(selection: InventoryItem):
@@ -179,10 +184,6 @@ func _on_select_inventory_item(selection: InventoryItem):
 func mint_tokens():
 	var provider: Provider = WalletSingleton.provider
 	var new_tx_result := await WalletSingleton.wallet.new_tx()
-	shop_script = PlutusData.apply_script_parameters(
-		shop_script,
-		[PlutusBytes.new(WalletSingleton.wallet.get_payment_pub_key_hash().to_bytes())]
-	)
 	if new_tx_result.is_err():
 		push_error("Could not create transaction: %s" % new_tx_result.error)
 		return
@@ -233,11 +234,13 @@ func mint_tokens():
 	await WalletSingleton.provider.await_tx(submit_result.value)
 	print("Minted")
 
-func buy_item(conf: MintCip68) -> void:
+func buy_item(conf: MintCip68, quantity: int) -> void:
+	if quantity == 0:
+		return
+		
 	var provider: Provider = WalletSingleton.provider
 	var new_tx_result := await WalletSingleton.wallet.new_tx()
 	
-	print("trying to buy")
 	if new_tx_result.is_err():
 		push_error("Could not create transaction: %s" % new_tx_result.error)
 		return
@@ -250,10 +253,16 @@ func buy_item(conf: MintCip68) -> void:
 	
 	var user_asset_class = conf.make_user_asset_class(minting_policy)
 	var selected_utxo: Utxo = null
-	for utxo in shop_utxos:
-		if utxo.assets().get_asset_quantity(user_asset_class).gt(BigInt.zero()):
-			selected_utxo = utxo
-			break
+	if quantity > 0:
+		for utxo in shop_utxos:
+			if utxo.assets().get_asset_quantity(user_asset_class).gt(BigInt.from_int(quantity - 1)):
+				selected_utxo = utxo
+				break
+	else:
+		for utxo in shop_utxos:
+			if utxo.coin().to_int() > conf.extra_plutus_data.to_int() * -quantity:
+				selected_utxo = utxo
+				break
 
 	tx_builder.collect_from_script(
 		PlutusScriptSource.from_script(shop_script),
@@ -267,12 +276,12 @@ func buy_item(conf: MintCip68) -> void:
 	tx_builder.add_reference_input(ref_utxo[0])
 	
 	var assets := selected_utxo.assets().duplicate()
-	assets.add_asset(conf.make_user_asset_class(minting_policy), BigInt.from_int(-1))
+	assets.add_asset(conf.make_user_asset_class(minting_policy), BigInt.from_int(-quantity))
 	tx_builder.pay_to_address_with_datum(
 		WalletSingleton.provider.make_address(
 			Credential.from_script(shop_script)
 		),
-		selected_utxo.coin().add(conf.extra_plutus_data),
+		selected_utxo.coin().add(BigInt.from_int(conf.extra_plutus_data.to_int() * quantity)),
 		assets,
 		VoidData.new().to_data()
 	)
@@ -285,7 +294,6 @@ func buy_item(conf: MintCip68) -> void:
 	
 	var tx := complete_result.value
 	tx.sign("1234")
-	print(tx.bytes().hex_encode())
 	var submit_result := await tx.submit()
 	
 	if submit_result.is_err():
@@ -293,7 +301,8 @@ func buy_item(conf: MintCip68) -> void:
 		return
 	
 	await WalletSingleton.provider.await_tx(submit_result.value)
-	
+	update_timer.timeout.emit()
+
 func load_script_from_blueprint(path: String, validator_name: String) -> PlutusScript:
 	var contents := FileAccess.get_file_as_string(path)
 	var contents_json: Dictionary = JSON.parse_string(contents)
@@ -303,3 +312,25 @@ func load_script_from_blueprint(path: String, validator_name: String) -> PlutusS
 	
 	push_error("Failed to load %s from %s" % [validator_name, path])
 	return null
+
+func cip68_to_item(conf: MintCip68, local_data := false) -> Item:
+	var data: Cip68Datum = Cip68Datum.from_constr(conf.to_data())
+	if not local_data:
+		var remote_data := await WalletSingleton.provider.get_cip68_datum(conf, minting_policy)
+		if remote_data != null:
+			data = remote_data
+		
+	var item := ShopItem.instantiate() as ShopItem
+	item.item_name = data.name()
+	item.price.b = data.get_extra_plutus_data()
+	item.conf = conf
+	var red: BigInt = data.get_metadata("Red")
+	var green: BigInt = data.get_metadata("Green")
+	var blue: BigInt = data.get_metadata("Blue")
+	item.color = Color(
+		red.to_int() / 255.0,
+		green.to_int() / 255.0,
+		blue.to_int() / 255.0
+	)
+	item.item_bought.connect(_on_buy_shop_item)
+	return item

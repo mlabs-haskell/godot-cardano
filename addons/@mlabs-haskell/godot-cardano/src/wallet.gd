@@ -42,6 +42,9 @@ func _sign_transaction(_password: String, _transaction: Transaction) -> SignTxRe
 func get_address() -> Address:
 	return _get_change_address()
 
+func get_utxos() -> Array[Utxo]:
+	return _get_utxos()
+	
 func get_payment_pub_key_hash() -> PubKeyHash:
 	return _get_change_address().payment_credential().to_pub_key_hash().value
 	

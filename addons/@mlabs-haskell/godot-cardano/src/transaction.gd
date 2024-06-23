@@ -24,6 +24,9 @@ func _init(tx: _Transaction) -> void:
 func bytes() -> PackedByteArray:
 	return _tx.bytes()
 
+func to_json() -> Dictionary:
+	return JSON.parse_string(_tx.to_json())
+	
 func add_signature(signature: Signature) -> void:
 	_tx.add_signature(signature)
 
