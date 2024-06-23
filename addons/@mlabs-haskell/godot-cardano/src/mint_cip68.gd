@@ -17,7 +17,7 @@ class_name MintCip68
 ## that is not the CIP67 header).
 var token_name: PackedByteArray:
 	set(v):
-		token_name = v
+		token_name = v.slice(0,32)
 
 @export
 # FIXME: Currently this doesn't work if you put one character at a time.
@@ -73,22 +73,137 @@ var non_standard_metadata: Dictionary = {}:
 	set(v):
 		non_standard_metadata = v
 		_homogenize_or_fail(non_standard_metadata)
-@export
 ## This corresponds to the third field of the CIP-68 datum. Use this if you need
 ## to store data in any form that is not compliant with CIP-25. No restrictions
 ## apply other than the usual ones for encoding a datum.
-var extra_plutus_data: Dictionary = {}:
+var extra_plutus_data: PlutusData = VoidData.new().to_data():
+	get:
+		if FileAccess.file_exists(extra_plutus_data_json_path):
+			var json := JSON.parse_string(FileAccess.get_file_as_string(extra_plutus_data_json_path))
+			if json != null:
+				return PlutusData.from_json(json)
+		return extra_plutus_data
 	set(v):
-		assert(PlutusData.serialize(v, true).is_ok()
-		, "Failed to do strict serialization of extra_plutus_data")
+		assert(v.serialize().is_ok()
+		, "Failed to serialize of extra_plutus_data")
+		extra_plutus_data = v
+enum ExtraPlutusDataType {
+	INT,
+	BYTES,
+	JSON_FILE,
+	JSON_INLINE,
+	CBOR_HEX
+}
+
+# TODO: Use _set and _get instead of allocating data where possible
+@export_category("Extra Plutus Data")
+@export
+var extra_plutus_data_type: ExtraPlutusDataType = 0:
+	set(v):
+		extra_plutus_data_type = v
+		notify_property_list_changed()
+@export
+var extra_plutus_data_int: int:
+	get:
+		if extra_plutus_data is BigInt:
+			return extra_plutus_data.to_str().to_int()
+		return 0
+	set(v):
+		extra_plutus_data = BigInt.from_int(v)
+		extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
+		extra_plutus_data_json_path = ""
+
+@export
+var extra_plutus_data_bytes: PackedByteArray:
+	get:
+		if extra_plutus_data is PlutusBytes:
+			return extra_plutus_data.get_data()
+		return PackedByteArray()
+	set(v):
+		extra_plutus_data = PlutusBytes.new(v)
+		extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
+		extra_plutus_data_json_path = ""
+
+@export
+# FIXME: Currently this doesn't work if you put one character at a time.
+var extra_plutus_data_as_hex: String:
+	get:
+		return extra_plutus_data_bytes.hex_encode()
+	set(v):
+		if (v.length() % 2 == 0):
+			extra_plutus_data_bytes = v.hex_decode()
+@export
+var extra_plutus_data_as_utf8: String:
+	get:
+		return extra_plutus_data_bytes.get_string_from_utf8()
+	set(v):
+		extra_plutus_data_bytes = v.to_utf8_buffer()
+
+var extra_plutus_data_cbor: PackedByteArray:
+	get:
+		var result = extra_plutus_data.serialize()
+		if result.is_ok():
+			return result.value
+		push_error("Failed to serialize PlutusData: %s" % result.error)
+		return PackedByteArray()
+	set(v):
+		var result = PlutusData.deserialize(v)
+		if result != null:
+			extra_plutus_data = result
+			extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
+			extra_plutus_data_json_path = ""
+@export
+# FIXME: Currently this doesn't work if you put one character at a time.
+var extra_plutus_data_cbor_hex: String:
+	get:
+		return extra_plutus_data_cbor.hex_encode()
+	set(v):
+		if (v.length() % 2 == 0):
+			extra_plutus_data_cbor = v.hex_decode()
+
+@export_multiline
+var extra_plutus_data_json: String:
+	get:
+		var json = JSON.new()
+		var error = json.parse(extra_plutus_data_json)
+		if error != OK:
+			return extra_plutus_data_json
+		var parsed := PlutusData.from_json(json.data)
+		if parsed == null:
+			return extra_plutus_data_json
+		var from_data = JSON.stringify(extra_plutus_data.to_json(), "  ")
+		return from_data
+	set(v):
+		var json := JSON.parse_string(v)
+		extra_plutus_data_json = v
+		if json != null:
+			var data = PlutusData.from_json(json)
+			if data != null:
+				extra_plutus_data = data
+			else:
+				push_error("Failed to parse PlutusData")
+		else:
+			push_error("Failed to parse JSON")
+
+@export_file("*.json")
+var extra_plutus_data_json_path: String = ""
+		
+@export_category("Minting")
 @export
 ## Whether or not multiple user tokens can be minted. This determines the asset 
 ## class used as defined in the CIP-68 specifications.
-var fungible: bool = false
+var fungible: bool = false:
+	set(v):
+		fungible = v
+		notify_property_list_changed()
 @export
 ## Initial quantity minted via [method TxBuilder.mint_cip68_pair]. In cases where
 ## the minting policy is one-shot, this will be the total supply for this token.
 var initial_quantity: int = 1:
+	get:
+		if not fungible:
+			return 1
+		return initial_quantity
 	set(v):
 		assert(v == 1 or fungible, "Only fungible tokens can have a non-one quantity")
 		initial_quantity = v
@@ -104,11 +219,11 @@ func get_ref_token_name() -> PackedByteArray:
 	return ref_token_name
 
 func get_quantity() -> BigInt:
-	return BigInt.from_int(initial_quantity)
+	return BigInt.from_int(initial_quantity) if fungible else BigInt.one()
 	
 ## The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data].
 ## The CIP25 metadata follows its own rules.
-func to_data(_strict: bool) -> Variant:
+func to_data(_strict: bool = true) -> Variant:
 	# We add the standard fields on top of the non-standard ones, overwriting.
 	var cip25_metadata := non_standard_metadata
 	cip25_metadata["name"] = name
@@ -135,10 +250,10 @@ var file_details_script : Script = preload("res://addons/@mlabs-haskell/godot-ca
 
 # Convert any non-strict keys and values to their strict PlutusData counterpart
 # (if possible). Fail if invalid types are found by returning null.
-func _homogenize_or_fail(v: Variant) -> Variant:
+func _homogenize_or_fail(v: Variant) -> PlutusData:
 	match typeof(v):
 		TYPE_STRING:
-			return (v as String).to_utf8_buffer()
+			return PlutusBytes.new((v as String).to_utf8_buffer())
 		TYPE_INT:
 			return BigInt.from_int(v)
 		TYPE_PACKED_BYTE_ARRAY:
@@ -157,7 +272,7 @@ func _homogenize_or_fail(v: Variant) -> Variant:
 			for key in v:
 				var homogenized_key
 				if typeof(key) == TYPE_STRING:
-					homogenized_key = (key as String).to_utf8_buffer()
+					homogenized_key = PlutusBytes.new((key as String).to_utf8_buffer())
 				elif typeof(key) == TYPE_PACKED_BYTE_ARRAY:
 					homogenized_key = key
 				else:
@@ -169,7 +284,7 @@ func _homogenize_or_fail(v: Variant) -> Variant:
 				if homogenized_val == null:
 					return null
 				homogenized_v[homogenized_key] = homogenized_val
-			return homogenized_v
+			return PlutusMap.new(homogenized_v)
 		TYPE_OBJECT:
 			var script = v.get_script()
 			if script != big_int_script and script != file_details_script:
@@ -180,3 +295,34 @@ func _homogenize_or_fail(v: Variant) -> Variant:
 		_:
 			assert(false, "Found value of unexpected type " + type_string(typeof(v)))
 			return null
+
+func make_user_asset_class(script: PlutusScript) -> AssetClass:
+	return AssetClass.new(
+		PolicyId.from_script(script),
+		AssetName.from_bytes(get_user_token_name()).value
+	)
+
+func make_ref_asset_class(script: PlutusScript) -> AssetClass:
+	return AssetClass.new(
+		PolicyId.from_script(script),
+		AssetName.from_bytes(get_ref_token_name()).value
+	)
+
+func _validate_property(property):
+	var hide_conditions: Array[bool] = [
+		property.name == 'initial_quantity' and not self.fungible,
+		property.name == 'extra_plutus_data_int' and extra_plutus_data_type != ExtraPlutusDataType.INT,
+		property.name == 'extra_plutus_data_bytes' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
+		property.name == 'extra_plutus_data_as_hex' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
+		property.name == 'extra_plutus_data_as_utf8' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
+		property.name == 'extra_plutus_data_json_path' and extra_plutus_data_type != ExtraPlutusDataType.JSON_FILE,
+		property.name == 'extra_plutus_data_json' and extra_plutus_data_type != ExtraPlutusDataType.JSON_INLINE,
+		property.name == 'extra_plutus_data_cbor_hex' and extra_plutus_data_type != ExtraPlutusDataType.CBOR_HEX,
+	]
+	var readonly_conditions: Array[bool] = [
+		property.name == 'extra_plutus_data_json' and FileAccess.file_exists(extra_plutus_data_json_path)
+	]
+	if hide_conditions.any(func (x): return x):
+		property.usage &= ~PROPERTY_USAGE_EDITOR
+	if readonly_conditions.any(func (x): return x):
+		property.usage |= PROPERTY_USAGE_READ_ONLY

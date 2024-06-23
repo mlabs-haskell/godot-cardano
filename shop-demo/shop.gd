@@ -11,6 +11,23 @@ var selected_item: InventoryItem = null
 var selection_stylebox: StyleBox = null
 var unselected_stylebox: StyleBox = null
 
+var cip68_data: Array[MintCip68] = []
+
+var tag: BigInt = BigInt.from_int(2421665)
+# TODO: make scripts resources?
+@onready
+var minting_policy := PlutusData.apply_script_parameters(
+	load_script_from_blueprint("res://scripts.json", "shop.tagged_mint"),
+	[tag]
+)
+@onready
+var ref_lock := PlutusData.apply_script_parameters(
+	load_script_from_blueprint("res://scripts.json", "shop.tagged_spend"),
+	[tag]
+)
+@onready
+var shop_script := load_script_from_blueprint("res://scripts.json", "shop.spend")
+
 func _ready():
 	shop_items = []
 	selection_stylebox = StyleBoxFlat.new()
@@ -19,23 +36,66 @@ func _ready():
 	selection_stylebox.set_corner_radius_all(16)
 	unselected_stylebox = StyleBoxEmpty.new()
 	
-	for n in range(8):
-		var item := ShopItem.instantiate() as ShopItem
-		item.item_name = "Item %d" % n
-		item.price.b = BigInt.from_int(int(randfn(800000000, 300000000)))
-		item.stock = randi_range(0,5)
-		item.sku = n
-		item.color = Color(randf_range(0, 1), randf_range(0, 1), randf_range(0, 1))
-		item.item_bought.connect(_on_buy_shop_item)
-		shop_items.push_back(item)
+	WalletSingleton.wallet_ready.connect(self.mint_tokens)
+	
+	var cip68_files := DirAccess.get_files_at("res://cip68_data")
+	for path in cip68_files:
+		cip68_data.push_back(load("res://cip68_data/%s" % path))
+
 	var item_container := %ItemContainer
 	var container_children = item_container.get_children()
 	for child in container_children:
-		item_container.remove_child(child)
-		
-	for item in shop_items:
-		item_container.add_child(item)
+		child.queue_free()
 	
+	var update_timer := Timer.new()
+	update_timer.autostart = true
+	update_timer.wait_time = 40
+	update_timer.one_shot = false
+	update_timer.timeout.connect(
+		func () -> void:
+			var provider: Provider = WalletSingleton.provider
+			var shop_utxos = await provider.get_utxos_at_address(
+				provider.make_address(Credential.from_script(shop_script))
+			)
+			var shop_assets = MultiAsset.empty()
+			for utxo in shop_utxos:
+				shop_assets.merge(utxo.assets())
+			shop_items = []
+			for conf: MintCip68 in cip68_data:
+				var data: Cip68Datum = await provider.get_cip68_datum(conf, minting_policy)
+				if data != null:
+					var item := ShopItem.instantiate() as ShopItem
+					item.item_name = data.name()
+					item.price.b = data.get_extra_plutus_data()
+					item.stock = shop_assets.get_asset_quantity(
+						conf.make_user_asset_class(minting_policy)
+					).to_int()
+					item.conf = conf
+					var red: BigInt = data.get_metadata("Red")
+					var green: BigInt = data.get_metadata("Green")
+					var blue: BigInt = data.get_metadata("Blue")
+					item.color = Color(
+						red.to_int() / 255.0,
+						green.to_int() / 255.0,
+						blue.to_int() / 255.0
+					)
+					item.item_bought.connect(_on_buy_shop_item)
+					shop_items.push_back(item)
+				
+			container_children = item_container.get_children()
+			for child in container_children:
+				child.queue_free()
+				
+			for item in shop_items:
+				item_container.add_child(item)
+	)
+	add_child(update_timer)
+	WalletSingleton.wallet_ready.connect(
+		func ():
+			await WalletSingleton.wallet.got_updated_utxos
+			update_timer.timeout.emit()
+	)
+
 func _process(delta: float):
 	%UserFundsLabel.text = "%s t₳" % WalletSingleton.user_funds.format_price()
 	
@@ -52,7 +112,7 @@ func _process(delta: float):
 			inventory_screen.scale -= Vector2.ONE * delta * 5
 		if inventory_screen.scale.x <= 0:
 			inventory_screen.visible = false
-	
+
 	if selected_item == null:
 		%SelectedItemDescription.text = ""
 		%SelectedItemPrice.text = ""
@@ -66,19 +126,6 @@ func deselect_item():
 	if selected_item != null:
 		selected_item.add_theme_stylebox_override("panel", unselected_stylebox)
 		selected_item = null
-		
-func create_new_wallet():
-	var new_wallet_result := SingleAddressWalletLoader.create("1234", 0, "My Account", "")
-	
-	if new_wallet_result.is_err():
-		push_error("Failed to create wallet: %s" % new_wallet_result.error)
-		return
-	
-	ResourceSaver.save(new_wallet_result.value._create_res.wallet_store, "user://user_wallet.tres")
-
-func load_wallet():
-	var loaded_wallet: _SingleAddressWalletStore = load("user://user_wallet.tres") as _SingleAddressWalletStore
-	print(loaded_wallet)
 	
 func _on_inventory_button_pressed() -> void:
 	display_inventory = not display_inventory
@@ -117,8 +164,7 @@ func _on_buy_shop_item(item: ShopItem):
 		user_item.item_selected.connect(_on_select_inventory_item)
 		%UserItemContainer.add_child(user_item)
 		user_item.gui_input
-		#user_funds = user_funds.sub(item.price.b)
-		item.stock -= 1
+		buy_item(item.conf)
 	add_child(new_message)
 	
 func _on_select_inventory_item(selection: InventoryItem):
@@ -129,3 +175,131 @@ func _on_select_inventory_item(selection: InventoryItem):
 		selection_stylebox
 	)
 	%SelectedItemSellButton.release_focus()
+
+func mint_tokens():
+	var provider: Provider = WalletSingleton.provider
+	var new_tx_result := await WalletSingleton.wallet.new_tx()
+	shop_script = PlutusData.apply_script_parameters(
+		shop_script,
+		[PlutusBytes.new(WalletSingleton.wallet.get_payment_pub_key_hash().to_bytes())]
+	)
+	if new_tx_result.is_err():
+		push_error("Could not create transaction: %s" % new_tx_result.error)
+		return
+	
+	var tx_builder = new_tx_result.value
+	
+	var new_mint = false
+	for conf in cip68_data:
+		var asset_class := conf.make_ref_asset_class(minting_policy)
+		var utxos := await provider.get_utxos_with_asset(asset_class)
+		if utxos.size() == 0:
+			new_mint = true
+			tx_builder.mint_cip68_pair(minting_policy, VoidData.new().to_data(), conf)
+			tx_builder.pay_cip68_ref_token(
+				minting_policy,
+				WalletSingleton.provider.make_address(
+					Credential.from_script(ref_lock),
+				),
+				conf
+			)
+			tx_builder.pay_cip68_user_tokens_with_datum(
+				minting_policy,
+				WalletSingleton.provider.make_address(
+					Credential.from_script(shop_script)
+				),
+				VoidData.new().to_data(),
+				conf
+			)
+
+	if not new_mint:
+		return
+
+	var complete_result := await tx_builder.complete()
+	
+	if complete_result.is_err():
+		push_error("Failed to build transaction: %s" % complete_result.error)
+		return
+	
+	var tx := complete_result.value
+	tx.sign("1234")
+	var submit_result := await tx.submit()
+	
+	if submit_result.is_err():
+		push_error("Failed to submit transaction: %s" % submit_result.error)
+		return
+	
+	print("Waiting for transaction %s..." % submit_result.value.to_hex())
+	await WalletSingleton.provider.await_tx(submit_result.value)
+	print("Minted")
+
+func buy_item(conf: MintCip68) -> void:
+	var provider: Provider = WalletSingleton.provider
+	var new_tx_result := await WalletSingleton.wallet.new_tx()
+	
+	print("trying to buy")
+	if new_tx_result.is_err():
+		push_error("Could not create transaction: %s" % new_tx_result.error)
+		return
+	
+	var tx_builder = new_tx_result.value
+	
+	var shop_utxos = await provider.get_utxos_at_address(
+		provider.make_address(Credential.from_script(shop_script))
+	)
+	
+	var user_asset_class = conf.make_user_asset_class(minting_policy)
+	var selected_utxo: Utxo = null
+	for utxo in shop_utxos:
+		if utxo.assets().get_asset_quantity(user_asset_class).gt(BigInt.zero()):
+			selected_utxo = utxo
+			break
+
+	tx_builder.collect_from_script(
+		PlutusScriptSource.from_script(shop_script),
+		[selected_utxo],
+		VoidData.new().to_data()
+	)
+	
+	var ref_utxo := await provider.get_utxos_with_asset(
+		conf.make_ref_asset_class(minting_policy)
+	)
+	tx_builder.add_reference_input(ref_utxo[0])
+	
+	var assets := selected_utxo.assets().duplicate()
+	assets.add_asset(conf.make_user_asset_class(minting_policy), BigInt.from_int(-1))
+	tx_builder.pay_to_address_with_datum(
+		WalletSingleton.provider.make_address(
+			Credential.from_script(shop_script)
+		),
+		selected_utxo.coin().add(conf.extra_plutus_data),
+		assets,
+		VoidData.new().to_data()
+	)
+	
+	var complete_result := await tx_builder.complete()
+	
+	if complete_result.is_err():
+		push_error("Failed to build transaction: %s" % complete_result.error)
+		return
+	
+	var tx := complete_result.value
+	tx.sign("1234")
+	print(tx.bytes().hex_encode())
+	var submit_result := await tx.submit()
+	
+	if submit_result.is_err():
+		push_error("Failed to submit transaction: %s" % submit_result.error)
+		return
+	
+	await WalletSingleton.provider.await_tx(submit_result.value)
+	
+func load_script_from_blueprint(path: String, validator_name: String) -> PlutusScript:
+	var contents := FileAccess.get_file_as_string(path)
+	var contents_json: Dictionary = JSON.parse_string(contents)
+	for validator: Dictionary in contents_json['validators']:
+		if validator['title'] == validator_name:
+			return PlutusScript.create((validator['compiledCode'] as String).hex_decode())
+	
+	push_error("Failed to load %s from %s" % [validator_name, path])
+	return null

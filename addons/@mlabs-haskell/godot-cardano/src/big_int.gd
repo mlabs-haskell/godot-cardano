@@ -1,5 +1,4 @@
-extends RefCounted
-
+extends PlutusData
 class_name BigInt
 
 ## You should not create a [BigInt] with [BigInt.new].
@@ -11,6 +10,17 @@ enum Status { SUCCESS = 0, COULD_NOT_PARSE_BIGINT = 1, COULD_NOT_DESERIALIZE_BIG
 
 var _b: _BigInt
 
+@export
+var value: String:
+	get:
+		return _b.to_str()
+	set(v):
+		var result = _BigInt._from_str(v)
+		if result.is_ok():
+			_b = result.unsafe_value()
+		else:
+			push_error("Could not parse BigInt: %s" % result.error)
+		
 func _init(b: _BigInt) -> void:
 	_b = b
 
@@ -64,7 +74,10 @@ func sub(other: BigInt) -> BigInt:
 func to_str() -> String:
 	return _b.to_str()
 
-func to_data(_strict := false) -> Variant:
+func to_int() -> int:
+	return _b.to_str().to_int()
+
+func _unwrap() -> Variant:
 	return _b
 	
 func _to_string() -> String:
@@ -72,3 +85,6 @@ func _to_string() -> String:
 
 func format_price(quantity_decimals: float = 6, format_decimals: int = 2) -> String:
 	return ("%." + str(format_decimals) + "f") % (float(to_string()) / pow(10, quantity_decimals))
+
+func _to_json():
+	return { "int": to_str() }

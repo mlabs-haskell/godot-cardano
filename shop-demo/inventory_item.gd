@@ -13,7 +13,7 @@ func _process(delta: float):
 func from_item(item: Item):
 	item_name = item.item_name
 	price = item.price
-	sku = item.sku
+	conf = item.conf
 	color = item.color
 
 func _on_gui_input(event: InputEvent) -> void:

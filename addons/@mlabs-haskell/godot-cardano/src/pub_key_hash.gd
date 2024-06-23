@@ -22,3 +22,6 @@ static func from_hex(hash: String) -> FromHexResult:
 	
 func to_hex() -> String:
 	return _pub_key_hash.to_hex()
+	
+func to_bytes() -> PackedByteArray:
+	return _pub_key_hash.to_bytes()

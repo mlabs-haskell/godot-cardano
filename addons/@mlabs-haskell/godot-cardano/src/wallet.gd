@@ -22,7 +22,7 @@ func total_lovelace() -> BigInt:
 
 func new_tx() -> TxBuilder.CreateResult:
 	var create_result := await _provider.new_tx()
-	
+
 	if create_result.is_ok():
 		create_result.value.set_wallet(self)
 
@@ -36,9 +36,15 @@ class SignTxResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 		
-func _sign_transaction(password: String, _transaction: Transaction) -> SignTxResult:
+func _sign_transaction(_password: String, _transaction: Transaction) -> SignTxResult:
 	return null
 
+func get_address() -> Address:
+	return _get_change_address()
+
+func get_payment_pub_key_hash() -> PubKeyHash:
+	return _get_change_address().payment_credential().to_pub_key_hash().value
+	
 class MnemonicWallet extends Wallet:
 	var _single_address_wallet: SingleAddressWallet
 
@@ -74,8 +80,10 @@ class MnemonicWallet extends Wallet:
 		add_child(timer)
 		if auto_update_utxos:
 			timer.autostart = true
-			# Initialize UTxOs immediately
-			update_utxos()
+		
+	func _ready():
+		# Initialize UTxOs immediately
+		update_utxos()
 		
 	## Update the cached utxos. The same as [MnemonicWallet.get_utxos], but
 	## without returning the updated utxos.

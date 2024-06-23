@@ -17,6 +17,15 @@ non_standard_metadata = {
 "Green": 0,
 "Red": 255
 }
-extra_plutus_data = {}
+extra_plutus_data_type = 0
+extra_plutus_data_int = 200000000
+extra_plutus_data_bytes = PackedByteArray()
+extra_plutus_data_as_hex = ""
+extra_plutus_data_as_utf8 = ""
+extra_plutus_data_cbor_hex = "1a0bebc200"
+extra_plutus_data_json = "{
+  \"int\": \"200000000\"
+}"
+extra_plutus_data_json_path = ""
 fungible = true
 initial_quantity = 10

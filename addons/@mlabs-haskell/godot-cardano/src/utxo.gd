@@ -33,6 +33,14 @@ func tx_hash() -> TransactionHash:
 func datum_info() -> UtxoDatumInfo:
 	return _utxo.datum_info
 
+func datum() -> PlutusData:
+	if not _utxo.datum_info.has_datum():
+		return null
+	var result := PlutusData.deserialize(datum_info().datum_value().unsafe_value().hex_decode())
+	if result == null:
+		push_error('Invalid datum for UTxO %s#%d' % [tx_hash().to_hex(), output_index()])
+	return result
+
 func output_index() -> int:
 	return _utxo.output_index
 

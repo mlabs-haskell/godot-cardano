@@ -1,100 +1,107 @@
 extends RefCounted
-
 class_name PlutusData
-		
-## Recursively unwraps Objects to native data types
-static func unwrap(v: Variant, strict: bool = false) -> Variant:
-	match typeof(v):
-		TYPE_ARRAY:
-			var unwrapped = v.map(func (child): return unwrap(child, strict))
-			if unwrapped.any(func (child): return child == null):
-				return null
-			return unwrapped
-		TYPE_DICTIONARY:
-			var unwrapped: Dictionary = {}
-			for key in v:
-				var unwrapped_key = unwrap(key, strict)
-				var unwrapped_value = unwrap(v[key], strict)
-				if unwrapped_key == null or unwrapped_value == null:
-					return null
-				unwrapped[unwrapped_key] = unwrapped_value
-			return unwrapped
-		TYPE_BOOL:
-			if strict:
-				push_error("Got native bool in strict data serialization")
-				return null
-			return unwrap(
-				Constr.new(BigInt.from_int(0), []) if not v 
-				else Constr.new(BigInt.from_int(1), []),
-				strict
-			)
-		TYPE_STRING:
-			if strict:
-				push_error("Got native string in strict data serialization")
-				return null
-			return v.to_utf8_buffer()
-		TYPE_INT:
-			if strict:
-				push_error("Got native int in strict data serialization")
-				return null
-			return _BigInt._from_int(v)
-		TYPE_OBJECT:
-			var _class: String = v.get_class()
-			if v.has_method("to_data"):
-				var data = v.to_data(strict)
-				if strict:
-					var __class: String = data.get_class()
-					assert(
-						__class == "_Constr" or __class == "_BigInt",
-						"Constr field not data-encoded in strict data serialization"
-					)
-					return data
-				return unwrap(data, strict)
-			elif _class == "_Constr" or _class == "_BigInt":
-				if strict:
-					push_error("Tried to unwrap native types in strict data serialization")
-					return null
-				return v
-			else:
-				push_error("Constr field does not implement `to_data`: %s" % v)
-				return null
-		TYPE_PACKED_BYTE_ARRAY:
-			return v
-		_:
-			push_error("Got unsupported type in data serialization: %s" % v)
-			return null
 
-## Recursively wraps native data types to GDScript types
-static func wrap(v: Variant) -> Variant:
+## Recursively wraps native data types to PlutusData types
+static func wrap(v: Variant) -> PlutusData:
 	match typeof(v):
 		TYPE_ARRAY:
-			return v.map(PlutusData.wrap)
+			return PlutusList.new(v.map(PlutusData.wrap))
 		TYPE_DICTIONARY:
 			var wrapped: Dictionary = {}
-			for key in v:
-				wrapped[PlutusData.wrap(key)] = PlutusData.wrap(v[key])
-			return wrapped
+			for key: Variant in v:
+				var wrapped_key := PlutusData.wrap(key)
+				var wrapped_value := PlutusData.wrap(v[key])
+				if wrapped_key == null or wrapped_value == null:
+					return null
+				wrapped[wrapped_key] = wrapped_value
+			return PlutusMap.new(wrapped)
 		TYPE_OBJECT:
 			var _class = v.get_class()
 			if _class == "_Constr":
-				return Constr.new(BigInt.new(v.constructor), v.fields.map(PlutusData.wrap))
+				var fields: Array[PlutusData] = []
+				for data in v.fields:
+					var wrapped = PlutusData.wrap(data)
+					if wrapped == null:
+						return null
+					fields.push_back(wrapped)
+				return Constr.new(BigInt.new(v.constructor), fields)
 			if _class == "_BigInt":
 				return BigInt.new(v)
 			return v
-		_: return v
+		TYPE_PACKED_BYTE_ARRAY:
+			return PlutusBytes.new(v)
+		_: return null
 
-static func serialize(v: Variant, strict: bool = true) -> Cbor.SerializeResult:
-	return Cbor.serialize(unwrap(v, strict), strict)
-
-static func deserialize(bytes: PackedByteArray) -> Cbor.DeserializeResult:
-	return Cbor.deserialize(bytes)
-
-# currently incomplete and only used for test cases
-static func from_json(json: Dictionary) -> Variant:
-	if json.has("list"):
-		return json.list.map(PlutusData.from_json)
-	if json.has("bytes"):
-		return json.bytes.hex_decode()
-	if json.has("int"):
-		return BigInt.from_str(json.int).value
+static func deserialize(bytes: PackedByteArray) -> PlutusData:
+	var result = Cbor.deserialize(bytes)
+	if result.is_ok():
+		return PlutusData.wrap(result.value)
+	push_error("Failed to deserialize Plutus data: %s" % result.error)
 	return null
+
+## Converts parsed JSON to PlutusData
+static func from_json(json: Dictionary) -> PlutusData:
+	if json.has("constructor") and json.has("fields"):
+		var constructor := BigInt.from_int(json.constructor)
+		var fields: Array[PlutusData] = []
+		for data in json.fields:
+			fields.push_back(from_json(data))
+		if constructor == null or fields.any(func (x): return x == null):
+			return null
+		return Constr.new(constructor, fields)
+	if json.has("map"):
+		var entries: Array = json.map
+		var dict: Dictionary = {}
+		for entry: Dictionary in entries:
+			var key = from_json(entry.get("k"))
+			var value = from_json(entry.get("v"))
+			if key == null or value == null:
+				return null
+			dict[key] = value
+		return PlutusMap.new(dict)
+	if json.has("list"):
+		var result: Array[PlutusData] = []
+		for data in json.list:
+			result.push_back(from_json(data))
+		if result.any(func (x): return x == null):
+			return null
+		return PlutusList.new(result)
+	if json.has("bytes"):
+		if typeof(json.bytes) != TYPE_STRING:
+			return null
+		var data: PackedByteArray = json.bytes.hex_decode()
+		if data.size() * 2 != json.bytes.length():
+			return null
+		return PlutusBytes.new(data)
+	if json.has("int"):
+		if typeof(json.int) == TYPE_STRING:
+			var result = BigInt.from_str(json.int)
+			if result.is_err():
+				push_error("Failed to parse BigInt: %s" % result.error)
+				return null
+			return result.value
+		elif typeof(json.int) == TYPE_FLOAT:
+			var result = BigInt.from_int(int(json.int))
+			return result
+	return null
+
+static func apply_script_parameters(
+	script: PlutusScript,
+	params: Array[PlutusData]
+) -> PlutusScript:
+	return script._apply_params(params.map(func (x): return x._unwrap()))
+
+func to_json() -> Dictionary:
+	return _to_json()
+
+func _unwrap() -> Variant:
+	return null
+
+func _to_json() -> Dictionary:
+	return {}
+
+func _to_string() -> String:
+	return "Plutus(%s)" % _unwrap()
+
+func serialize() -> Cbor.SerializeResult:
+	return Cbor.serialize(_unwrap())

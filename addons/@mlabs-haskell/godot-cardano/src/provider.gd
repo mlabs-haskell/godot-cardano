@@ -10,7 +10,9 @@ var _network_genesis: ProviderApi.NetworkGenesis
 var _protocol_params: ProtocolParameters
 var _era_summaries: Array[ProviderApi.EraSummary]
 var _cost_models: CostModels
-		
+
+var tx_status_timeout: int = 300
+
 func _init(provider_api: ProviderApi) -> void:
 	_provider_api = provider_api
 	if provider_api.got_network_genesis.connect(_on_got_network_genesis) == ERR_INVALID_PARAMETER:
@@ -74,6 +76,7 @@ func get_protocol_parameters() -> ProtocolParameters:
 	return _protocol_params
 
 func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
+	await_tx(tx.hash(), tx_status_timeout)
 	return await _provider_api._submit_transaction(tx)
 	
 func _await_response(
@@ -101,7 +104,6 @@ func _await_response(
 	return status
 	
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
-	print("Waiting for transaction %s..." % tx_hash.to_hex())
 	var confirmed := await _await_response(
 		func () -> void: _provider_api._get_tx_status(tx_hash),
 		func (result: ProviderApi.TransactionStatus) -> bool:
@@ -109,8 +111,6 @@ func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 		_provider_api.got_tx_status,
 		timeout
 	)
-	if confirmed:
-		print("Transaction confirmed")
 	return confirmed
 
 func await_utxos_at(
@@ -118,7 +118,6 @@ func await_utxos_at(
 	from_tx: TransactionHash = null,
 	timeout := 60
 ) -> bool:
-	print("Waiting for UTxOs at %s..." % address.to_bech32())
 	return await _await_response(
 		func () -> void: _provider_api._get_utxos_at_address(address),
 		func (result: ProviderApi.UtxosAtAddressResult) -> bool:
@@ -151,3 +150,10 @@ func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 
 func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 	return await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)
+
+func get_cip68_datum(conf: MintCip68, minting_policy: PlutusScript) -> Cip68Datum:
+	var asset_class := conf.make_ref_asset_class(minting_policy)
+	var utxos := await get_utxos_with_asset(asset_class)
+	if utxos.size() == 0:
+		return null
+	return Cip68Datum.from_constr(utxos[0].datum())

@@ -98,7 +98,6 @@ struct GTxBuilder {
     max_ex_units: (u64, u64),
     slot_config: (u64, u64, u32),
     cost_models: Costmdls,
-    fee: Option<u64>,
     minted_assets:
         BTreeMap<CSL::crypto::ScriptHash, (CSL::plutus::PlutusScript, Dictionary, PackedByteArray)>,
     data: BTreeSet<PlutusData>,
@@ -226,7 +225,6 @@ impl GTxBuilder {
             inputs_builder: TxInputsBuilder::new(),
             mint_builder: MintBuilder::new(),
             uses_plutus_scripts: false,
-            fee: None,
             max_ex_units: (params.max_cpu_units, params.max_mem_units),
             slot_config: (0, 0, 0),
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
@@ -546,6 +544,7 @@ impl GTxBuilder {
         &mut self,
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<Address>,
+        complete: bool,
     ) -> Result<Transaction, TxBuilderError> {
         let mut utxos: TransactionUnspentOutputs = TransactionUnspentOutputs::new();
         let mut tx_builder = self.tx_builder.clone();
@@ -557,14 +556,16 @@ impl GTxBuilder {
         tx_builder.set_inputs(&self.inputs_builder.clone());
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
+
+        let fee = if complete {
+            match tx_builder.min_fee() {
+                Ok(fee) => fee.into(),
+                Err(_) => 0,
+            }
+        } else {
+            2_000_000u64
+        };
         if self.uses_plutus_scripts {
-            let fee = match self.fee {
-                Some(set_fee) => set_fee,
-                None => match self.tx_builder.min_fee() {
-                    Ok(fee) => fee.into(),
-                    Err(_) => 0,
-                },
-            };
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
             let collateral_amount = BigNum::from(min_collateral);
             let mut collateral_inputs_builder = TxInputsBuilder::new();
@@ -602,19 +603,8 @@ impl GTxBuilder {
             tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
 
-        match self.fee {
-            Some(_fee) => {
-                tx_builder
-                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
-                tx_builder.add_change_if_needed(&change_address.bind().address)?;
-            }
-            None => {
-                tx_builder.set_fee(&BigNum::from(5_000_000u64));
-                tx_builder
-                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
-            }
-        }
-        self.fee = Some(tx_builder.get_fee_if_set().unwrap().into());
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
+        tx_builder.add_change_if_needed(&change_address.bind().address)?;
         let tx = tx_builder.build_tx()?;
 
         let mut witnesses = tx.witness_set();
@@ -634,7 +624,7 @@ impl GTxBuilder {
         gutxos: Array<Gd<Utxo>>,
         change_address: Gd<Address>,
     ) -> Gd<GResult> {
-        Self::to_gresult_class(self.balance_and_assemble(gutxos, change_address))
+        Self::to_gresult_class(self.balance_and_assemble(gutxos, change_address, false))
     }
 
     fn complete(
@@ -701,8 +691,7 @@ impl GTxBuilder {
         }
         self.inputs_builder
             .add_required_script_input_witnesses(&replaced_inputs);
-        self.fee = Some(eval_result.bind().fee);
-        self.balance_and_assemble(gutxos, change_address)
+        self.balance_and_assemble(gutxos, change_address, true)
     }
 
     #[func]

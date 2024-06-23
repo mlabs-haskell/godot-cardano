@@ -1,24 +1,27 @@
 extends RefCounted
 
-class_name PubKeyHash
+class_name ScriptHash
 
-var _pub_key_hash: _PubKeyHash
+var _script_hash: _ScriptHash
 
 enum Status { SUCCESS = 0, FROM_HEX_ERROR = 1 }
 
-func _init(pub_key_hash: _PubKeyHash):
-	_pub_key_hash = pub_key_hash
+func _init(script_hash: _ScriptHash):
+	_script_hash = script_hash
 
 class FromHexResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
-	var value: PubKeyHash:
-		get: return PubKeyHash.new(_res.unsafe_value())
+	var value: ScriptHash:
+		get: return ScriptHash.new(_res.unsafe_value())
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
 		
 static func from_hex(hash: String) -> FromHexResult:
-	return FromHexResult.new(_PubKeyHash._from_hex(hash))
+	return FromHexResult.new(_ScriptHash._from_hex(hash))
 	
 func to_hex() -> String:
-	return _pub_key_hash.to_hex()
+	return _script_hash.to_hex()
+	
+func to_bytes() -> PackedByteArray:
+	return _script_hash.to_bytes()

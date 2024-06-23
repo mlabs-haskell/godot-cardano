@@ -162,6 +162,7 @@
         pre_commit_checks = config.pre-commit.settings.run;
         preview-integration-test = run_gut_test { };
         inherit (inputs'.cardano-nix.packages) cardano-cli;
+        inherit (inputs'.aiken.packages) aiken;
         inherit setup-dev-env;
       };
     };

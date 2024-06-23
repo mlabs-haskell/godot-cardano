@@ -1,6 +1,5 @@
-extends Provider
-
-class_name BlockfrostProvider
+extends ProviderApi
+class_name BlockfrostProviderApi
 
 class Epoch extends Abstract:
 	const _abstract_name := "Epoch"
@@ -19,7 +18,7 @@ class SpecificEpoch extends Epoch:
 	var _epoch: int
 	
 	func _init(epoch: int) -> void:
-		self._epoch = epoch
+		_epoch = epoch
 	
 	func _to_string() -> String:
 		return str(_epoch)
@@ -39,7 +38,7 @@ class Request:
 		return PackedByteArray()
 	
 	func _to_string() -> String:
-		var method_to_string = {
+		var method_to_string := {
 			HTTPClient.METHOD_GET: 'GET',
 			HTTPClient.METHOD_HEAD: 'HEAD',
 			HTTPClient.METHOD_POST: 'POST',
@@ -60,7 +59,7 @@ class ProtocolParametersRequest extends Request:
 	var _epoch: Epoch
 	
 	func _init(epoch: Epoch) -> void:
-		self._epoch = epoch
+		_epoch = epoch
 	
 	func _url() -> String:
 		return "epochs/%s/parameters" % _epoch
@@ -77,26 +76,37 @@ class UtxosAtAddressRequest extends Request:
 	var _page: int
 	
 	func _init(address: String, page := 1) -> void:
-		self._address = address
-		self._page = page
+		_address = address
+		_page = page
 		
 	func _url() -> String:
-		return "addresses/%s/utxos?page=%d" % [self._address, self._page]
+		return "addresses/%s/utxos?page=%d" % [_address, _page]
+
+class AssetsAddressesRequest extends Request:
+	var _asset_unit: String
+	var _page: int
+	
+	func _init(asset_unit: String, page := 1) -> void:
+		_asset_unit = asset_unit
+		_page = page
+		
+	func _url() -> String:
+		return "assets/%s/addresses?page=%d" % [_asset_unit, _page]
 
 class DatumCborFromHash extends Request:
 	var _hash: String
 
 	func _init(datum_hash: String) -> void:
-		self._hash = datum_hash
+		_hash = datum_hash
 
 	func _url() -> String:
-		return "scripts/datum/%s/cbor" % self._hash
+		return "scripts/datum/%s/cbor" % _hash
 		
 class SubmitTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
 	
 	func _init(tx_cbor: PackedByteArray) -> void:
-		self._tx_cbor = tx_cbor
+		_tx_cbor = tx_cbor
 	
 	func _url() -> String:
 		return "tx/submit"
@@ -114,7 +124,7 @@ class EvaluateTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
 	
 	func _init(tx_cbor: PackedByteArray) -> void:
-		self._tx_cbor = tx_cbor
+		_tx_cbor = tx_cbor
 	
 	func _url() -> String:
 		return "utils/txs/evaluate"
@@ -132,10 +142,19 @@ class TransactionRequest extends Request:
 	var _tx_hash: String
 	
 	func _init(tx_hash: String) -> void:
-		self._tx_hash = tx_hash
+		_tx_hash = tx_hash
 
 	func _url() -> String:
 		return "txs/%s" % _tx_hash
+		
+class TransactionUtxosRequest extends Request:
+	var _tx_hash: String
+	
+	func _init(tx_hash: String) -> void:
+		_tx_hash = tx_hash
+
+	func _url() -> String:
+		return "txs/%s/utxos" % _tx_hash
 
 var api_key: String
 
@@ -164,14 +183,14 @@ func blockfrost_request(request: Request) -> Variant:
 	
 	if status != OK:
 		print("Creating Blockfrost request failed: %s, %s" % [status, request])
-		remove_child(http_request)
+		http_request.queue_free()
 		return null
 
 	var result : Array = await http_request.request_completed
 	var status_code : int = result[1]
 	var content_bytes : PackedByteArray = result[3]
 	var content := content_bytes.get_string_from_utf8()
-	remove_child(http_request)
+	http_request.queue_free()
 	
 	# TODO: handle error responses properly
 	if status_code != 200:
@@ -238,51 +257,102 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 			var quantity: String = asset.quantity
 			var res : BigInt.ConversionResult = BigInt.from_str(quantity)
 			if res.is_ok():
-				# We have to return a [_BigInt] here because that is what the Rust code
-				# expects. This should be fixed from the Rust side of things.
-				assets[asset.unit] = res.value._b
+				assets[asset.unit] = res.value
 			else:
 				push_error("There was an error while reading the assets from a utxo", res.error)
 	)
 	return assets
 	
 func _get_utxos_at_address(address: Address) -> Array[Utxo]:
-	var utxos_json: Array = []
+	var utxos_json: Array = await _paged_request(
+		func (page: int) -> Request:
+			return UtxosAtAddressRequest.new(address.to_bech32(), page)
+	)
+	var utxos := await _utxos_from_json(utxos_json)
+	got_utxos_at_address.emit(UtxosAtAddressResult.new(address, utxos))
+	return utxos
+
+func _get_asset_addresses(asset: AssetClass) -> Array[Address]:
+	var addresses_json: Array = await _paged_request(
+		func (page: int) -> Request:
+			return AssetsAddressesRequest.new(asset.to_unit(), page)
+	)
+	var addresses: Array[Address] = []
 	
+	addresses.assign(addresses_json.map(
+		func (address: Dictionary) -> Address:
+			var result := Address.from_bech32(address.address as Variant as String)
+			if result.is_err():
+				push_error("Couldn't parse address: %s" % address.address)
+				return null
+			return result.value
+	).filter(func (address: Address) -> bool: return address != null))
+	return addresses
+
+func _get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
+	var addresses := await _get_asset_addresses(asset)
+	var utxos: Array[Utxo] = []
+	
+	for address: Address in addresses:
+		var address_utxos = await _get_utxos_at_address(address)
+		utxos.append_array(address_utxos.filter(
+			func (utxo: Utxo) -> bool:
+				return utxo.assets().get_asset_quantity(asset).gt(BigInt.zero())
+		))
+
+	got_utxos_with_asset.emit(UtxosWithAssetResult.new(asset, utxos))
+	return utxos
+
+func _get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
+	var response: Dictionary = await blockfrost_request(
+		TransactionUtxosRequest.new(tx_hash.to_hex())
+	)
+	if response.outputs.size() < output_index + 1:
+		return null
+	
+	var utxo_json = response.outputs[output_index]
+	# There may be better ways to handle this, but the structure of the outputs
+	# here don't match the usual UTxO structure returned by Blockfrost
+	utxo_json['tx_hash'] = tx_hash.to_hex()
+	utxo_json['tx_index'] = output_index
+	var utxo = await _utxos_from_json([utxo_json])
+	return utxo[0]
+	
+func _paged_request(make_request: Callable, page_size := 100) -> Array:
+	var results: Array = []
 	var page := 1
 	while true:
-		var utxos_response := await blockfrost_request(
-			UtxosAtAddressRequest.new(address.to_bech32(), page)
-		)
-		if typeof(utxos_response) == TYPE_DICTIONARY and utxos_response['status_code'] == 404:
-			utxo_result.emit(UtxoResult.new(address, []))
-			return []
-		utxos_json.append_array(utxos_response)
-		if utxos_response.size() < 100:
+		var response: Variant = await blockfrost_request(make_request.call(page) as Request)
+		if typeof(response) == TYPE_DICTIONARY and response['status_code'] == 404:
+			break
+		results.append_array(response as Array)
+		if (response as Array).size() < page_size:
 			break
 		page += 1
+	return results
 	
+func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 	var utxos: Array[Utxo] = []
 	
 	var data_map := {}
 	
-	for utxo in utxos_json:
+	for utxo: Dictionary in utxos_json:
 		var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
 		var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
-		var resolved_datum_str: String = ""
 		if inline_datum_str == "" and data_hash != "":
-			var resolve_result := await blockfrost_request(DatumCborFromHash.new(data_hash))
-			data_map[data_hash] = resolve_result.cbor
+			var resolve_result: Variant = await blockfrost_request(DatumCborFromHash.new(data_hash))
+			if resolve_result.get('status_code', null) != 404 and resolve_result.has('cbor'):
+				data_map[data_hash] = resolve_result.cbor
 	
 	utxos.assign(
-		await utxos_json.map(
+		utxos_json.map(
 			func (utxo: Dictionary) -> Utxo:
 				var assets: Dictionary = utxo_assets(utxo)
-				var coin: BigInt = BigInt.new(assets['lovelace'] as Variant as _BigInt)
+				var coin: BigInt = assets['lovelace']
 				var _erased := assets.erase('lovelace')
 				var tx_hash: String = utxo.tx_hash
 				var tx_index: int = utxo.tx_index
-				var utxo_address: String = utxo.address
+				var address: String = utxo.address
 				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
 				var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
 				var resolved_datum_str: String = ""
@@ -292,10 +362,10 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 					
 				var datum_info := self._build_datum_info(data_hash, inline_datum_str, resolved_datum_str)
 				
-				var result = Utxo.create(
+				var result := Utxo.create(
 					tx_hash,
 					tx_index,
-					utxo_address,
+					address,
 					coin.to_str(),
 					assets,
 					datum_info
@@ -306,30 +376,13 @@ func _get_utxos_at_address(address: Address) -> Array[Utxo]:
 					return null
 				
 				return result.value
-	))
-	utxo_result.emit(UtxoResult.new(address, utxos))
+	).filter(func (utxo: Utxo) -> bool: return utxo != null))
 	return utxos
-	
-func _build_datum_info(
-	datum_hash: String,
-	datum_inline_str: String,
-	datum_resolved_str: String,
-) -> UtxoDatumInfo:
-	if datum_hash == "":
-		return UtxoDatumInfo.empty()
-	elif datum_inline_str == "":
-		if datum_resolved_str == "":
-			return UtxoDatumInfo.create_with_hash(datum_hash)
-		else:
-			return UtxoDatumInfo.create_with_resolved_datum(datum_hash, datum_resolved_str)
-	else:
-		return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
 
-func _get_datum_cbor(_datum_hash: String) -> Cbor:
-	var cbor_resp : Dictionary = await blockfrost_request(DatumCborFromHash.new(_datum_hash))
+func _get_datum_cbor(datum_hash: String) -> PackedByteArray:
+	var cbor_resp : Dictionary = await blockfrost_request(DatumCborFromHash.new(datum_hash))
 	var cbor_hex : String = cbor_resp.cbor
-	var res := Cbor.deserialize(cbor_hex.hex_decode())
-	return null
+	return cbor_hex.hex_decode()
 
 func _get_era_summaries() -> Array[EraSummary]:
 	var summaries_json: Array = await blockfrost_request(EraSummariesRequest.new())
@@ -358,7 +411,7 @@ func _get_era_summaries() -> Array[EraSummary]:
 	got_era_summaries.emit(summaries)
 	return summaries
 	
-func _submit_transaction(tx: Transaction) -> Provider.SubmitResult:
+func _submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
 	var result = await blockfrost_request(SubmitTransactionRequest.new(tx.bytes()))
 	if typeof(result) == TYPE_DICTIONARY:
 		return SubmitResult.new(_Result.err(result.message, ProviderStatus.SUBMIT_ERROR))
@@ -374,5 +427,5 @@ func _get_tx_status(tx_hash: TransactionHash) -> bool:
 		tx_hash,
 		tx_response.get('status_code', 200) == 200
 	)
-	tx_status.emit(status)
+	got_tx_status.emit(status)
 	return status._confirmed

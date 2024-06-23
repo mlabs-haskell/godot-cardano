@@ -1,7 +1,11 @@
+use crate::plutus::to_aiken;
 use cardano_serialization_lib as CSL;
+use godot::builtin::meta::ConvertError;
+use uplc::ast::DeBruijn;
+use uplc::ast::Program;
 use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
-use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
+use CSL::plutus::{ExUnits, Language, RedeemerTag};
 use CSL::tx_builder::tx_inputs_builder::{self};
 use CSL::utils::*;
 use CSL::{TransactionInput, TransactionOutput};
@@ -100,6 +104,22 @@ impl From<JsError> for AssetNameError {
 
 #[godot_api]
 impl AssetName {
+    fn from_bytes(bytes: PackedByteArray) -> Result<AssetName, AssetNameError> {
+        Ok(Self {
+            asset_name: CSL::AssetName::new(bytes.to_vec())?,
+        })
+    }
+
+    #[func]
+    fn _from_bytes(bytes: PackedByteArray) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_bytes(bytes))
+    }
+
+    #[func]
+    fn to_bytes(&self) -> PackedByteArray {
+        PackedByteArray::from(self.asset_name.to_bytes().as_slice())
+    }
+
     fn from_hex(asset_name: GString) -> Result<AssetName, AssetNameError> {
         let asset_name = CSL::AssetName::new(
             hex::decode(&asset_name.to_string())
@@ -115,9 +135,9 @@ impl AssetName {
 
     #[func]
     fn to_hex(&self) -> GString {
-        // NOTE: simply using `CSL::AssetClass::to_hex` here will encode as CBOR bytearray with a
-        // header byte
-        format!("{}", self.asset_name).into_godot()
+        // NOTE: using `CSL::AssetClass::to_hex` here will encode as CBOR bytearray with a header
+        // byte
+        self.asset_name.to_string().into_godot()
     }
 }
 
@@ -211,7 +231,7 @@ impl MultiAsset {
                 let asset_name = asset_names.get(j);
                 let quantity = assets.get(&asset_name).unwrap();
                 let mut unit = policy_id.to_hex().to_owned();
-                unit.push_str(&asset_name.to_hex());
+                unit.push_str(&asset_name.to_string());
                 dict.set(
                     unit,
                     Gd::from_object(
@@ -343,6 +363,59 @@ pub struct Credential {
     pub credential: CSL::address::StakeCredential,
 }
 
+#[derive(Debug)]
+pub enum CredentialType {
+    Payment,
+    Stake,
+}
+
+impl GodotConvert for CredentialType {
+    type Via = i64;
+}
+
+impl ToGodot for CredentialType {
+    fn to_godot(&self) -> Self::Via {
+        use CredentialType::*;
+        match self {
+            Payment => 0,
+            Stake => 1,
+        }
+    }
+}
+
+impl FromGodot for CredentialType {
+    fn try_from_godot(v: Self::Via) -> Result<Self, ConvertError> {
+        use CredentialType::*;
+        match v {
+            0 => Ok(Payment),
+            1 => Ok(Stake),
+            _ => Err(ConvertError::new()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum CredentialError {
+    IncorrectType,
+}
+
+impl GodotConvert for CredentialError {
+    type Via = i64;
+}
+
+impl ToGodot for CredentialError {
+    fn to_godot(&self) -> Self::Via {
+        use CredentialError::*;
+        match self {
+            IncorrectType => 1,
+        }
+    }
+}
+
+impl FailsWith for Credential {
+    type E = CredentialError;
+}
+
 #[godot_api]
 impl Credential {
     #[func]
@@ -357,6 +430,52 @@ impl Credential {
         Gd::from_object(Credential {
             credential: CSL::address::StakeCredential::from_scripthash(&hash.bind().hash),
         })
+    }
+
+    #[func]
+    fn get_type(&self) -> CredentialType {
+        CredentialType::Payment
+    }
+
+    #[func]
+    fn to_pub_key_hash(&self) -> Gd<GResult> {
+        Self::to_gresult_class(
+            self.credential
+                .to_keyhash()
+                .map(|hash| PubKeyHash { hash })
+                .ok_or(CredentialError::IncorrectType),
+        )
+    }
+
+    #[func]
+    fn to_script_hash(&self) -> Gd<GResult> {
+        Self::to_gresult_class(
+            self.credential
+                .to_scripthash()
+                .map(|hash| ScriptHash { hash })
+                .ok_or(CredentialError::IncorrectType),
+        )
+    }
+
+    #[func]
+    fn to_bytes(&self) -> PackedByteArray {
+        let bytes = self
+            .credential
+            .to_keyhash()
+            .ok_or_else(|| self.credential.to_scripthash().map(|x| x.to_bytes()))
+            .map(|x| x.to_bytes())
+            .unwrap();
+        PackedByteArray::from(bytes.as_slice())
+    }
+
+    #[func]
+    fn to_hex(&self) -> GString {
+        self.credential
+            .to_keyhash()
+            .ok_or_else(|| self.credential.to_scripthash().map(|x| x.to_hex()))
+            .map(|x| x.to_hex())
+            .unwrap()
+            .into_godot()
     }
 }
 
@@ -437,6 +556,42 @@ impl Address {
             },
         };
         Gd::from_object(address)
+    }
+
+    #[func]
+    pub fn payment_credential(&self) -> Option<Gd<Credential>> {
+        match CSL::address::EnterpriseAddress::from_address(&self.address) {
+            Some(eaddr) => Some(Gd::from_object(Credential {
+                credential: eaddr.payment_cred(),
+            })),
+            _ => None,
+        }
+        .or_else(
+            || match CSL::address::BaseAddress::from_address(&self.address) {
+                Some(baddr) => Some(Gd::from_object(Credential {
+                    credential: baddr.payment_cred(),
+                })),
+                _ => None,
+            },
+        )
+    }
+
+    #[func]
+    pub fn stake_credential(&self) -> Option<Gd<Credential>> {
+        match CSL::address::RewardAddress::from_address(&self.address) {
+            Some(raddr) => Some(Gd::from_object(Credential {
+                credential: raddr.payment_cred(),
+            })),
+            _ => None,
+        }
+        .or_else(
+            || match CSL::address::BaseAddress::from_address(&self.address) {
+                Some(baddr) => Some(Gd::from_object(Credential {
+                    credential: baddr.stake_cred(),
+                })),
+                _ => None,
+            },
+        )
     }
 }
 
@@ -539,7 +694,7 @@ impl Redeemer {
             3 => Ok(RedeemerTag::new_reward()),
             _ => Err(RedeemerError::UnknownRedeemerTag(tag)),
         }?;
-        let data = &PlutusData::from_bytes(data.to_vec())?;
+        let data = &CSL::plutus::PlutusData::from_bytes(data.to_vec())?;
         Ok(Redeemer {
             redeemer: CSL::plutus::Redeemer::new(
                 &redeemer_tag,
@@ -581,6 +736,7 @@ pub struct PlutusScript {
     pub script: CSL::plutus::PlutusScript,
 }
 
+// FIXME: handle errors in here and support Plutus V1
 #[godot_api]
 impl PlutusScript {
     #[func]
@@ -600,6 +756,23 @@ impl PlutusScript {
     #[func]
     fn hash_as_hex(&self) -> GString {
         self.hash().bind().hash.to_hex().to_godot()
+    }
+
+    fn apply_params(&self, args: Array<Variant>) -> PlutusScript {
+        let mut buffer: Vec<u8> = Vec::new();
+        let prog: Program<DeBruijn> =
+            Program::from_cbor(self.script.bytes().as_slice(), &mut buffer).unwrap();
+        let mut applied_prog = prog.clone();
+        for arg in args.iter_shared() {
+            applied_prog = applied_prog.apply_data(to_aiken(arg));
+        }
+        let script = CSL::plutus::PlutusScript::new_v2(applied_prog.to_cbor().unwrap());
+        Self { script }
+    }
+
+    #[func]
+    fn _apply_params(&self, args: Array<Variant>) -> Gd<PlutusScript> {
+        Gd::from_object(self.apply_params(args))
     }
 }
 
@@ -673,6 +846,16 @@ impl PubKeyHash {
     pub fn _from_hex(hex: GString) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_hex(hex.to_string()))
     }
+
+    #[func]
+    pub fn to_hex(&self) -> GString {
+        self.hash.to_hex().into_godot()
+    }
+
+    #[func]
+    pub fn to_bytes(&self) -> PackedByteArray {
+        PackedByteArray::from(self.hash.to_bytes().as_slice())
+    }
 }
 
 #[derive(GodotClass, Debug)]
@@ -714,6 +897,16 @@ impl ScriptHash {
     #[func]
     pub fn _from_hex(hex: GString) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_hex(hex.to_string()))
+    }
+
+    #[func]
+    pub fn to_hex(&self) -> GString {
+        self.hash.to_hex().into_godot()
+    }
+
+    #[func]
+    pub fn to_bytes(&self) -> PackedByteArray {
+        PackedByteArray::from(self.hash.to_bytes().as_slice())
     }
 }
 
@@ -777,7 +970,7 @@ impl Utxo {
         match (datum_info.data_hash.clone(), datum_info.datum_value.clone()) {
             (_, Some(UtxoDatumValue::Inline(inline_datum))) => {
                 output.set_plutus_data(
-                    &PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
+                    &CSL::plutus::PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
                 );
             }
             (Some(datum_hash), _) => {
@@ -915,6 +1108,16 @@ impl UtxoDatumInfo {
     #[func]
     pub fn datum_hash(&self) -> Gd<GResult> {
         Self::to_gresult(self.data_hash.clone().ok_or(DatumInfoError::NoDatum))
+    }
+
+    #[func]
+    pub fn datum_value(&self) -> Gd<GResult> {
+        let result = match self.datum_value.clone() {
+            Some(UtxoDatumValue::Inline(d)) => Ok(d.clone()),
+            Some(UtxoDatumValue::Resolved(d)) => Ok(d.clone()),
+            _ => Err(DatumInfoError::NoDatum),
+        };
+        Self::to_gresult(result)
     }
 
     #[func]
@@ -1068,7 +1271,7 @@ impl Transaction {
             &self.cost_models.to_bytes(),
             self.max_ex_units,
             self.slot_config,
-            false,
+            true,
             |_| {},
         )?;
 

@@ -7,7 +7,7 @@ var item_name: String
 @export
 var price: BigIntNode
 @export
-var sku: int
+var conf: MintCip68
 @export
 var color: Color = Color.WHITE
 
