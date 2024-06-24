@@ -64,12 +64,12 @@ func _cb_sign_data(args):
 	var signing_address: String = args[2]
 	var data_hex: String = args[3]
 	
-	# TODO: If we want proper CIP-30 support, we should parse address to pub key and 
-	# differentiate between ProofGeneration and AddressNotPK erors
+	# TODO: If we want proper CIP-30 support, we should parse the address (could be hex or bech32)
+	# to pub key and differentiate between ProofGeneration and AddressNotPK errors
 	if !_address_matches_own(signing_address):
 		var sign_error = JavaScriptBridge.create_object("Object")
 		sign_error.code = 1
-		sign_error.info = "Wallet can't sign data - addres does not belong to the wallet, or not properly encoded (expecting hex)"
+		sign_error.info = "Wallet can't sign data - address does not belong to the wallet, or not properly encoded (expecting hex)"
 		promise_reject.call("call", promise_reject.this, sign_error)
 		return
 	
@@ -78,8 +78,8 @@ func _cb_sign_data(args):
 	promise_resolve.call("call", promise_resolve.this, _mk_sign_response(sign_result))
 
 func _address_matches_own(address: String):
-	var own_address = _godot_wallet.get_address_hex()
-	return address != own_address
+	# Paima framework will pass bech32 encoded Address into the sing request if the wallet is not Nami
+	return address == _godot_wallet.get_address_bech32() || address == _godot_wallet.get_address_hex()
 
 func _mk_sign_response(sign_result):
 	var sign_response = JavaScriptBridge.create_object("Object")
