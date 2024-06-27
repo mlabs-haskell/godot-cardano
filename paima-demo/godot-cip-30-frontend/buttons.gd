@@ -7,9 +7,9 @@ var _paima_middleware
 var _window
 
 # Buttons
-var loginB
-var joinB
-var stepRightB
+var login_button
+var join_button
+var step_right_button
 
 var player_pos_button
 
@@ -34,24 +34,24 @@ func add_paima_game_buttons(window):
 	add_child(sep1)
 	
 	# Login
-	loginB = Button.new()
-	loginB.text = "Paima login with wallet"
-	loginB.pressed.connect(_paima_middleware.login)
-	add_child(loginB)
+	login_button = Button.new()
+	login_button.text = "Paima login with wallet"
+	login_button.pressed.connect(_paima_middleware.login)
+	add_child(login_button)
 	
 	# Join world
-	joinB = Button.new()
-	joinB.text = "Paima Join World"
-	joinB.pressed.connect(_paima_middleware.join_world)
-	joinB.disabled = true
-	add_child(joinB)
+	join_button = Button.new()
+	join_button.text = "Paima Join World"
+	join_button.pressed.connect(_paima_middleware.join_world)
+	join_button.disabled = true
+	add_child(join_button)
 	
 	# Step right
-	stepRightB = Button.new()
-	stepRightB.text = "Step right"
-	stepRightB.pressed.connect(test_step_right)
-	stepRightB.disabled = true
-	add_child(stepRightB)
+	step_right_button = Button.new()
+	step_right_button.text = "Step right"
+	step_right_button.pressed.connect(test_step_right)
+	step_right_button.disabled = true
+	add_child(step_right_button)
 	
 	# Button to refresh and show player posiotion
 	player_pos_button = Button.new()
@@ -116,12 +116,12 @@ func _process(delta):
 				_paima_middleware.update_player_stats()
 		
 		if _paima_middleware._paima_wallet:
-			joinB.disabled = false
-			loginB.disabled = true
+			join_button.disabled = false
+			login_button.disabled = true
 		if _paima_middleware.has_player_stats():
 			player_pos_button.disabled = false
-			joinB.disabled = true
-			stepRightB.disabled = false
+			join_button.disabled = true
+			step_right_button.disabled = false
 			player_pos_button.text = str(
 				"Player position: x=", 
 				_paima_middleware.get_x(),

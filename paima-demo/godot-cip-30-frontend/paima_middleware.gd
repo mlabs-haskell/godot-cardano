@@ -39,6 +39,7 @@ func _on_login(args):
 ## Join world
 ### The func
 func join_world():
+	console.log("GD:Paima: Joining game world...")
 	_endpoints.joinWorld().then(_on_join_world_js)
 
 ### Callback
@@ -62,6 +63,7 @@ func _on_stats_received(args):
 ## Submit moves
 ### The func
 func submit_moves(x, y):
+	console.log("GD:Paima: Submitting move...")
 	_endpoints.submitMoves(x, y).then(_on_moves_submitted_js)
 
 ### Callback
