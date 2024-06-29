@@ -1,8 +1,29 @@
 extends RefCounted
+## A class for constructing on-chain Plutus data
+##
+## The Plutus language, which may be used for minting policies and validators,
+## operates on a specific datatype called [PlutusData]. This class is used for
+## constructing valid instances of this datatype, which then may be used as
+## datums or redeemers in functions that require it.
+##
+## Most of the time, the different [PlutusData] constructs may be accurately
+## represented by native GDScript types, such as [bool], [Array] or [Dictionary].
+## But for other cases, like [BigInt] or [Constr], native GDScript types aren't
+## accurate enough or are simply inexistent.
+##
+## This class tries to abstract most of the complexity by allowing the use of
+## of nested native types and SDK types (like the aforementioned) to construct
+## any PlutusData desired. These can subsequentely be converted into valid
+## CBOR (the format used in transactions) with [method serialize]. In practice
+## most users should not need to interact with this class directly, as most
+## functions requiring [PlutusData] will take a [Variant] and do the conversion
+## themselves.
+
+# TODO: Add a specific tutorial on PlutusData conversions.
 
 class_name PlutusData
 		
-## Recursively unwraps Objects to native data types
+## Recursively unwraps Objects to Plutus compatible data types
 static func unwrap(v: Variant, strict: bool = false) -> Variant:
 	match typeof(v):
 		TYPE_ARRAY:
@@ -64,7 +85,7 @@ static func unwrap(v: Variant, strict: bool = false) -> Variant:
 			push_error("Got unsupported type in data serialization: %s" % v)
 			return null
 
-## Recursively wraps native data types to GDScript types
+## Recursively wraps Plutus compatible data types to GDScript types.
 static func wrap(v: Variant) -> Variant:
 	match typeof(v):
 		TYPE_ARRAY:
@@ -83,13 +104,15 @@ static func wrap(v: Variant) -> Variant:
 			return v
 		_: return v
 
+## Serialize to CBOR format.
 static func serialize(v: Variant, strict: bool = true) -> Cbor.SerializeResult:
 	return Cbor.serialize(unwrap(v, strict), strict)
 
+## Deserialize from CBOR format.
 static func deserialize(bytes: PackedByteArray) -> Cbor.DeserializeResult:
 	return Cbor.deserialize(bytes)
 
-# currently incomplete and only used for test cases
+## WARNING: Currently incomplete and only used for test cases
 static func from_json(json: Dictionary) -> Variant:
 	if json.has("list"):
 		return json.list.map(PlutusData.from_json)

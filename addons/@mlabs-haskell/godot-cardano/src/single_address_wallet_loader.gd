@@ -1,4 +1,9 @@
 extends RefCounted
+## A utility class used for loading/creating wallets
+##
+## This class is provided for the safe construction, import and export of
+## [SingleAddressWallet]s. Because of this, it should only be used once and then
+## discarded.
 
 class_name SingleAddressWalletLoader
 
@@ -19,7 +24,7 @@ enum Status {
 ## returns a result.
 signal import_completed(res: WalletImportResult)
 
-## May be null if no wallet was loaded
+# May be null if no wallet was loaded
 var _wallet_loader : _SingleAddressWalletLoader
 
 var _network: ProviderApi.Network
@@ -27,6 +32,8 @@ var _network: ProviderApi.Network
 # Used when importing
 var thread: Thread
 
+## Only construct a [SingleAddressWalletLoader] if you plan to use a non-static
+## method for obtaininng a [SingleAddressWallet].
 func _init(
 	network: ProviderApi.Network,
 	wallet_loader: _SingleAddressWalletLoader = null,
@@ -47,14 +54,6 @@ class GetWalletResult extends Result:
 	func _init(wallet_loader: SingleAddressWalletLoader, res: _Result):
 		super(res)
 		_wallet_loader = wallet_loader
-		
-## Obtain a [SingleAddressWallet] that can be used for signing transactions.
-## The operation may fail in different ways if the store is malformed.
-func get_wallet(account_index: int) -> GetWalletResult:
-	var get_wallet_result = _wallet_loader._get_wallet(
-		account_index,
-	)
-	return GetWalletResult.new(self, get_wallet_result)
 
 class WalletImport extends RefCounted:
 	var _import_res: _SingleAddressWalletImportResult

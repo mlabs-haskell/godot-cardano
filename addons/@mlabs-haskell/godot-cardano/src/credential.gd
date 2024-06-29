@@ -1,4 +1,5 @@
 extends RefCounted
+## A Cardano credential
 
 class_name Credential
 

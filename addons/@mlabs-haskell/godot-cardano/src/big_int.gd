@@ -1,10 +1,15 @@
 extends RefCounted
 
 class_name BigInt
-
-## You should not create a [BigInt] with [BigInt.new].
-## Instead you should use the [BigInt.from_str] or [BigInt.from_int] conversion
-## methods. Alternatively, you can use [BigInt.one] or [BigInt.zero] to get those
+## Integers of arbitrary size
+##
+## This class is used for representing both positive and negative integers of
+## arbitrary size.
+##
+## You should not create a [BigInt] with [method new]. Instead you should use the
+## static [method from_str] or [method from_int] conversion methods.
+##
+## Alternatively, you can use [method one] or [method zero] to get those
 ## numbers.
 
 enum Status { SUCCESS = 0, COULD_NOT_PARSE_BIGINT = 1, COULD_NOT_DESERIALIZE_BIGINT = 2 }
@@ -14,6 +19,8 @@ var _b: _BigInt
 func _init(b: _BigInt) -> void:
 	_b = b
 
+## Result of calling either [method from_str]. If the operation succeeds,
+## [member value] will contain a valid [BigInt].
 class ConversionResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: BigInt:
@@ -30,27 +37,35 @@ static func from_str(s: String) -> ConversionResult:
 static func from_int(n: int) -> BigInt:
 	return new(_BigInt._from_int(n))
 
+## Return 0
 static func zero() -> BigInt:
 	return BigInt.new(_BigInt.zero())
-	
+
+## Return 1
 static func one() -> BigInt:
 	return BigInt.new(_BigInt.one())
 	
+## Return the result of adding [param other].
 func add(other: BigInt) -> BigInt:
 	return BigInt.new(_b.add(other._b))
-	
+
+## Return the result of multiplying by [param other].
 func mul(other: BigInt) -> BigInt:
 	return BigInt.new(_b.mul(other._b))
-	
+
+## Check if is equal to [param other].
 func eq(other: BigInt) -> bool:
 	return _b.eq(other._b)
-	
+
+## Check if it is less than [param other].
 func lt(other: BigInt) -> bool:
 	return _b.lt(other._b)
-	
+
+## Check if it is greater than [param other].	
 func gt(other: BigInt) -> bool:
 	return _b.gt(other._b)
 
+## Return the additive inverse.
 func negate() -> BigInt:
 	var str = to_str()
 	if str[0] == "-":
@@ -58,9 +73,11 @@ func negate() -> BigInt:
 	else:
 		return BigInt.from_str("-" + str).value
 
+## Return the result of substracting [param other].
 func sub(other: BigInt) -> BigInt:
 	return self.add(other.negate())
 	
+## Convert to [String].
 func to_str() -> String:
 	return _b.to_str()
 
