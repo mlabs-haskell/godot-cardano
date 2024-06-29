@@ -1,19 +1,22 @@
 @tool
 extends Resource
-
-## This resource is used for creating a valid pair of CIP68 _reference_
+## Helper for minting valid CIP68 tokens
+## 
+## This resource is used for creating valid pairs of CIP68 _reference_
 ## and _user_ tokens, as described in the specification:
 ##
 ## https://cips.cardano.org/cip/CIP-0068
 ##
 ## This class runs assertions in the editor to validate that the provided
-## metadata is valid for a CIP68 token.
+## metadata is valid for a CIP68 token. Whenever possible, it is recommended
+## to create a resource in the inspector and edit the fields manually instead
+## of programmatically to take advantage of this.
 
 class_name MintCip68
 
 @export_category("Token Name")
 @export
-## The token name *body* (i.e: the part of the token name
+## The token name [b]body[/b] (i.e: the part of the token name
 ## that is not the CIP67 header).
 var token_name: PackedByteArray:
 	set(v):
@@ -53,22 +56,22 @@ var description: String = ""
 var file_details : Array[FileDetails] = []
 @export_category("Additional Metadata")
 @export
-## This is _non-standard_ CIP-25 metadata.
+## This is [i]non-standard[/i], [i]optional[/i] CIP-25 metadata.[br][br]
 ##
 ## Use this for any additional fields you want to provide that are not
-## required by the CIP25 standard. Any fields overlapping with mandatory field
+## required by the CIP25 standard. Any field names overlapping with standard field
 ## names (like "name" and "image") will be ignored.
 ##
-## Keys of the dictionary should be [String]s, while values may be:
-## 1. [String] (which will be converted [PackedByteArray])
-## 2. [PackedByteArray]
-## 3. [int] (which will be converted to [BigInt])
-## 4. [BigInt]
-## 5. [Array], [b]but only if its elements are valid values[\b].
-## 6. [Dictionary], [b]but only if its keys and values are valid[\b].
+## Keys of the dictionary should be [String]s, while values may be:[br][br]
+## 1. [String] (which will be converted [PackedByteArray])[br]
+## 2. [PackedByteArray][br]
+## 3. [int] (which will be converted to [BigInt])[br]
+## 4. [BigInt][br]
+## 5. [Array], [b]but only if its elements are valid values[/b].[br]
+## 6. [Dictionary], [b]but only if its keys and values are valid[/b].[br][br]
 ##
 ## Notably, you may not use neither [bool] nor [Constr]. If these conditions are
-## too restrictive, take a look at [member MintCip68Pair.extra_metadata].
+## too restrictive, take a look at [member MintCip68Pair.extra_plutus_data].
 var non_standard_metadata: Dictionary = {}:
 	set(v):
 		non_standard_metadata = v
@@ -97,6 +100,12 @@ enum ExtraPlutusDataType {
 
 # TODO: Use _set and _get instead of allocating data where possible
 @export_category("Extra Plutus Data")
+## The type that will be used for the extra Plutus Data stored in the CIP68
+## datum.[br][br]
+##
+## This corresponds to the third field of the CIP-68 datum. Use this if you need
+## to store data in any form that is not compliant with CIP-25. No restrictions
+## apply other than the usual ones for encoding a datum.
 @export
 var extra_plutus_data_type: ExtraPlutusDataType = 0:
 	set(v):
@@ -208,11 +217,13 @@ var initial_quantity: int = 1:
 		assert(v == 1 or fungible, "Only fungible tokens can have a non-one quantity")
 		initial_quantity = v
 		
+## Get the CIP68 user token name
 func get_user_token_name() -> PackedByteArray:
 	var user_token_name := "000de140".hex_decode() if not fungible else "0014df10".hex_decode()
 	user_token_name.append_array(token_name)
 	return user_token_name
 	
+## Get the CIP68 reference token name	
 func get_ref_token_name() -> PackedByteArray:
 	var ref_token_name := "000643b0".hex_decode()
 	ref_token_name.append_array(token_name)
@@ -296,12 +307,14 @@ func _homogenize_or_fail(v: Variant) -> Variant:
 			assert(false, "Found value of unexpected type " + type_string(typeof(v)))
 			return null
 
+## Return the [AssetClass] of the user token.
 func make_user_asset_class(script: PlutusScript) -> AssetClass:
 	return AssetClass.new(
 		PolicyId.from_script(script),
 		AssetName.from_bytes(get_user_token_name()).value
 	)
 
+## Return the [AssetClass] of the reference token.
 func make_ref_asset_class(script: PlutusScript) -> AssetClass:
 	return AssetClass.new(
 		PolicyId.from_script(script),
