@@ -10,6 +10,8 @@ var busy: bool = false
 func _process(delta: float):
 	if stock > 0:
 		%StickerLabel.text = "x%d" % stock
+	elif stock < 0:
+		%StickerLabel.text = "x?"
 	else:
 		%StickerLabel.text = "Sold out"
 

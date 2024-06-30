@@ -15,6 +15,8 @@ class UtxoCacheEntry:
 ## blockchain, after object initialization.
 signal got_tx_builder(initialized: bool)
 
+signal tx_status_confirmed(status: ProviderApi.TransactionStatus)
+
 var _provider_api: ProviderApi
 var _network_genesis: ProviderApi.NetworkGenesis
 var _protocol_params: ProtocolParameters
@@ -39,13 +41,14 @@ func _init(provider_api: ProviderApi) -> void:
 		push_error("Failed to connect provider's 'got_protocol_parameters' signal ")
 	if provider_api.got_era_summaries.connect(_on_got_era_summaries) == ERR_INVALID_PARAMETER:
 		push_error("Failed to connect provider's 'got_era_summaries' signal ")
+	if tx_status_confirmed.connect(_on_tx_status_confirmed) == ERR_INVALID_PARAMETER:
+		push_error("Failed to connect provider's 'got_tx_status' signal ")
 
 func _ready() -> void:
 	_provider_api._get_network_genesis()
 	_provider_api._get_protocol_parameters()
 	_provider_api._get_era_summaries()
-	
-	_provider_api.got_tx_status.connect(self._on_got_tx_status)
+
 
 func _on_got_network_genesis(
 	genesis: ProviderApi.NetworkGenesis
@@ -59,7 +62,7 @@ func _on_got_protocol_parameters(
 	_protocol_params = params
 	_cost_models = cost_models
 
-func _on_got_tx_status(status: ProviderApi.TransactionStatus) -> void:
+func _on_tx_status_confirmed(status: ProviderApi.TransactionStatus) -> void:
 	if use_chaining:
 		_handle_chaining_transaction_status(status)
 	
@@ -82,7 +85,7 @@ func _await_response(
 	f: Callable,
 	check: Callable,
 	s: Signal,
-	interval: float = 2.5,
+	interval: float = 4,
 	timeout := 60
 	) -> bool:
 	var start := Time.get_ticks_msec()
@@ -90,8 +93,8 @@ func _await_response(
 	timer.one_shot = false
 	timer.wait_time = interval
 	timer.timeout.connect(f)
+	timer.autostart = true
 	add_child(timer)
-	timer.start()
 	var status := false
 	while true:
 		var r: Variant = await s
@@ -105,7 +108,7 @@ func _await_response(
 func _chain_utxos(utxos: Array[Utxo]) -> Array[Utxo]:
 	if not use_chaining:
 		return utxos
-		
+	
 	var chained: Array[Utxo] = utxos.duplicate()
 	for utxo in utxos:
 		var out_ref := utxo.to_out_ref_string()
@@ -119,10 +122,11 @@ func _chain_utxos(utxos: Array[Utxo]) -> Array[Utxo]:
 	return chained
 
 func _handle_chaining_transaction_status(status: ProviderApi.TransactionStatus) -> void:
+	var tx_hash := status._tx_hash.to_hex()
 	for key: String in _chaining_map:
 		var inner: Dictionary = _chaining_map[key]
 		for out_ref: String in inner:
-			if out_ref.begins_with(status._tx_hash.to_hex()) and not status._confirmed:
+			if out_ref.begins_with(tx_hash) and not status._confirmed:
 				# transaction was not confirmed, remove the entire map for this
 				# stale outref
 				inner.erase(out_ref)
@@ -130,7 +134,7 @@ func _handle_chaining_transaction_status(status: ProviderApi.TransactionStatus) 
 			
 			var utxos = inner[out_ref]
 			for utxo: Utxo in utxos:
-				if utxo.to_out_ref_string() == out_ref:
+				if utxo.to_out_ref_string().begins_with(tx_hash):
 					# if this transaction was confirmed we no longer need to chain
 					# to it; if it failed, we want to remove all references
 					utxos.erase(utxo)
@@ -229,12 +233,11 @@ func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
 
 	if submit_result.is_err():
 		return submit_result
-		
-	await_tx(tx.to_hash(), tx_status_timeout)
 
 	if use_chaining:
 		_handle_chaining_submit_transaction(tx)
 
+	await_tx(tx.to_hash(), tx_status_timeout)
 	return submit_result
 
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
@@ -243,8 +246,10 @@ func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 		func (result: ProviderApi.TransactionStatus) -> bool:
 			return result._tx_hash == tx_hash and result._confirmed,
 		_provider_api.got_tx_status,
+		5,
 		timeout
 	)
+	tx_status_confirmed.emit(ProviderApi.TransactionStatus.new(tx_hash, confirmed))
 	return confirmed
 
 func await_utxos_at(
