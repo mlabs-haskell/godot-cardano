@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 var ShopItem = preload("res://shop_item.tscn")
 var InventoryItem = preload("res://inventory_item.tscn")
@@ -80,19 +80,24 @@ func _ready():
 	)
 
 func _on_data_updated():
-	var container_children := %UserItemContainer.get_children()
-	deselect_item()
-	for child in %UserItemContainer.get_children():
-		assert(not inventory_items.has(child))
-		child.queue_free()
-	for item: InventoryItem in inventory_items:
-		assert(not container_children.has(item))
-		item.add_theme_stylebox_override(
-			"panel",
-			unselected_stylebox
-		)
-		item.item_selected.connect(_on_select_inventory_item)
-		%UserItemContainer.add_child(item)
+	var i := 0
+	var user_items := %UserItemContainer.get_children()
+	while i < inventory_items.size():
+		if i < user_items.size():
+			var old_item = user_items[i] as InventoryItem
+			old_item.from_item(inventory_items[i])
+			old_item.visible = true
+		else:
+			inventory_items[i].add_theme_stylebox_override(
+				"panel",
+				unselected_stylebox
+			)
+			inventory_items[i].item_selected.connect(_on_select_inventory_item)
+			%UserItemContainer.add_child(inventory_items[i])
+		i += 1
+	while i < user_items.size():
+		user_items[i].visible = false
+		i += 1
 
 func _process(delta: float):
 	var inventory_screen := $InventoryScreen
@@ -100,7 +105,7 @@ func _process(delta: float):
 	
 	if WalletSingleton.is_node_ready():
 		pass
-		
+
 	if display_inventory:
 		inventory_screen.visible = true
 		if inventory_screen.scale.x < 1:
@@ -144,19 +149,20 @@ func _on_selected_item_sell_button_confirmed() -> void:
 	var new_message = UserMessage.instantiate()
 	new_message.set_message("+%s t₳" % selected_item.price.b.format_price())
 	new_message.set_color(Color.GREEN)
-	await buy_item(selected_item.conf, -1)
-	add_child(new_message)
+	if await buy_item(selected_item.conf, -1):
+		add_child(new_message)
 
 func _on_buy_shop_item(item: ShopItem):
 	var new_message := UserMessage.instantiate()
 	if WalletSingleton.user_funds.lt(item.price.b):
 		new_message.set_message("Insufficient funds")
 		new_message.set_color(Color.RED)
+		add_child(new_message)
 	else:
 		new_message.set_message("-%s t₳" % item.price.b.format_price())
 		new_message.set_color(Color.GOLD)
-		await buy_item(item.conf, 1)
-	add_child(new_message)
+		if await buy_item(item.conf, 1):
+			add_child(new_message)
 
 func _on_select_inventory_item(selection: InventoryItem):
 	deselect_item()
@@ -220,9 +226,9 @@ func mint_tokens():
 	await WalletSingleton.provider.await_tx(submit_result.value)
 	print("Minted")
 
-func buy_item(conf: MintCip68, quantity: int) -> void:
+func buy_item(conf: MintCip68, quantity: int) -> bool:
 	if quantity == 0:
-		return
+		return false
 
 	busy = true
 	deselect_item()
@@ -232,7 +238,7 @@ func buy_item(conf: MintCip68, quantity: int) -> void:
 	if new_tx_result.is_err():
 		push_error("Could not create transaction: %s" % new_tx_result.error)
 		busy = false
-		return
+		return false
 
 	var tx_builder = new_tx_result.value
 
@@ -280,7 +286,7 @@ func buy_item(conf: MintCip68, quantity: int) -> void:
 	if complete_result.is_err():
 		push_error("Failed to build transaction: %s" % complete_result.error)
 		busy = false
-		return
+		return false
 
 	var tx := complete_result.value
 	tx.sign("1234")
@@ -289,10 +295,11 @@ func buy_item(conf: MintCip68, quantity: int) -> void:
 	if submit_result.is_err():
 		push_error("Failed to submit transaction: %s" % submit_result.error)
 		busy = false
-		return
+		return false
 
 	update_timer.timeout.emit()
 	busy = false
+	return true
 
 func update_data() -> void:
 	var provider: Provider = WalletSingleton.provider
@@ -325,7 +332,6 @@ func update_data() -> void:
 				new_inventory_items.push_back(user_item)
 
 	inventory_items = new_inventory_items
-	
 	WalletSingleton.wallet.update_utxos()
 	data_updated.emit()
 

@@ -38,7 +38,9 @@ content_margin_top = 5.0
 content_margin_right = 5.0
 content_margin_bottom = 5.0
 
-[node name="Node2D" type="Node2D"]
+[node name="Shop" type="Control"]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_n7hu2")
 
 [node name="MainScreen" type="VBoxContainer" parent="."]
