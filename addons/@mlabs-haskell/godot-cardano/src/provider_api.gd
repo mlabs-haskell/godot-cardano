@@ -122,7 +122,7 @@ signal got_era_summaries(summaries: Array[EraSummary])
 signal got_tx_status(status: TransactionStatus)
 signal got_utxos_at_address(result: UtxosAtAddressResult)
 signal got_utxos_with_asset(result: UtxosWithAssetResult)
-signal got_utxos_by_out_ref(result: UtxoByOutRefResult)
+signal got_utxo_by_out_ref(result: UtxoByOutRefResult)
 signal _empty()
 
 enum Network {MAINNET, PREVIEW, PREPROD, CUSTOM}

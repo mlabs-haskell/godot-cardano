@@ -38,9 +38,12 @@ func _ready() -> void:
 	wallet = Wallet.MnemonicWallet.new(single_address_wallet, provider)
 	add_child(wallet)
 	wallet.got_updated_utxos.connect(self._on_wallet_updated_utxos)
+	provider.chain_address(wallet.get_address())
+	provider.use_chaining = true
+	provider.use_caching = true
 	wallet_ready.emit()
 	
-	print("Using wallet %s" % wallet._get_change_address().to_bech32())
+	print("Using wallet %s" % wallet.get_address().to_bech32())
 
 func _on_wallet_updated_utxos(_utxos: Array[Utxo]):
 	if wallet == null:

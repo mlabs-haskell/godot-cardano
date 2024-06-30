@@ -1,6 +1,16 @@
 extends Node
 class_name Provider
 
+class UtxoCacheEntry:
+	var _query_id: String
+	var _time: int
+	var _result: Array[Utxo]
+	
+	func _init(query_id: String, time: int, result: Array[Utxo]) -> void:
+		_query_id = query_id
+		_time = time
+		_result = result
+
 ## This signal is emitted shortly after getting the protocol parameters from the
 ## blockchain, after object initialization.
 signal got_tx_builder(initialized: bool)
@@ -10,6 +20,14 @@ var _network_genesis: ProviderApi.NetworkGenesis
 var _protocol_params: ProtocolParameters
 var _era_summaries: Array[ProviderApi.EraSummary]
 var _cost_models: CostModels
+
+# maps (Address or AssetClass) => (OutRef => [Utxo])
+var _chaining_map: Dictionary = {}
+var use_chaining: bool = false
+
+var _utxo_cache: Dictionary = {}
+var use_caching: bool = false
+var cache_timeout: int = 30000
 
 var tx_status_timeout: int = 300
 
@@ -26,6 +44,8 @@ func _ready() -> void:
 	_provider_api._get_network_genesis()
 	_provider_api._get_protocol_parameters()
 	_provider_api._get_era_summaries()
+	
+	_provider_api.got_tx_status.connect(self._on_got_tx_status)
 
 func _on_got_network_genesis(
 	genesis: ProviderApi.NetworkGenesis
@@ -39,45 +59,24 @@ func _on_got_protocol_parameters(
 	_protocol_params = params
 	_cost_models = cost_models
 
-func new_tx() -> TxBuilder.CreateResult:
-	var create_result := await TxBuilder.create(self)
-	if create_result.is_ok():
-		var builder := create_result.value
-		if _era_summaries.size() > 0:
-			builder.set_slot_config(
-				_era_summaries[-1]._start._time,
-				_era_summaries[-1]._start._slot,
-				_era_summaries[-1]._parameters._slot_length,
-			)
-		if _cost_models != null:
-			builder.set_cost_models(_cost_models)
-	return create_result
+func _on_got_tx_status(status: ProviderApi.TransactionStatus) -> void:
+	if use_chaining:
+		_handle_chaining_transaction_status(status)
 	
 func _on_got_era_summaries(summaries: Array[ProviderApi.EraSummary]) -> void:
 	_era_summaries = summaries
 
-func time_to_slot(time: int) -> int:
-	# FIXME: should return a `Result`?
-	if _network_genesis == null:
-		return -1
-
-	for era in _era_summaries:
-		var era_start_time := _network_genesis._system_start + era._start._time
-		var era_end_time := _network_genesis._system_start + era._end._time
-		if time > era_start_time and time < era_end_time:
-			var time_in_era := time - era_start_time
-			return time_in_era / era._parameters._slot_length + era._start._slot
-	
-	return -1
-
-func get_protocol_parameters() -> ProtocolParameters:
-	if _protocol_params == null:
-		await _provider_api.got_protocol_parameters
-	return _protocol_params
-
-func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
-	await_tx(tx.hash(), tx_status_timeout)
-	return await _provider_api._submit_transaction(tx)
+func _get_utxos(query_id: String, query: Callable) -> Array[Utxo]:
+	var utxos: Array[Utxo] = []
+	var cache_entry: UtxoCacheEntry = _utxo_cache.get(query_id, null)
+	var now = Time.get_ticks_msec()
+	if cache_entry != null and (now - cache_entry._time) < cache_timeout:
+		utxos = cache_entry._result
+	else:
+		utxos = await query.call() 
+		_utxo_cache[query_id] = UtxoCacheEntry.new(query_id, now, utxos)
+		
+	return _chain_utxos(utxos)
 	
 func _await_response(
 	f: Callable,
@@ -102,7 +101,142 @@ func _await_response(
 	timer.stop()
 	timer.queue_free()
 	return status
+
+func _chain_utxos(utxos: Array[Utxo]) -> Array[Utxo]:
+	if not use_chaining:
+		return utxos
+		
+	var chained: Array[Utxo] = utxos.duplicate()
+	for utxo in utxos:
+		var out_ref := utxo.to_out_ref_string()
+		for key in _chaining_map:
+			var inner: Dictionary = _chaining_map[key]
+			if inner.has(out_ref):
+				chained.erase(utxo)
+				for new_utxo: Utxo in inner[out_ref]:
+					if not chained.has(new_utxo):
+						chained.push_back(new_utxo)
+	return chained
+
+func _handle_chaining_transaction_status(status: ProviderApi.TransactionStatus) -> void:
+	for key: String in _chaining_map:
+		var inner: Dictionary = _chaining_map[key]
+		for out_ref: String in inner:
+			if out_ref.begins_with(status._tx_hash.to_hex()) and not status._confirmed:
+				# transaction was not confirmed, remove the entire map for this
+				# stale outref
+				inner.erase(out_ref)
+				continue
+			
+			var utxos = inner[out_ref]
+			for utxo: Utxo in utxos:
+				if utxo.to_out_ref_string() == out_ref:
+					# if this transaction was confirmed we no longer need to chain
+					# to it; if it failed, we want to remove all references
+					utxos.erase(utxo)
+
+			if utxos.size() == 0:
+				# prune outrefs with no remaining mappings
+				inner.erase(out_ref)
+
+func _update_chaining_entry(
+	entry_key: String,
+	out_ref: String,
+	outputs: Array[Utxo]
+) -> void:
+	# updates a particular chaining entry (address or asset) by mapping a spent
+	# outref to a set of utxos
+	var inner: Dictionary = _chaining_map[entry_key]
+	inner[out_ref] = outputs
 	
+	# for each existing mapping, replace the given outref by the same set out
+	# outputs as mapped directly above
+	for key: String in inner:
+		var mapping: Array = inner[key]
+		var matches = mapping.filter(
+			func (x: Utxo) -> bool: return x.to_out_ref_string() == out_ref
+		)
+		for utxo: Utxo in matches:
+			# should really only exist once, but just in case
+			mapping.erase(utxo)
+		if matches.size() > 0:
+			mapping.append_array(outputs)
+	
+func _handle_chaining_submit_transaction(tx: Transaction) -> void:
+	# update chaining map for a given transaction:
+	# inputs spent in this transaction are mapped to outputs based on either 
+	# their address or an asset they carry
+	var outputs: Array[Utxo] = tx.outputs()
+	for input: Utxo in tx._input_utxos:
+		var address := input.address().to_bech32()
+		var assets := input.assets().to_dictionary().keys()
+		var out_ref := input.to_out_ref_string()
+		if _chaining_map.has(address):
+			var matched_outputs = outputs.filter(
+				func (utxo: Utxo) -> bool:
+					return utxo.address().to_bech32() == address
+			)
+			_update_chaining_entry(address, out_ref, matched_outputs)
+			
+			# give priority to address chaining
+			continue
+
+		for asset: String in assets:
+			var asset_class := AssetClass.from_unit(asset).value
+			if _chaining_map.has(asset):
+				var inner: Dictionary = _chaining_map[asset]
+				var matched_outputs = outputs.filter(
+					func (utxo: Utxo) -> bool:
+						return not utxo.assets().get_asset_quantity(asset_class).eq(BigInt.zero())
+				)
+				_update_chaining_entry(asset, out_ref, matched_outputs)
+
+func new_tx() -> TxBuilder.CreateResult:
+	var create_result := await TxBuilder.create(self)
+	if create_result.is_ok():
+		var builder := create_result.value
+		if _era_summaries.size() > 0:
+			builder.set_slot_config(
+				_era_summaries[-1]._start._time,
+				_era_summaries[-1]._start._slot,
+				_era_summaries[-1]._parameters._slot_length,
+			)
+		if _cost_models != null:
+			builder.set_cost_models(_cost_models)
+	return create_result
+	
+func time_to_slot(time: int) -> int:
+	# FIXME: should return a `Result`?
+	if _network_genesis == null:
+		return -1
+
+	for era in _era_summaries:
+		var era_start_time := _network_genesis._system_start + era._start._time
+		var era_end_time := _network_genesis._system_start + era._end._time
+		if time > era_start_time and time < era_end_time:
+			var time_in_era := time - era_start_time
+			return time_in_era / era._parameters._slot_length + era._start._slot
+	
+	return -1
+
+func get_protocol_parameters() -> ProtocolParameters:
+	if _protocol_params == null:
+		await _provider_api.got_protocol_parameters
+	return _protocol_params
+
+func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
+	var submit_result := await _provider_api._submit_transaction(tx)
+
+	if submit_result.is_err():
+		return submit_result
+		
+	await_tx(tx.to_hash(), tx_status_timeout)
+
+	if use_chaining:
+		_handle_chaining_submit_transaction(tx)
+
+	return submit_result
+
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 	var confirmed := await _await_response(
 		func () -> void: _provider_api._get_tx_status(tx_hash),
@@ -143,10 +277,18 @@ func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Ad
 	)
 
 func get_utxos_at_address(address: Address) -> Array[Utxo]:
-	return await _provider_api._get_utxos_at_address(address)
+	var query_id = address.to_bech32()
+	return await _get_utxos(
+		query_id,
+		func (): return await _provider_api._get_utxos_at_address(address)
+	)
 
 func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
-	return await _provider_api._get_utxos_with_asset(asset)
+	var query_id = asset.to_unit()
+	return await _get_utxos(
+		query_id,
+		func (): return await _provider_api._get_utxos_with_asset(asset)
+	)
 
 func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 	return await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)
@@ -157,3 +299,13 @@ func get_cip68_datum(conf: MintCip68, minting_policy: PlutusScript) -> Cip68Datu
 	if utxos.size() == 0:
 		return null
 	return Cip68Datum.from_constr(utxos[0].datum())
+
+func chain_address(address: Address) -> void:
+	var bech32 := address.to_bech32()
+	if not _chaining_map.has(bech32):
+		_chaining_map[bech32] = {}
+		
+func chain_asset(asset_class: AssetClass) -> void:
+	var unit := asset_class.to_unit()
+	if not _chaining_map.has(unit):
+		_chaining_map[unit] = {}

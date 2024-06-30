@@ -312,10 +312,11 @@ func _get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 	
 	var utxo_json = response.outputs[output_index]
 	# There may be better ways to handle this, but the structure of the outputs
-	# here don't match the usual UTxO structure returned by Blockfrost
+	# here doesn't match the usual UTxO structure returned by Blockfrost
 	utxo_json['tx_hash'] = tx_hash.to_hex()
 	utxo_json['tx_index'] = output_index
 	var utxo = await _utxos_from_json([utxo_json])
+	got_utxo_by_out_ref.emit(UtxoByOutRefResult.new(utxo[0]))
 	return utxo[0]
 	
 func _paged_request(make_request: Callable, page_size := 100) -> Array:

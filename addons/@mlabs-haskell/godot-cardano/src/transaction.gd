@@ -3,6 +3,7 @@ extends RefCounted
 class_name Transaction
 
 var _tx: _Transaction
+var _input_utxos: Array[Utxo]
 
 enum TransactionStatus {
 	SUCCESS = 0,
@@ -18,9 +19,17 @@ class EvaluationResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 	
-func _init(tx: _Transaction) -> void:
+func _init(tx: _Transaction, input_utxos: Array[Utxo] = []) -> void:
 	_tx = tx
-	
+	_input_utxos = []
+	var json: Dictionary = to_json()
+	for utxo in input_utxos:
+		var utxo_out_ref = utxo.to_out_ref_string()
+		for input: Dictionary in json.body.inputs:
+			var input_out_ref := "%s#%d" % [input.transaction_id, input.index]
+			if utxo_out_ref == input_out_ref:
+				_input_utxos.push_back(utxo)
+
 func bytes() -> PackedByteArray:
 	return _tx.bytes()
 
@@ -37,5 +46,15 @@ func evaluate(utxos: Array[Utxo]) -> EvaluationResult:
 	)
 	return EvaluationResult.new(_tx._evaluate(_utxos))
 
-func hash() -> TransactionHash:
+func to_hash() -> TransactionHash:
 	return TransactionHash.new(_tx.hash())
+
+func input_utxos() -> Array[Utxo]:
+	return _input_utxos
+	
+func outputs() -> Array[Utxo]:
+	var _outputs: Array[_Utxo] = _tx.outputs()
+	var outputs: Array[Utxo]
+	for _utxo in _outputs:
+		outputs.push_back(Utxo.new(_utxo))
+	return outputs

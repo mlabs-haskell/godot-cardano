@@ -5,8 +5,6 @@ extends Item
 @export
 var stock: int
 
-var confirming: bool
-
 func _process(delta: float):
 	$Sprite.modulate = color
 

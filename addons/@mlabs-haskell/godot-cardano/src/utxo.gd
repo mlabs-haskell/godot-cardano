@@ -74,5 +74,23 @@ static func create(
 	
 func _init(utxo: _Utxo) -> void:
 	_utxo = utxo
-	
 
+func _to_string() -> String:
+	return """{
+		transaction_hash: %s,
+		output_index: %d,
+		address: %s,
+		coin: %s,
+		assets: %s,
+		datum: %s
+	}""" % [
+		_utxo.tx_hash.to_hex(),
+		_utxo.output_index,
+		_utxo.address._to_bech32().unsafe_value(),
+		_utxo.coin.to_str(),
+		MultiAsset.new(_utxo.assets).to_dictionary(),
+		datum().serialize().value.hex_encode() if datum() else null
+	]
+	
+func to_out_ref_string() -> String:
+	return "%s#%d" % [_utxo.tx_hash.to_hex(), _utxo.output_index]

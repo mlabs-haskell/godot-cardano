@@ -4,6 +4,8 @@ extends Item
 
 @export
 var stock: int
+@export
+var busy: bool = false
 
 func _process(delta: float):
 	if stock > 0:
@@ -30,7 +32,7 @@ func _process(delta: float):
 	%Sticker.polygon = points
 	%StickerLabel.size.x = 32
 
-	%BuyButton.disabled = stock <= 0
+	%BuyButton.disabled = stock <= 0 or busy
 	
 	%Sprite.modulate = color
 

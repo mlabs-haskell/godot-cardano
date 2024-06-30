@@ -1299,4 +1299,65 @@ impl Transaction {
             .unwrap_or("null".to_string())
             .into_godot()
     }
+
+    #[func]
+    fn outputs(&self) -> Array<Gd<Utxo>> {
+        let mut outputs = Array::new();
+        let tx_hash = self.hash();
+        let mut output_index = 0;
+        for output in self.transaction.body().outputs().into_iter() {
+            let mut assets = CSL::MultiAsset::new();
+
+            match output.amount().multiasset() {
+                None => (),
+                Some(multiasset) => {
+                    let policy_ids = multiasset.keys();
+                    for i in 0..policy_ids.len() {
+                        let policy_id = policy_ids.get(i);
+                        match multiasset.get(&policy_id) {
+                            None => (),
+                            Some(tokens) => {
+                                let asset_names = tokens.keys();
+                                for j in 0..asset_names.len() {
+                                    let asset_name = asset_names.get(j);
+                                    assets.set_asset(
+                                        &policy_id,
+                                        &asset_name,
+                                        tokens.get(&asset_name).unwrap(),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut datum_info = UtxoDatumInfo::empty();
+            if output.has_plutus_data() {
+                let data = output.plutus_data().unwrap();
+                datum_info = UtxoDatumInfo::create_with_inline_datum(
+                    hash_plutus_data(&data).to_string().into_godot(),
+                    data.to_hex().into_godot(),
+                );
+            } else if output.has_data_hash() {
+                let hash = output.data_hash().unwrap();
+                datum_info = UtxoDatumInfo::create_with_hash(hash.to_string().into_godot());
+            }
+
+            outputs.push(Gd::from_object(Utxo {
+                tx_hash: tx_hash.clone(),
+                output_index,
+                address: Gd::from_object(Address {
+                    address: output.address(),
+                }),
+                coin: Gd::from_object(BigInt::from_int(
+                    (u64::from(output.amount().coin())).try_into().unwrap(),
+                )),
+                assets: Gd::from_object(MultiAsset { assets }),
+                datum_info,
+            }));
+            output_index += 1;
+        }
+        return outputs;
+    }
 }
