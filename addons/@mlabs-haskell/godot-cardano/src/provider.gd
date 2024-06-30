@@ -15,6 +15,9 @@ class UtxoCacheEntry:
 ## blockchain, after object initialization.
 signal got_tx_builder(initialized: bool)
 
+## Indicates the confirmation status of a given transaction. A status result of
+## false indicates that the query timed out without the transaction being
+## confirmed.
 signal tx_status_confirmed(status: ProviderApi.TransactionStatus)
 
 var _provider_api: ProviderApi
@@ -25,10 +28,16 @@ var _cost_models: CostModels
 
 # maps (Address or AssetClass) => (OutRef => [Utxo])
 var _chaining_map: Dictionary = {}
+## If true, locally submitted transactions will be chained to allow for more 
+## frequent interactions.
+## @experimental
 var use_chaining: bool = false
 
 var _utxo_cache: Dictionary = {}
+## Enables caching of UTxOs queries via this Provider. This allows for faster
+## and smoother interactions at the cost of data consistency.
 var use_caching: bool = false
+## The time in milliseconds for which a cached entry is valid.
 var cache_timeout: int = 30000
 
 var tx_status_timeout: int = 300
@@ -324,12 +333,26 @@ func get_cip68_datum(conf: MintCip68, minting_policy: PlutusScript) -> Cip68Datu
 		return null
 	return Cip68Datum.from_constr(utxos[0].datum())
 
+## Have the Provider chain UTxOs by address. Locally-spent UTxOs will be translated
+## to outputs of the spending transaction by matching the input and output address.
+## Note that this currently will not chain with remotely submitted transactions,
+## such as those in the mempool.
 func chain_address(address: Address) -> void:
 	var bech32 := address.to_bech32()
 	if not _chaining_map.has(bech32):
 		_chaining_map[bech32] = {}
-		
+
+## Similar to [method Provider.chain_address], but translates UTxOs based on an asset.
+## In general this will be most reliable when used for authoritative NFTs.
 func chain_asset(asset_class: AssetClass) -> void:
 	var unit := asset_class.to_unit()
 	if not _chaining_map.has(unit):
 		_chaining_map[unit] = {}
+
+## Deletes the current cached data for a given key, or all cached data.
+## A key may be in the form of a Bech32 address or an asset unit string.
+func invalidate_cache(key: String = "") -> void:
+	if key == "":
+		_utxo_cache = {}
+	else:
+		_utxo_cache.erase(key)

@@ -251,7 +251,7 @@ func buy_item(conf: MintCip68, quantity: int) -> void:
 				selected_utxo = utxo
 				break
 	else:
-		for utxo in shop_utxos:
+		for utxo: Utxo in shop_utxos:
 			if utxo.coin().to_int() > conf.extra_plutus_data.to_int() * -quantity:
 				selected_utxo = utxo
 				break
