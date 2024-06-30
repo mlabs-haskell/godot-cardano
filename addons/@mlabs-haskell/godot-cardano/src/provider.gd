@@ -49,7 +49,6 @@ func _ready() -> void:
 	_provider_api._get_protocol_parameters()
 	_provider_api._get_era_summaries()
 
-
 func _on_got_network_genesis(
 	genesis: ProviderApi.NetworkGenesis
 ) -> void:
@@ -87,7 +86,7 @@ func _await_response(
 	s: Signal,
 	interval: float = 4,
 	timeout := 60
-	) -> bool:
+) -> bool:
 	var start := Time.get_ticks_msec()
 	var timer := Timer.new()
 	timer.one_shot = false
@@ -96,10 +95,11 @@ func _await_response(
 	timer.autostart = true
 	add_child(timer)
 	var status := false
+	var timeout_millis := timeout * 1000
 	while true:
 		var r: Variant = await s
 		status = status or check.call(r)
-		if status or (Time.get_ticks_msec() - start) / 1000.0 > timeout:
+		if status or (Time.get_ticks_msec() - start) > timeout_millis:
 			break
 	timer.stop()
 	timer.queue_free()
@@ -120,20 +120,23 @@ func _chain_utxos(utxos: Array[Utxo]) -> Array[Utxo]:
 					if not chained.has(new_utxo):
 						chained.push_back(new_utxo)
 	return chained
-
+	
 func _handle_chaining_transaction_status(status: ProviderApi.TransactionStatus) -> void:
 	var tx_hash := status._tx_hash.to_hex()
+	var new_map := {}
 	for key: String in _chaining_map:
 		var inner: Dictionary = _chaining_map[key]
+		new_map[key] = {}
+		var pruned: Array[String] = []
 		for out_ref: String in inner:
 			if out_ref.begins_with(tx_hash) and not status._confirmed:
 				# transaction was not confirmed, remove the entire map for this
 				# stale outref
-				inner.erase(out_ref)
+				pruned.push_back(out_ref)
 				continue
 			
-			var utxos = inner[out_ref]
-			for utxo: Utxo in utxos:
+			var utxos = inner[out_ref].duplicate()
+			for utxo: Utxo in inner[out_ref]:
 				if utxo.to_out_ref_string().begins_with(tx_hash):
 					# if this transaction was confirmed we no longer need to chain
 					# to it; if it failed, we want to remove all references
@@ -141,7 +144,23 @@ func _handle_chaining_transaction_status(status: ProviderApi.TransactionStatus) 
 
 			if utxos.size() == 0:
 				# prune outrefs with no remaining mappings
-				inner.erase(out_ref)
+				pruned.push_back(out_ref)
+			else:
+				inner[out_ref] = utxos
+		
+		get_tree().create_timer(cache_timeout / 1000).timeout.connect(
+			func():
+				# TODO: figure out how to handle asset keys
+				var address_result = Address.from_bech32(key)
+				
+				if address_result.is_ok():
+					if inner.size() == 0:
+						_utxo_cache.erase(key)
+					await await_utxos_at(address_result.value, status._tx_hash)
+					
+				for out_ref in pruned:
+					inner.erase(out_ref)
+		)
 
 func _update_chaining_entry(
 	entry_key: String,

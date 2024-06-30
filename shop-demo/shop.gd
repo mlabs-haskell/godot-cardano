@@ -48,7 +48,9 @@ func _ready():
 		cip68_data.push_back(load("res://cip68_data/%s" % path))
 
 	for conf: MintCip68 in cip68_data:
-		shop_items.push_back(await cip68_to_item(conf, true))
+		var item = await cip68_to_item(conf, true)
+		shop_items.push_back(item)
+		%ItemContainer.add_child(item)
 	
 	data_updated.connect(self._on_data_updated)
 
@@ -78,16 +80,7 @@ func _ready():
 	)
 
 func _on_data_updated():
-	var item_container := %ItemContainer
-	var container_children := item_container.get_children()
-	for child in container_children:
-		assert(not shop_items.has(child))
-		child.queue_free()
-	for item in shop_items:
-		assert(not container_children.has(item))
-		item_container.add_child(item)
-
-	container_children = %UserItemContainer.get_children()
+	var container_children := %UserItemContainer.get_children()
 	deselect_item()
 	for child in %UserItemContainer.get_children():
 		assert(not inventory_items.has(child))
@@ -123,11 +116,11 @@ func _process(delta: float):
 	if selected_item == null:
 		%SelectedItemDescription.text = ""
 		%SelectedItemPrice.text = ""
-		%SelectedItemSellButton.disabled = not busy
+		%SelectedItemSellButton.disabled = true
 	else:
 		%SelectedItemDescription.text = selected_item.stats_string()
 		%SelectedItemPrice.text = "%s t₳" % selected_item.price.b.format_price()
-		%SelectedItemSellButton.disabled = false
+		%SelectedItemSellButton.disabled = busy
 	
 	for shop_item in %ItemContainer.get_children():
 		shop_item.busy = busy
@@ -151,7 +144,7 @@ func _on_selected_item_sell_button_confirmed() -> void:
 	var new_message = UserMessage.instantiate()
 	new_message.set_message("+%s t₳" % selected_item.price.b.format_price())
 	new_message.set_color(Color.GREEN)
-	buy_item(selected_item.conf, -1)
+	await buy_item(selected_item.conf, -1)
 	add_child(new_message)
 
 func _on_buy_shop_item(item: ShopItem):
@@ -162,7 +155,7 @@ func _on_buy_shop_item(item: ShopItem):
 	else:
 		new_message.set_message("-%s t₳" % item.price.b.format_price())
 		new_message.set_color(Color.GOLD)
-		buy_item(item.conf, 1)
+		await buy_item(item.conf, 1)
 	add_child(new_message)
 
 func _on_select_inventory_item(selection: InventoryItem):
@@ -309,13 +302,15 @@ func update_data() -> void:
 	var shop_assets = MultiAsset.empty()
 	for utxo in shop_utxos:
 		shop_assets.merge(utxo.assets())
-	var new_shop_items: Array[ShopItem] = []
 	for conf: MintCip68 in cip68_data:
-		var item = await cip68_to_item(conf)
+		var item: ShopItem = null
+		for v in shop_items:
+			if v.conf == conf:
+				item = v
+				break
 		item.stock = shop_assets.get_asset_quantity(
 			conf.make_user_asset_class(minting_policy)
 		).to_int()
-		new_shop_items.push_back(item)
 
 	var wallet_utxos: Array[Utxo] = await WalletSingleton.wallet._get_updated_utxos()
 	var new_inventory_items: Array[InventoryItem] = []
@@ -328,8 +323,7 @@ func update_data() -> void:
 				var user_item: InventoryItem = InventoryItem.instantiate()
 				user_item.from_item(await cip68_to_item(conf, true))
 				new_inventory_items.push_back(user_item)
-	
-	shop_items = new_shop_items
+
 	inventory_items = new_inventory_items
 	
 	WalletSingleton.wallet.update_utxos()
