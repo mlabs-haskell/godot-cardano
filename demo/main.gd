@@ -4,7 +4,7 @@ extends Node2D
 var mint_token_conf: MintCip68Pair
 
 var provider: Provider
-var wallet: Wallet.MnemonicWallet = null
+var wallet: OnlineWallet.OnlineSingleAddressWallet = null
 var correct_password: String = ""
 var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 
@@ -200,7 +200,7 @@ func set_wallet(key_ring: SingleAddressWallet):
 	if wallet != null:
 		wallet.queue_free()
 
-	wallet = Wallet.MnemonicWallet.new(key_ring, provider)
+	wallet = OnlineWallet.OnlineSingleAddressWallet.new(key_ring, provider)
 	add_child(wallet)
 	correct_password = password_input.text
 	password_warning.text = ""

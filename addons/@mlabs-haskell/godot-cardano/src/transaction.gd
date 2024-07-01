@@ -1,4 +1,5 @@
 extends RefCounted
+## Transaction class
 
 class_name Transaction
 
@@ -24,9 +25,11 @@ func _init(tx: _Transaction) -> void:
 func bytes() -> PackedByteArray:
 	return _tx.bytes()
 
+## Add a signature to the witness set
 func add_signature(signature: Signature) -> void:
 	_tx.add_signature(signature)
 
+## Try to evaluate the transaction
 func evaluate(utxos: Array[Utxo]) -> EvaluationResult:
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(
@@ -34,5 +37,6 @@ func evaluate(utxos: Array[Utxo]) -> EvaluationResult:
 	)
 	return EvaluationResult.new(_tx._evaluate(_utxos))
 
+## Get the unique hash of the transaction
 func hash() -> TransactionHash:
 	return TransactionHash.new(_tx.hash())

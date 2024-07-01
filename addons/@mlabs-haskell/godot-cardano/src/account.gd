@@ -1,9 +1,14 @@
-## A [class Account] is an independent public key derived from the same
-## wallet, and hence it has its own [member Account.index],
+extends RefCounted
+## An account inside a wallet.
+##
+## An [Account] is an independent public key derived from a
+## [SingleAddressWallet], hence it has its own [member Account.index],
 ## [member Account.address_bech32], etc.
 ##
-## Do not construct this class manually. Accounts are created and handled
-## automatically by [class SingleAddressWalletLoader].
+## [b]Do not construct this class manually[/b]. Accounts are created and handled
+## automatically by [SingleAddressWalletLoader].
+
+#TODO: We should provide access to most (if not all) properties under _Account.
 class_name Account
 
 var _account : _Account

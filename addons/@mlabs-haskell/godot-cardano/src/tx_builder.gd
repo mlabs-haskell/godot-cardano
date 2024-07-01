@@ -1,5 +1,16 @@
 extends RefCounted
-
+## Main interface for transaction building
+##
+## The [TxBuilder] offers a stateful interface for the building of transactions,
+## not unlike other frameworks such as Lucid.
+##
+## The general flow for transaction building is: initialization
+## ([method Provider.new_tx]), addition of constraints (e.g:
+## [method pay_to_address], [method set_change_address], [method collect_from],
+## etc.) and balancing/evaluation [method complete].
+##
+## This last step returns a [TxComplete], which is a balanced and evaluated
+## transaction that can be subsequently signed and submitted.
 class_name TxBuilder
 
 ## You should not create a [TxBuilder] with [TxBuilder.new], instead
@@ -23,7 +34,7 @@ enum TxBuilderStatus {
 }
 
 var _builder: _TxBuilder
-var _wallet: Wallet
+var _wallet: OnlineWallet
 var _provider: Provider
 var _results: Array[Result]
 var _script_utxos: Array[Utxo]
@@ -76,7 +87,7 @@ class CompleteResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 	
-	func _init(provider: Provider, res: _Result, wallet: Wallet = null) -> void:
+	func _init(provider: Provider, res: _Result, wallet: OnlineWallet = null) -> void:
 		if res.is_ok():
 			_transaction = TxComplete.new(
 				provider,
@@ -93,7 +104,10 @@ class MintToken:
 		_token_name = token_name
 		_quantity = quantity
 		
-## Create a TxBuilder object from a Provider. This action may fail.
+## TODO: This probably shouldn't be exposed.
+## Create a TxBuilder object from a Provider. You should use [method Provider.new_tx]
+## instead of this method, since that one will make sure to initialize other
+## necessary fields.
 static func create(provider: Provider) -> CreateResult:
 	var params := await provider.get_protocol_parameters()
 	if params == null:
@@ -106,18 +120,28 @@ static func create(provider: Provider) -> CreateResult:
 		)
 	return CreateResult.new(provider, _TxBuilder._create(params))
 
+## Set the slot configuration. This is automatically done on initialization, do
+## not use unless you know what you are doing.
 func set_slot_config(start_time: int, start_slot: int, slot_length: int) -> TxBuilder:
 	_builder.set_slot_config(start_time, start_slot, slot_length)
 	return self
-
+	
+## Set the cost models. This is automatically done on initialization, do
+## not use unless you know what you are doing.
 func set_cost_models(cost_models: CostModels) -> TxBuilder:
 	_builder.set_cost_models(cost_models._cost_models)
 	return self
 	
+## Pay to a given [param address]. [param coin] specifies the quantity of
+## lovelace to transfer, while [param assets] specifies any additional native
+## assets to transfer.
 func pay_to_address(address: Address, coin: BigInt, assets: MultiAsset) -> TxBuilder:
 	_builder.pay_to_address(address._address, coin._b, assets._multi_asset)
 	return self
 
+## Similar to [method pay_to_address], but it also takes a [param datum]
+## argument that will be used to create an inline datum in the resulting UTxO.
+## [param datum] should be convertable to PlutusData.
 func pay_to_address_with_datum(
 	address: Address,
 	coin: BigInt,
@@ -138,6 +162,9 @@ func pay_to_address_with_datum(
 	
 	return self
 	
+## Similar to [method pay_to_address], but it also takes a [param datum]
+## argument that will be used to embed the datum hash in the transaction.
+## [param datum] should be convertable to PlutusData.
 func pay_to_address_with_datum_hash(
 	address: Address,
 	coin: BigInt,
@@ -158,6 +185,9 @@ func pay_to_address_with_datum_hash(
 	
 	return self
 
+## Mint tokens with the given [param minting_policy] and using the a list of
+## specs defined in [param tokens]. A [param redeemer] is also required for the
+## minting policy.
 func mint_assets(
 	minting_policy: PlutusScript,
 	tokens: Array[MintToken],
@@ -188,7 +218,9 @@ func mint_assets(
 	_results.push_back(result)
 	
 	return self
-	
+
+## Mint a pair of CIP68 user and reference tokens using the given [param
+## minting_policy], [param redeemer] and minting configuration in [param conf].
 func mint_cip68_pair(
 	minting_policy: PlutusScript
 	, redeemer: Variant
@@ -201,7 +233,7 @@ func mint_cip68_pair(
 		
 		return self
 	
-
+## Consume all the [param utxos] specified.
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(
@@ -209,7 +241,9 @@ func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	)
 	_builder._collect_from(_utxos)
 	return self
-	
+
+## Consume all the [param utxos] locked by the [param plutus_script_source] using
+## the provided [param redeemer].
 func collect_from_script(
 	plutus_script_source: PlutusScriptSource,
 	utxos: Array[Utxo],
@@ -232,11 +266,15 @@ func collect_from_script(
 	
 	return self
 
+## When the transaction is balanced (usually when [method complete] is called),
+## send any change to the provided [param change_address].
 func set_change_address(change_address: Address) -> TxBuilder:
 	_change_address = change_address
 	return self
 
-func set_wallet(wallet: Wallet) -> TxBuilder:
+## Use the provided [param wallet] for balancing. This automatically sets the
+## change address to that wallet's address.
+func set_wallet(wallet: OnlineWallet) -> TxBuilder:
 	_wallet = wallet
 	_change_address = wallet._get_change_address()
 	return self
@@ -253,18 +291,22 @@ func valid_before(time: int) -> TxBuilder:
 	_builder.valid_before(slot)
 	return self
 
+## Add a required signer constraint to the transaction.
 func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 	_builder._add_required_signer(pub_key_hash._pub_key_hash)
 	return self
 
+## Add a [param utxo] as a reference input. This input will not be consumed
+## but will be available in the script evaluation context.
 func add_reference_input(utxo: Utxo) -> TxBuilder:
 	_builder._add_reference_input(utxo._utxo)
 	return self
 
-## Only balance the transaction and return the result. The resulting transaction
+## Only balance the transaction and return the result.[br]The resulting transaction
 ## will not have been evaluated and will have inaccurate script execution units,
 ## which may cause the transaction to fail at submission and potentially consume
-## the provided collateral.
+## the provided collateral.[br][br]
+## Do not use this function unless you know what you are doing.
 func balance(utxos: Array[Utxo] = []) -> BalanceResult:
 	var wallet_utxos: Array[Utxo] = []
 	if utxos.size() > 0:
@@ -302,6 +344,8 @@ func balance(utxos: Array[Utxo] = []) -> BalanceResult:
 		_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
 	)
 	
+## Attempts to balance and evaluate the transaction. The provided [param utxos]
+## can be used for balancing the transaction.
 func complete(utxos: Array[Utxo] = []) -> CompleteResult:#
 	var wallet_utxos: Array[Utxo] = []
 	if utxos.size() > 0:
