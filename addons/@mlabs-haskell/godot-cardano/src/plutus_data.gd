@@ -103,5 +103,8 @@ func _to_json() -> Dictionary:
 func _to_string() -> String:
 	return "Plutus(%s)" % _unwrap()
 
+func equals(other: PlutusData) -> bool:
+	return serialize().value == other.serialize().value
+
 func serialize() -> Cbor.SerializeResult:
 	return Cbor.serialize(_unwrap())

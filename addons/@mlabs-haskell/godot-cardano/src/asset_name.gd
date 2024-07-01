@@ -29,7 +29,10 @@ static func from_hex(hash: String) -> FromHexResult:
 
 static func from_bytes(bytes: PackedByteArray) -> FromBytesResult:
 	return FromBytesResult.new(_AssetName._from_bytes(bytes))
-	
+
+func to_bytes() -> PackedByteArray:
+	return _asset_name.to_bytes()
+
 func to_hex() -> String:
 	return _asset_name.to_hex()
 

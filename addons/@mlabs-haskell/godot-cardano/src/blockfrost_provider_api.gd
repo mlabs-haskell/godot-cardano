@@ -124,6 +124,23 @@ class AssetTransactionsRequest extends Request:
 			_page,
 			"asc" if _order == ResultsOrder.ASCENDING else "desc"
 		]
+		
+class AssetsOfPolicyRequest extends Request:
+	var _policy_id: String
+	var _page: int
+	var _order: ResultsOrder
+	
+	func _init(policy_id: String, page := 1, order := ResultsOrder.DESCENDING) -> void:
+		_policy_id = policy_id
+		_page = page
+		_order = order
+		
+	func _url() -> String:
+		return "assets/policy/%s?page=%d&order=%s" % [
+			_policy_id,
+			_page,
+			"asc" if _order == ResultsOrder.ASCENDING else "desc"
+		]
 
 class DatumCborFromHash extends Request:
 	var _hash: String
@@ -340,6 +357,16 @@ func _get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 	
 func _get_utxo_with_nft(asset: AssetClass) -> Utxo:
 	var asset_unit = asset.to_unit()
+	var assets := await blockfrost_request(
+		AssetsOfPolicyRequest.new(asset._policy_id.to_hex(), 1, ResultsOrder.DESCENDING)
+	)
+	if assets.has("status_code"):
+		return null
+	var asset_entry = assets.filter(
+		func (json: Dictionary): return json.asset == asset_unit and json.quantity == "1"
+	)
+	if asset_entry.is_empty():
+		return null
 	var transactions := await blockfrost_request(
 		AssetTransactionsRequest.new(asset_unit, 1, ResultsOrder.DESCENDING)
 	)

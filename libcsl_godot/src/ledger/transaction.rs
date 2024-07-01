@@ -117,7 +117,9 @@ impl AssetName {
 
     #[func]
     fn to_bytes(&self) -> PackedByteArray {
-        PackedByteArray::from(self.asset_name.to_bytes().as_slice())
+        // NOTE: using `CSL::AssetClass::to_bytes` here will encode as CBOR bytearray with a header
+        // byte
+        PackedByteArray::from(hex::decode(self.asset_name.to_string()).unwrap().as_slice())
     }
 
     fn from_hex(asset_name: GString) -> Result<AssetName, AssetNameError> {

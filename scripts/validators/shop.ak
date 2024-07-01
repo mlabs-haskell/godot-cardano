@@ -13,20 +13,24 @@ type Cip68Ref {
   extra: Int
 }
 
-validator(owner: Hash<Blake2b_224, VerificationKey>) {
-  fn spend(_d: Data, _r: Data, ctx: ScriptContext) {
+validator(_tag: Int) {
+  fn spend(owner: Hash<Blake2b_224, VerificationKey>, _r: Data, ctx: ScriptContext) {
     let ScriptContext(tx_info, purpose) = ctx
     expect Spend(out_ref) = purpose
     expect Some(self_in) = list.find(
       tx_info.inputs,
       fn(input) { input.output_reference == out_ref }
     )
-    expect [self_out] = list.filter(
-      tx_info.outputs,
-      fn(output) { output.address.payment_credential == self_in.output.address.payment_credential }
-    )
-
     let valid_sale = fn() {
+      expect [self_out] = list.filter(
+        tx_info.outputs,
+        fn(output) { output.address.payment_credential == self_in.output.address.payment_credential }
+      )
+      expect new_datum: Hash<Blake2b_224, VerificationKey> = {
+        expect InlineDatum(data) = self_out.datum
+        data
+      }
+
       let diff = value.merge(value.negate(self_in.output.value), self_out.value)
       let paid = value.lovelace_of(diff)
 
@@ -36,6 +40,12 @@ validator(owner: Hash<Blake2b_224, VerificationKey>) {
           list.find(
             tx_info.reference_inputs,
             fn (input) {
+              trace string.join([
+                @"Trying",
+                bytearray.to_hex(input.output_reference.transaction_id.hash),
+                @"#",
+                string.from_int(input.output_reference.output_index)
+              ], @"")
               let ref_asset_name = bytearray.concat(#"000643b0", bytearray.drop(asset_name, 4))
               value.quantity_of(input.output.value, minting_policy, ref_asset_name) >= 1
             }
@@ -50,12 +60,18 @@ validator(owner: Hash<Blake2b_224, VerificationKey>) {
             expect Some(ref_input) = find_cip68_ref(policy_id, asset_name)
             expect InlineDatum(datum) = ref_input.output.datum
             expect Cip68Ref{extra: price, ..}: Cip68Ref = datum
-            trace string.join([if quantity < 0 { @"Selling" } else { @"Buying" }, string.from_int(math.abs(quantity)), @"tokens for", string.from_int(price), @"each"], @" ")
+            trace string.join([
+              if quantity < 0 { @"Selling" } else { @"Buying" },
+              string.from_int(math.abs(quantity)),
+              @"tokens for",
+              string.from_int(price),
+              @"each"
+            ], @" ")
             acc + price * quantity
           }
         )
 
-      paid == -token_value_diff
+      paid == -token_value_diff && new_datum == owner
     }
 
     let owner_signed = list.has(tx_info.extra_signatories, owner)
@@ -65,14 +81,14 @@ validator(owner: Hash<Blake2b_224, VerificationKey>) {
   }
 }
 
-validator(tag: Int) {
+validator(_tag: Int) {
   fn tagged_mint(_r: Data, _ctx: ScriptContext) {
-    tag == tag
+    True
   }
 }
 
-validator(tag: Int) {
+validator(_tag: Int) {
   fn tagged_spend(_d: Data, _r: Data, _ctx: ScriptContext) {
-    tag == tag
+    True
   }
 }

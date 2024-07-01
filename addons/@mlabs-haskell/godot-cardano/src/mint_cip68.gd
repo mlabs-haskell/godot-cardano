@@ -208,15 +208,15 @@ var initial_quantity: int = 1:
 		assert(v == 1 or fungible, "Only fungible tokens can have a non-one quantity")
 		initial_quantity = v
 		
-func get_user_token_name() -> PackedByteArray:
+func get_user_token_name() -> AssetName:
 	var user_token_name := "000de140".hex_decode() if not fungible else "0014df10".hex_decode()
 	user_token_name.append_array(token_name)
-	return user_token_name
+	return AssetName.from_bytes(user_token_name).value
 	
-func get_ref_token_name() -> PackedByteArray:
+func get_ref_token_name() -> AssetName:
 	var ref_token_name := "000643b0".hex_decode()
 	ref_token_name.append_array(token_name)
-	return ref_token_name
+	return AssetName.from_bytes(ref_token_name).value
 
 func get_quantity() -> BigInt:
 	return BigInt.from_int(initial_quantity) if fungible else BigInt.one()
@@ -299,13 +299,13 @@ func _homogenize_or_fail(v: Variant) -> PlutusData:
 func make_user_asset_class(script: PlutusScript) -> AssetClass:
 	return AssetClass.new(
 		PolicyId.from_script(script),
-		AssetName.from_bytes(get_user_token_name()).value
+		get_user_token_name()
 	)
 
 func make_ref_asset_class(script: PlutusScript) -> AssetClass:
 	return AssetClass.new(
 		PolicyId.from_script(script),
-		AssetName.from_bytes(get_ref_token_name()).value
+		get_ref_token_name()
 	)
 
 func _validate_property(property):

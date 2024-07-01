@@ -92,12 +92,15 @@ class CompleteResult extends Result:
 		super(res)
 
 class MintToken:
-	var _token_name: PackedByteArray
+	var _asset_name: AssetName
 	var _quantity: BigInt
 	
-	func _init(token_name: PackedByteArray, quantity: BigInt):
-		_token_name = token_name
+	func _init(asset_name: AssetName, quantity: BigInt):
+		_asset_name = asset_name
 		_quantity = quantity
+	
+	func _to_string() -> String:
+		return "%s" % { [_asset_name.to_hex()]: _quantity.to_str() }
 		
 ## Create a TxBuilder object from a Provider. This action may fail.
 static func create(provider: Provider) -> CreateResult:
@@ -177,8 +180,9 @@ func mint_assets(
 	var tokens_dict: Dictionary = {}
 	tokens.map(
 		func (token: MintToken) -> void:
-			var prev = tokens_dict.get(token._token_name, BigInt.zero()._b)
-			tokens_dict[token._token_name] = prev.add(token._quantity._b)
+			var asset_name = token._asset_name.to_bytes()
+			var prev = tokens_dict.get(asset_name, BigInt.zero()._b)
+			tokens_dict[asset_name] = prev.add(token._quantity._b)
 	)
 	
 	var result := Result.VariantResult.new(
@@ -194,16 +198,19 @@ func mint_assets(
 	return self
 	
 func mint_cip68_pair(
-	minting_policy: PlutusScript
-	, redeemer: PlutusData
-	, conf: MintCip68) -> TxBuilder:
-		mint_assets(
-			minting_policy, 
-			[ TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity()),
-			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one()) ],
-		redeemer)
-		
-		return self
+	minting_policy: PlutusScript,
+	redeemer: PlutusData,
+	conf: MintCip68
+) -> TxBuilder:
+	mint_assets(
+		minting_policy, 
+		[
+			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity()),
+			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one())
+		],
+		redeemer
+	)
+	return self
 
 func pay_cip68_ref_token(
 	minting_policy: PlutusScript,

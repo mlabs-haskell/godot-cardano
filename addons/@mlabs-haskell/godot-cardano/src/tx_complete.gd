@@ -56,6 +56,8 @@ func submit() -> SubmitResult:
 		)
 	)
 
-	
 func bytes() -> PackedByteArray:
 	return _transaction.bytes()
+
+func to_json() -> Dictionary:
+	return _transaction.to_json()

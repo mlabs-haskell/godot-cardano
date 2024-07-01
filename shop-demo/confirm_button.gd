@@ -13,7 +13,7 @@ func _init():
 	focus_exited.connect(self._on_focus_exited)
 	set_custom_minimum_size(Vector2(80, 0))
 	
-func _process(delta: float):
+func _process(_delta: float):
 	if confirming:
 		text = "Confirm?"
 	else:
