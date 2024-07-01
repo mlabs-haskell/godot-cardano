@@ -18,57 +18,71 @@ enum TxBuilderStatus {
 	CREATE_ERROR = 9,
 	INVALID_DATA = 10,
 	NO_UTXOS = 11,
+	NO_CHANGE_ADDRESS = 12,
+	COMPLETE_ERROR=13,
 }
 
 var _builder: _TxBuilder
-var _cardano: Cardano
+var _wallet: Wallet
+var _provider: Provider
 var _results: Array[Result]
 var _script_utxos: Array[Utxo]
 
 var _change_address: Address
 
-func _init(cardano: Cardano, builder: _TxBuilder) -> void:
-	_cardano = cardano
+func _init(provider: Provider, builder: _TxBuilder) -> void:
 	_builder = builder
-	_change_address = cardano.wallet._get_change_address()
+	_provider = provider
 
 class CreateResult extends Result:
-	var _cardano: Cardano
+	var _provider: Provider
+	var _builder: TxBuilder
 	
 	## WARNING: This function may fail! First match on `tag` or call `is_ok`.
 	var value: TxBuilder:
-		get: return TxBuilder.new(_cardano, _res.unsafe_value() as _TxBuilder)
+		get: return _builder
 	## WARNING: This function may fail! First match on `tag` or call `is_err`.
 	var error: String:
 		get: return _res.unsafe_error()
 		
-	func _init(cardano: Cardano, res: _Result):
-		_cardano = cardano
+	func _init(provider: Provider, res: _Result) -> void:
+		_provider = provider
+		if res.is_ok():
+			_builder = TxBuilder.new(_provider, res.unsafe_value() as _TxBuilder)
 		super(res)
 
 class BalanceResult extends Result:
+	var _transaction: Transaction
+	
 	## WARNING: This function may fail! First match on `tag` or call `is_ok`.
 	var value: Transaction:
-		get: return Transaction.new(_res.unsafe_value() as _Transaction)
+		get: return _transaction
 	## WARNING: This function may fail! First match on `tag` or call `is_err`.
 	var error: String:
 		get: return _res.unsafe_error()
+	
+	func _init(res: _Result):
+		if res.is_ok():
+			_transaction = Transaction.new(res.unsafe_value() as _Transaction)
+		super(res)
 		
 class CompleteResult extends Result:
-	var _cardano: Cardano
+	var _transaction: TxComplete
 	
 	## WARNING: This function may fail! First match on `tag` or call `is_ok`.
 	var value: TxComplete:
-		get: return TxComplete.new(
-			_cardano,
-			Transaction.new(_res.unsafe_value() as _Transaction)
-		)
+		get: return _transaction
 	## WARNING: This function may fail! First match on `tag` or call `is_err`.
 	var error: String:
 		get: return _res.unsafe_error()
 	
-	func _init(cardano: Cardano, res: _Result) -> void:
-		_cardano = cardano
+	func _init(provider: Provider, res: _Result, wallet: Wallet = null) -> void:
+		if res.is_ok():
+			_transaction = TxComplete.new(
+				provider,
+				Transaction.new(res.unsafe_value() as _Transaction),
+				wallet
+			)
 		super(res)
 
 class MintToken:
@@ -79,15 +93,18 @@ class MintToken:
 		_token_name = token_name
 		_quantity = quantity
 		
-## Create a TxBuilder object from a ProtocolParameters. This action may fail.
-static func create(cardano: Cardano, params: ProtocolParameters) -> CreateResult:
+## Create a TxBuilder object from a Provider. This action may fail.
+static func create(provider: Provider) -> CreateResult:
+	var params := await provider.get_protocol_parameters()
 	if params == null:
 		return CreateResult.new(
-			cardano,
-			_Result.err("Tried to create transaction with null protocol parameters", 1)
+			provider,
+			_Result.err(
+				"Tried to create transaction with null protocol parameters",
+				TxBuilderStatus.BAD_PROTOCOL_PARAMETERS
+			)
 		)
-	var res := CreateResult.new(cardano, _TxBuilder._create(params))
-	return res
+	return CreateResult.new(provider, _TxBuilder._create(params))
 
 func set_slot_config(start_time: int, start_slot: int, slot_length: int) -> TxBuilder:
 	_builder.set_slot_config(start_time, start_slot, slot_length)
@@ -219,15 +236,20 @@ func set_change_address(change_address: Address) -> TxBuilder:
 	_change_address = change_address
 	return self
 
+func set_wallet(wallet: Wallet) -> TxBuilder:
+	_wallet = wallet
+	_change_address = wallet._get_change_address()
+	return self
+
 ## Set the time in POSIX seconds after which the transaction is valid
 func valid_after(time: int) -> TxBuilder:
-	var slot := _cardano.time_to_slot(time)
+	var slot := _provider.time_to_slot(time)
 	_builder.valid_after(slot)
 	return self
 
 ## Set the time in POSIX seconds before which the transaction is valid
 func valid_before(time: int) -> TxBuilder:
-	var slot := _cardano.time_to_slot(time)
+	var slot := _provider.time_to_slot(time)
 	_builder.valid_before(slot)
 	return self
 
@@ -235,46 +257,71 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 	_builder._add_required_signer(pub_key_hash._pub_key_hash)
 	return self
 
+func add_reference_input(utxo: Utxo) -> TxBuilder:
+	_builder._add_reference_input(utxo._utxo)
+	return self
+
 ## Only balance the transaction and return the result. The resulting transaction
 ## will not have been evaluated and will have inaccurate script execution units,
 ## which may cause the transaction to fail at submission and potentially consume
 ## the provided collateral.
-func balance() -> BalanceResult:
-	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
+func balance(utxos: Array[Utxo] = []) -> BalanceResult:
+	var wallet_utxos: Array[Utxo] = []
+	if utxos.size() > 0:
+		wallet_utxos = utxos
+	elif _wallet != null:
+		wallet_utxos = await _wallet._get_updated_utxos()
+		
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
 	
+	var result: BalanceResult = null
 	if wallet_utxos.size() == 0:
-		_results.push_back(
-			CompleteResult.new(
-				_cardano,
-				_Result.err(
-					"",
-					TxBuilderStatus.NO_UTXOS
-				)
+		result = BalanceResult.new(
+			_Result.err(
+				"Tried to balance transaction with no input UTxOs",
+				TxBuilderStatus.NO_UTXOS
 			)
 		)
 	
+	if _change_address == null:
+		result = BalanceResult.new(
+			_Result.err(
+				"Tried to balance transaction with no change address",
+				TxBuilderStatus.NO_CHANGE_ADDRESS
+			)
+		)
+	
+	if result != null:
+		_results.push_back(result)
+		return result
+		
 	return BalanceResult.new(
 		_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
 	)
 	
-func complete() -> CompleteResult:
-	var wallet_utxos: Array[Utxo] = await _cardano.wallet._get_updated_utxos()
+func complete(utxos: Array[Utxo] = []) -> CompleteResult:#
+	var wallet_utxos: Array[Utxo] = []
+	if utxos.size() > 0:
+		wallet_utxos = utxos
+	elif _wallet != null:
+		wallet_utxos = await _wallet._get_updated_utxos()
+		
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
-	var additional_utxos: Array[Utxo] = [] # TODO
+	# TODO: accept UTxOs which may not be in the ledger for balancing/evaluation
+	var additional_utxos: Array[Utxo] = []
 	
 	if wallet_utxos.size() == 0:
 		_results.push_back(
 			CompleteResult.new(
-				_cardano,
+				_provider,
 				_Result.err(
-					"",
+					"Tried to complete transaction with no input UTxOs",
 					TxBuilderStatus.NO_UTXOS
 				)
 			)
@@ -292,12 +339,13 @@ func complete() -> CompleteResult:
 		_results.push_back(eval_result)
 		if eval_result.is_ok():
 			return CompleteResult.new(
-				_cardano,
+				_provider,
 				_builder._complete(
 					_wallet_utxos,
 					_change_address._address,
 					eval_result.value
-				)
+				),
+				_wallet
 			)
 	
 	for result in _results:
@@ -305,9 +353,9 @@ func complete() -> CompleteResult:
 			push_error(result.error)
 	
 	return CompleteResult.new(
-		_cardano,
+		_provider,
 		_Result.err(
 			"Failed to complete transaction; errors logged to output",
-			TxBuilderStatus.CREATE_ERROR
+			TxBuilderStatus.COMPLETE_ERROR
 		)
 	)

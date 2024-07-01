@@ -4,7 +4,7 @@ use CSL::error::JsError;
 use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
 use CSL::tx_builder::tx_inputs_builder::{self};
 use CSL::utils::*;
-use CSL::{AssetName, TransactionInput, TransactionOutput};
+use CSL::{TransactionInput, TransactionOutput};
 
 use uplc::tx::error::Error as UplcError;
 use uplc::tx::eval_phase_two_raw;
@@ -14,6 +14,112 @@ use godot::prelude::*;
 
 use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
+
+#[derive(GodotClass)]
+#[class(base=RefCounted, rename=_PolicyId)]
+pub struct PolicyId {
+    pub policy_id: CSL::PolicyID,
+}
+
+#[derive(Debug)]
+pub enum PolicyIdError {
+    CouldNotDecodeHex(String),
+}
+
+impl GodotConvert for PolicyIdError {
+    type Via = i64;
+}
+
+impl ToGodot for PolicyIdError {
+    fn to_godot(&self) -> Self::Via {
+        use PolicyIdError::*;
+        match self {
+            CouldNotDecodeHex(_) => 1,
+        }
+    }
+}
+
+impl FailsWith for PolicyId {
+    type E = PolicyIdError;
+}
+
+#[godot_api]
+impl PolicyId {
+    fn from_hex(policy_id: GString) -> Result<PolicyId, PolicyIdError> {
+        CSL::crypto::ScriptHash::from_hex(&policy_id.to_string())
+            .map_err(|_| PolicyIdError::CouldNotDecodeHex(policy_id.to_string()))
+            .map(|policy_id| Self { policy_id })
+    }
+
+    #[func]
+    fn _from_hex(policy_id: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(policy_id))
+    }
+
+    #[func]
+    fn to_hex(&self) -> GString {
+        self.policy_id.to_hex().into_godot()
+    }
+}
+
+#[derive(GodotClass)]
+#[class(base=RefCounted, rename=_AssetName)]
+pub struct AssetName {
+    pub asset_name: CSL::AssetName,
+}
+
+#[derive(Debug)]
+pub enum AssetNameError {
+    CouldNotDecodeHex(String),
+    OtherError(JsError),
+}
+
+impl GodotConvert for AssetNameError {
+    type Via = i64;
+}
+
+impl ToGodot for AssetNameError {
+    fn to_godot(&self) -> Self::Via {
+        use AssetNameError::*;
+        match self {
+            CouldNotDecodeHex(_) => 1,
+            OtherError(_) => 2,
+        }
+    }
+}
+
+impl FailsWith for AssetName {
+    type E = AssetNameError;
+}
+
+impl From<JsError> for AssetNameError {
+    fn from(error: JsError) -> AssetNameError {
+        AssetNameError::OtherError(error)
+    }
+}
+
+#[godot_api]
+impl AssetName {
+    fn from_hex(asset_name: GString) -> Result<AssetName, AssetNameError> {
+        let asset_name = CSL::AssetName::new(
+            hex::decode(&asset_name.to_string())
+                .map_err(|_| AssetNameError::CouldNotDecodeHex(asset_name.to_string()))?,
+        )?;
+        Ok(Self { asset_name })
+    }
+
+    #[func]
+    fn _from_hex(asset_name: GString) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_hex(asset_name))
+    }
+
+    #[func]
+    fn to_hex(&self) -> GString {
+        // NOTE: simply using `CSL::AssetClass::to_hex` here will encode as CBOR bytearray with a
+        // header byte
+        format!("{}", self.asset_name).into_godot()
+    }
+}
 
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_MultiAsset)]
@@ -70,16 +176,16 @@ impl MultiAsset {
                         .ok_or(MultiAssetError::CouldNotExtractPolicyId(unit.to_string()))?,
                 )
                 .map_err(|_| MultiAssetError::CouldNotDecodeHex(unit.to_string()))?,
-                &AssetName::new(
+                &CSL::AssetName::new(
                     hex::decode(
                         unit.to_string()
                             .get(56..)
                             .ok_or(MultiAssetError::CouldNotExtractAssetName(unit.to_string()))?,
                     )
-                    .map_err(|_| MultiAssetError::CouldNotDecodeHex(unit.to_string()))?
-                    .into(),
+                    .map_err(|_| MultiAssetError::CouldNotDecodeHex(unit.to_string()))?,
                 )
-                .map_err(|_| MultiAssetError::InvalidAssetName(unit.to_string()))?,
+                .map_err(|_| MultiAssetError::InvalidAssetName(unit.to_string()))?
+                .into(),
                 BigNum::from_str(&amount.bind().to_str())?,
             );
         }
@@ -92,6 +198,35 @@ impl MultiAsset {
     }
 
     #[func]
+    pub fn _to_dictionary(&self) -> Dictionary {
+        let mut dict = Dictionary::new();
+        let mut i = 0;
+        let policy_ids = self.assets.keys();
+        while i < policy_ids.len() {
+            let policy_id = policy_ids.get(i);
+            let mut j = 0;
+            let assets = self.assets.get(&policy_id).unwrap();
+            let asset_names = assets.keys();
+            while j < asset_names.len() {
+                let asset_name = asset_names.get(j);
+                let quantity = assets.get(&asset_name).unwrap();
+                let mut unit = policy_id.to_hex().to_owned();
+                unit.push_str(&asset_name.to_hex());
+                dict.set(
+                    unit,
+                    Gd::from_object(
+                        BigInt::from_str(quantity.to_str())
+                            .expect("Failed to convert asset quantity"),
+                    ),
+                );
+                j += 1;
+            }
+            i += 1;
+        }
+        dict
+    }
+
+    #[func]
     pub fn empty() -> Gd<MultiAsset> {
         Gd::from_object(MultiAsset {
             assets: CSL::MultiAsset::new(),
@@ -100,6 +235,46 @@ impl MultiAsset {
 
     pub fn to_value(&self) -> Value {
         Value::new_from_assets(&self.assets)
+    }
+
+    pub fn set_asset_quantity(
+        &mut self,
+        policy_id: Gd<PolicyId>,
+        asset_name: Gd<AssetName>,
+        quantity: Gd<BigInt>,
+    ) -> Result<(), MultiAssetError> {
+        self.assets.set_asset(
+            &policy_id.bind().policy_id,
+            &asset_name.bind().asset_name,
+            BigNum::from_str(&quantity.bind().to_str())?,
+        );
+        Ok(())
+    }
+
+    #[func]
+    pub fn _set_asset_quantity(
+        &mut self,
+        policy_id: Gd<PolicyId>,
+        asset_name: Gd<AssetName>,
+        quantity: Gd<BigInt>,
+    ) -> Gd<GResult> {
+        Self::to_gresult(self.set_asset_quantity(policy_id, asset_name, quantity))
+    }
+
+    #[func]
+    pub fn _quantity_of_asset(
+        &self,
+        policy_id: Gd<PolicyId>,
+        asset_name: Gd<AssetName>,
+    ) -> Gd<BigInt> {
+        Gd::from_object(
+            BigInt::from_str(
+                self.assets
+                    .get_asset(&policy_id.bind().policy_id, &asset_name.bind().asset_name)
+                    .to_str(),
+            )
+            .expect("Failed to convert asset quantity"),
+        )
     }
 }
 

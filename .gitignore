@@ -14,3 +14,4 @@ result*
 */.godot/
 .pre-commit-config.yaml
 .vscode
+*/.home/

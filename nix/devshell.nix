@@ -21,12 +21,20 @@
           package = self'.packages.cardano-cli;
         }
         {
+          package = config.pre-commit.settings.package;
+        }
+        {
+          package = config.packages.fmt;
+          help = "Format source files";
+        }
+        {
           category = "godot";
           package = self'.packages.steam-run;
           help = "Wrapper to run godot exports in an Ubuntu-like environment";
         }
         {
           category = "godot";
+          name = "godot4";
           package = self'.packages.godot;
         }
         {
