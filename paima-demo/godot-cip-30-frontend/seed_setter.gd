@@ -6,7 +6,6 @@ var _seed_field
 
 signal on_seed_received(seed_phrase)
 
-
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	var sep1 = Label.new()

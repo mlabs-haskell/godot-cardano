@@ -26,7 +26,7 @@ func get_address() -> Address:
 
 ## Get the account's address as a BECH32-encoded [String].
 func get_address_bech32() -> String:
-	return _wallet._get_address_bech32()
+	return _wallet.get_address_bech32()
 	
 func get_address_hex() -> String:
 	return get_address().to_hex()

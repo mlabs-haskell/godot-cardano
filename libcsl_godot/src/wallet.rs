@@ -128,24 +128,25 @@ impl SingleAddressWallet {
         password: Vec<u8>,
         data: Vec<u8>,
     ) -> Result<DataSignature, SingleAddressWalletError> {
-        let pbes2_params = self.get_pbes2_params();
+        let pbes2_params = unsafe_get_pbes2_params(&self.aes_iv, &self.scrypt_params, &self.salt);
+        let current_account = self.account.bind();
         let res = with_account_private_key(
             pbes2_params,
             self.encrypted_master_private_key.as_slice(),
-            password.as_slice(),
-            self.account_info.index,
+            password.to_vec().as_slice(),
+            current_account.index,
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0);
                 cip_8_sign::sign_data(
                     &spend_key,
-                    self.get_base_address().to_bytes(),
+                    self.account.bind().address.to_bytes(),
                     data.to_vec(),
                 )
                 .map_err(SingleAddressWalletError::DataSignCip30Error)
             },
         );
         match res {
-            Ok(sign_result) => sign_result.map(DataSignature::from),
+            Ok(sign_result) => Ok(DataSignature::from(sign_result)),
             Err(other_err) => Err(other_err),
         }
     }
@@ -155,9 +156,9 @@ impl SingleAddressWallet {
         Self::to_gresult_class(self.sign_data(password.to_vec(), data.to_vec()))
     }
 
-    pub fn get_base_address(&self) -> CSLAddress {
-        address_from_key(self.network_id, &self.account_info.public_key)
-    }
+    // pub fn get_base_address(&self) -> CSLAddress {
+    //     address_from_key(self.network_id, &self.account_info.public_key)
+    // }
 
     pub fn get_address(&self) -> Gd<Address> {
         Gd::from_object(Address {

@@ -1,8 +1,8 @@
 extends Node2D
 
 var window = JavaScriptBridge.get_interface("window")
+var loader := SingleAddressWalletLoader.new(ProviderApi.Network.MAINNET)
 
-var loader
 var provider
 var wallet
 var buttons_grid
@@ -20,13 +20,11 @@ func _ready():
 func init_cardano_wallet(seedphrase):
 	print("GD: Loading cardano wallet...")
 	_remove_buttons()
-	loader = SingleAddressWalletLoader.new(Provider.Network.MAINNET)
-	add_child(loader)
 	var load_result = await loader.import_from_seedphrase_wo_new_thread(
 		seedphrase, "", "", 0, "Acc name", "Acc description"
 		)
 	if load_result.is_err():
-		print("Failed to load cardano wallet")
+		print("Failed to load cardano wallet with specified seed phrase")
 		_remove_buttons()
 		return
 	wallet = load_result.value.wallet

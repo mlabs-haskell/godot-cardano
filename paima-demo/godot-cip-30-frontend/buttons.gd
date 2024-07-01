@@ -90,8 +90,8 @@ func test_sing():
 	var test_hex = test_data.to_utf8_buffer().hex_encode()
 	prints("Signing known test data - hex of", test_data, ": ", test_hex)
 	
-	var signing_address = _godot_wallet.get_address().to_bech32()
-	prints("Test sig address hex: ", _godot_wallet.get_address().to_hex())
+	var signing_address = _godot_wallet.get_address_bech32()
+	prints("Test sig address hex: ", _godot_wallet.get_address_hex())
 	prints("Test sig address bech32: ", signing_address)
 	var sign_res = sign_data(signing_address, test_hex)
 	if sign_res.is_err():
