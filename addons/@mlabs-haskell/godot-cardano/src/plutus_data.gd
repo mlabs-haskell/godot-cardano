@@ -32,8 +32,12 @@ static func wrap(v: Variant) -> PlutusData:
 			return PlutusBytes.new(v)
 		_: return null
 
-static func deserialize(bytes: PackedByteArray) -> Cbor.DeserializeResult:
-	return Cbor.deserialize(bytes)
+static func deserialize(bytes: PackedByteArray) -> PlutusData:
+	var result = Cbor.deserialize(bytes)
+	if result.is_ok():
+		return PlutusData.wrap(result.value)
+	push_error("Failed to deserialize Plutus data: %s" % result.error)
+	return null
 
 ## Converts parsed JSON to PlutusData
 static func from_json(json: Dictionary) -> PlutusData:
@@ -97,7 +101,10 @@ func _to_json() -> Dictionary:
 	return {}
 
 func _to_string() -> String:
-	return "%s" % _unwrap()
+	return "Plutus(%s)" % _unwrap()
+
+func equals(other: PlutusData) -> bool:
+	return serialize().value == other.serialize().value
 
 func serialize() -> Cbor.SerializeResult:
 	return Cbor.serialize(_unwrap())

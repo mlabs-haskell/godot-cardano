@@ -27,6 +27,7 @@ var _wallet: Wallet
 var _provider: Provider
 var _results: Array[Result]
 var _script_utxos: Array[Utxo]
+var _other_utxos: Array[Utxo]
 
 var _change_address: Address
 
@@ -76,22 +77,30 @@ class CompleteResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 	
-	func _init(provider: Provider, res: _Result, wallet: Wallet = null) -> void:
+	func _init(
+		provider: Provider,
+		res: _Result,
+		wallet: Wallet = null,
+		input_utxos: Array[Utxo] = []
+	) -> void:
 		if res.is_ok():
 			_transaction = TxComplete.new(
 				provider,
-				Transaction.new(res.unsafe_value() as _Transaction),
-				wallet
+				Transaction.new(res.unsafe_value() as _Transaction, input_utxos),
+				wallet,
 			)
 		super(res)
 
 class MintToken:
-	var _token_name: PackedByteArray
+	var _asset_name: AssetName
 	var _quantity: BigInt
 	
-	func _init(token_name: PackedByteArray, quantity: BigInt):
-		_token_name = token_name
+	func _init(asset_name: AssetName, quantity: BigInt):
+		_asset_name = asset_name
 		_quantity = quantity
+	
+	func _to_string() -> String:
+		return "%s" % { [_asset_name.to_hex()]: _quantity.to_str() }
 		
 ## Create a TxBuilder object from a Provider. This action may fail.
 static func create(provider: Provider) -> CreateResult:
@@ -155,7 +164,6 @@ func pay_to_address_with_datum_hash(
 			assets._multi_asset,
 			Datum.hashed(serialize_result.value)
 		)
-	
 	return self
 
 func mint_assets(
@@ -172,8 +180,9 @@ func mint_assets(
 	var tokens_dict: Dictionary = {}
 	tokens.map(
 		func (token: MintToken) -> void:
-			var prev = tokens_dict.get(token._token_name, BigInt.zero()._b)
-			tokens_dict[token._token_name] = prev.add(token._quantity._b)
+			var asset_name = token._asset_name.to_bytes()
+			var prev = tokens_dict.get(asset_name, BigInt.zero()._b)
+			tokens_dict[asset_name] = prev.add(token._quantity._b)
 	)
 	
 	var result := Result.VariantResult.new(
@@ -183,23 +192,25 @@ func mint_assets(
 			serialize_result.value
 		)
 	)
-	
-	
+
 	_results.push_back(result)
 	
 	return self
 	
 func mint_cip68_pair(
-	minting_policy: PlutusScript
-	, redeemer: PlutusData
-	, conf: MintCip68) -> TxBuilder:
-		mint_assets(
-			minting_policy, 
-			[ TxBuilder.MintToken.new(conf.get_user_token_name(), BigInt.one()),
-			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one()) ],
-		redeemer)
-		
-		return self
+	minting_policy: PlutusScript,
+	redeemer: PlutusData,
+	conf: MintCip68
+) -> TxBuilder:
+	mint_assets(
+		minting_policy, 
+		[
+			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity()),
+			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one())
+		],
+		redeemer
+	)
+	return self
 
 func pay_cip68_ref_token(
 	minting_policy: PlutusScript,
@@ -217,7 +228,7 @@ func pay_cip68_user_tokens(
 	conf: MintCip68
 ) -> TxBuilder:
 	var assets = MultiAsset.empty()
-	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), conf.get_quantity())
+	assets.set_asset_quantity(conf.make_user_asset_class(minting_policy), conf.get_quantity())
 	pay_to_address(address, BigInt.zero(), assets)
 	return self
 	
@@ -225,19 +236,23 @@ func pay_cip68_user_tokens_with_datum(
 	minting_policy: PlutusScript,
 	address: Address,
 	datum: PlutusData,
-	conf: MintCip68
+	conf: MintCip68,
+	amount := conf.get_quantity()
 ) -> TxBuilder:
 	var assets = MultiAsset.empty()
-	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), conf.get_quantity())
+	assets.set_asset_quantity(conf.make_user_asset_class(minting_policy), amount)
 	pay_to_address_with_datum(address, BigInt.zero(), assets, datum)
 	return self
 
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(
-		utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+		utxos.map(
+			func (utxo: Utxo) -> _Utxo: return utxo._utxo
+		)
 	)
 	_builder._collect_from(_utxos)
+	_other_utxos.append_array(utxos)
 	return self
 	
 func collect_from_script(
@@ -249,7 +264,9 @@ func collect_from_script(
 	
 	var _utxos: Array[_Utxo] = []
 	_utxos.assign(
-		utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
+		utxos.map(
+			func (utxo: Utxo) -> _Utxo: return utxo._utxo
+		)
 	)
 	
 	_script_utxos.append_array(utxos)
@@ -289,6 +306,7 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 
 func add_reference_input(utxo: Utxo) -> TxBuilder:
 	_builder._add_reference_input(utxo._utxo)
+	_script_utxos.push_back(utxo)
 	return self
 
 ## Only balance the transaction and return the result. The resulting transaction
@@ -332,19 +350,17 @@ func balance(utxos: Array[Utxo] = []) -> BalanceResult:
 		_builder._balance_and_assemble(_wallet_utxos, _change_address._address)
 	)
 	
-func complete(utxos: Array[Utxo] = []) -> CompleteResult:#
+func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 	var wallet_utxos: Array[Utxo] = []
 	if utxos.size() > 0:
 		wallet_utxos = utxos
 	elif _wallet != null:
 		wallet_utxos = await _wallet._get_updated_utxos()
-		
+
 	var _wallet_utxos: Array[_Utxo] = []
 	_wallet_utxos.assign(
 		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
 	)
-	# TODO: accept UTxOs which may not be in the ledger for balancing/evaluation
-	var additional_utxos: Array[Utxo] = []
 	
 	if wallet_utxos.size() == 0:
 		_results.push_back(
@@ -362,9 +378,11 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:#
 	
 	var error = _results.any(func (result: Result) -> bool: return result.is_err())
 	
+	if balance_result.is_ok():
+		pass
 	_results.push_back(balance_result)
 	if not error and balance_result.is_ok():
-		var eval_result := balance_result.value.evaluate(wallet_utxos + additional_utxos + _script_utxos)
+		var eval_result := balance_result.value.evaluate(wallet_utxos + _script_utxos)
 		
 		_results.push_back(eval_result)
 		if eval_result.is_ok():
@@ -375,7 +393,8 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:#
 					_change_address._address,
 					eval_result.value
 				),
-				_wallet
+				_wallet,
+				wallet_utxos + _script_utxos + _other_utxos
 			)
 	
 	for result in _results:

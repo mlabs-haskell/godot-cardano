@@ -612,7 +612,7 @@ impl SingleAddressWalletLoader {
             "encrypted_master_private_key",
             PackedByteArray::from(self.encrypted_master_private_key.as_slice()),
         );
-        dict.set("scrypt_salt", PackedByteArray::from(self.salt.as_slice()));
+        dict.set("salt", PackedByteArray::from(self.salt.as_slice()));
         dict.set("scrypt_log_n", self.scrypt_params.log_n());
         dict.set("scrypt_r", self.scrypt_params.r());
         dict.set("scrypt_p", self.scrypt_params.p());

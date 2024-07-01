@@ -1,5 +1,6 @@
 use crate::plutus::to_aiken;
 use cardano_serialization_lib as CSL;
+use godot::builtin::meta::ConvertError;
 use uplc::ast::DeBruijn;
 use uplc::ast::Program;
 use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
@@ -103,6 +104,24 @@ impl From<JsError> for AssetNameError {
 
 #[godot_api]
 impl AssetName {
+    fn from_bytes(bytes: PackedByteArray) -> Result<AssetName, AssetNameError> {
+        Ok(Self {
+            asset_name: CSL::AssetName::new(bytes.to_vec())?,
+        })
+    }
+
+    #[func]
+    fn _from_bytes(bytes: PackedByteArray) -> Gd<GResult> {
+        Self::to_gresult_class(Self::from_bytes(bytes))
+    }
+
+    #[func]
+    fn to_bytes(&self) -> PackedByteArray {
+        // NOTE: using `CSL::AssetClass::to_bytes` here will encode as CBOR bytearray with a header
+        // byte
+        PackedByteArray::from(hex::decode(self.asset_name.to_string()).unwrap().as_slice())
+    }
+
     fn from_hex(asset_name: GString) -> Result<AssetName, AssetNameError> {
         let asset_name = CSL::AssetName::new(
             hex::decode(&asset_name.to_string())
@@ -118,9 +137,9 @@ impl AssetName {
 
     #[func]
     fn to_hex(&self) -> GString {
-        // NOTE: simply using `CSL::AssetClass::to_hex` here will encode as CBOR bytearray with a
-        // header byte
-        format!("{}", self.asset_name).into_godot()
+        // NOTE: using `CSL::AssetClass::to_hex` here will encode as CBOR bytearray with a header
+        // byte
+        self.asset_name.to_string().into_godot()
     }
 }
 
@@ -214,7 +233,7 @@ impl MultiAsset {
                 let asset_name = asset_names.get(j);
                 let quantity = assets.get(&asset_name).unwrap();
                 let mut unit = policy_id.to_hex().to_owned();
-                unit.push_str(&asset_name.to_hex());
+                unit.push_str(&asset_name.to_string());
                 dict.set(
                     unit,
                     Gd::from_object(
@@ -346,6 +365,59 @@ pub struct Credential {
     pub credential: CSL::address::StakeCredential,
 }
 
+#[derive(Debug)]
+pub enum CredentialType {
+    Payment,
+    Stake,
+}
+
+impl GodotConvert for CredentialType {
+    type Via = i64;
+}
+
+impl ToGodot for CredentialType {
+    fn to_godot(&self) -> Self::Via {
+        use CredentialType::*;
+        match self {
+            Payment => 0,
+            Stake => 1,
+        }
+    }
+}
+
+impl FromGodot for CredentialType {
+    fn try_from_godot(v: Self::Via) -> Result<Self, ConvertError> {
+        use CredentialType::*;
+        match v {
+            0 => Ok(Payment),
+            1 => Ok(Stake),
+            _ => Err(ConvertError::new()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum CredentialError {
+    IncorrectType,
+}
+
+impl GodotConvert for CredentialError {
+    type Via = i64;
+}
+
+impl ToGodot for CredentialError {
+    fn to_godot(&self) -> Self::Via {
+        use CredentialError::*;
+        match self {
+            IncorrectType => 1,
+        }
+    }
+}
+
+impl FailsWith for Credential {
+    type E = CredentialError;
+}
+
 #[godot_api]
 impl Credential {
     #[func]
@@ -360,6 +432,52 @@ impl Credential {
         Gd::from_object(Credential {
             credential: CSL::address::StakeCredential::from_scripthash(&hash.bind().hash),
         })
+    }
+
+    #[func]
+    fn get_type(&self) -> CredentialType {
+        CredentialType::Payment
+    }
+
+    #[func]
+    fn to_pub_key_hash(&self) -> Gd<GResult> {
+        Self::to_gresult_class(
+            self.credential
+                .to_keyhash()
+                .map(|hash| PubKeyHash { hash })
+                .ok_or(CredentialError::IncorrectType),
+        )
+    }
+
+    #[func]
+    fn to_script_hash(&self) -> Gd<GResult> {
+        Self::to_gresult_class(
+            self.credential
+                .to_scripthash()
+                .map(|hash| ScriptHash { hash })
+                .ok_or(CredentialError::IncorrectType),
+        )
+    }
+
+    #[func]
+    fn to_bytes(&self) -> PackedByteArray {
+        let bytes = self
+            .credential
+            .to_keyhash()
+            .ok_or_else(|| self.credential.to_scripthash().map(|x| x.to_bytes()))
+            .map(|x| x.to_bytes())
+            .unwrap();
+        PackedByteArray::from(bytes.as_slice())
+    }
+
+    #[func]
+    fn to_hex(&self) -> GString {
+        self.credential
+            .to_keyhash()
+            .ok_or_else(|| self.credential.to_scripthash().map(|x| x.to_hex()))
+            .map(|x| x.to_hex())
+            .unwrap()
+            .into_godot()
     }
 }
 
@@ -440,6 +558,42 @@ impl Address {
             },
         };
         Gd::from_object(address)
+    }
+
+    #[func]
+    pub fn payment_credential(&self) -> Option<Gd<Credential>> {
+        match CSL::address::EnterpriseAddress::from_address(&self.address) {
+            Some(eaddr) => Some(Gd::from_object(Credential {
+                credential: eaddr.payment_cred(),
+            })),
+            _ => None,
+        }
+        .or_else(
+            || match CSL::address::BaseAddress::from_address(&self.address) {
+                Some(baddr) => Some(Gd::from_object(Credential {
+                    credential: baddr.payment_cred(),
+                })),
+                _ => None,
+            },
+        )
+    }
+
+    #[func]
+    pub fn stake_credential(&self) -> Option<Gd<Credential>> {
+        match CSL::address::RewardAddress::from_address(&self.address) {
+            Some(raddr) => Some(Gd::from_object(Credential {
+                credential: raddr.payment_cred(),
+            })),
+            _ => None,
+        }
+        .or_else(
+            || match CSL::address::BaseAddress::from_address(&self.address) {
+                Some(baddr) => Some(Gd::from_object(Credential {
+                    credential: baddr.stake_cred(),
+                })),
+                _ => None,
+            },
+        )
     }
 }
 
@@ -694,6 +848,16 @@ impl PubKeyHash {
     pub fn _from_hex(hex: GString) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_hex(hex.to_string()))
     }
+
+    #[func]
+    pub fn to_hex(&self) -> GString {
+        self.hash.to_hex().into_godot()
+    }
+
+    #[func]
+    pub fn to_bytes(&self) -> PackedByteArray {
+        PackedByteArray::from(self.hash.to_bytes().as_slice())
+    }
 }
 
 #[derive(GodotClass, Debug)]
@@ -735,6 +899,16 @@ impl ScriptHash {
     #[func]
     pub fn _from_hex(hex: GString) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_hex(hex.to_string()))
+    }
+
+    #[func]
+    pub fn to_hex(&self) -> GString {
+        self.hash.to_hex().into_godot()
+    }
+
+    #[func]
+    pub fn to_bytes(&self) -> PackedByteArray {
+        PackedByteArray::from(self.hash.to_bytes().as_slice())
     }
 }
 
@@ -939,6 +1113,16 @@ impl UtxoDatumInfo {
     }
 
     #[func]
+    pub fn datum_value(&self) -> Gd<GResult> {
+        let result = match self.datum_value.clone() {
+            Some(UtxoDatumValue::Inline(d)) => Ok(d.clone()),
+            Some(UtxoDatumValue::Resolved(d)) => Ok(d.clone()),
+            _ => Err(DatumInfoError::NoDatum),
+        };
+        Self::to_gresult(result)
+    }
+
+    #[func]
     pub fn inline_datum(&self) -> Gd<GResult> {
         let result = match self.datum_value.clone() {
             Some(UtxoDatumValue::Inline(d)) => Ok(d.clone()),
@@ -1089,7 +1273,7 @@ impl Transaction {
             &self.cost_models.to_bytes(),
             self.max_ex_units,
             self.slot_config,
-            false,
+            true,
             |_| {},
         )?;
 
@@ -1108,5 +1292,74 @@ impl Transaction {
     #[func]
     fn _evaluate(&mut self, gutxos: Array<Gd<Utxo>>) -> Gd<GResult> {
         Self::to_gresult_class(self.evaluate(gutxos))
+    }
+
+    #[func]
+    fn to_json(&self) -> GString {
+        self.transaction
+            .to_json()
+            .unwrap_or("null".to_string())
+            .into_godot()
+    }
+
+    #[func]
+    fn outputs(&self) -> Array<Gd<Utxo>> {
+        let mut outputs = Array::new();
+        let tx_hash = self.hash();
+        let mut output_index = 0;
+        for output in self.transaction.body().outputs().into_iter() {
+            let mut assets = CSL::MultiAsset::new();
+
+            match output.amount().multiasset() {
+                None => (),
+                Some(multiasset) => {
+                    let policy_ids = multiasset.keys();
+                    for i in 0..policy_ids.len() {
+                        let policy_id = policy_ids.get(i);
+                        match multiasset.get(&policy_id) {
+                            None => (),
+                            Some(tokens) => {
+                                let asset_names = tokens.keys();
+                                for j in 0..asset_names.len() {
+                                    let asset_name = asset_names.get(j);
+                                    assets.set_asset(
+                                        &policy_id,
+                                        &asset_name,
+                                        tokens.get(&asset_name).unwrap(),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut datum_info = UtxoDatumInfo::empty();
+            if output.has_plutus_data() {
+                let data = output.plutus_data().unwrap();
+                datum_info = UtxoDatumInfo::create_with_inline_datum(
+                    hash_plutus_data(&data).to_string().into_godot(),
+                    data.to_hex().into_godot(),
+                );
+            } else if output.has_data_hash() {
+                let hash = output.data_hash().unwrap();
+                datum_info = UtxoDatumInfo::create_with_hash(hash.to_string().into_godot());
+            }
+
+            outputs.push(Gd::from_object(Utxo {
+                tx_hash: tx_hash.clone(),
+                output_index,
+                address: Gd::from_object(Address {
+                    address: output.address(),
+                }),
+                coin: Gd::from_object(BigInt::from_int(
+                    (u64::from(output.amount().coin())).try_into().unwrap(),
+                )),
+                assets: Gd::from_object(MultiAsset { assets }),
+                datum_info,
+            }));
+            output_index += 1;
+        }
+        return outputs;
     }
 }

@@ -11,4 +11,4 @@ static func from_data(v: Variant) -> VoidData:
 	return VoidData.new()
 
 func _to_string() -> String:
-	return "()"
+	return "Void"

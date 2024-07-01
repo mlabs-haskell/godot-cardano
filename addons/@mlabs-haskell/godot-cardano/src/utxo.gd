@@ -33,6 +33,14 @@ func tx_hash() -> TransactionHash:
 func datum_info() -> UtxoDatumInfo:
 	return _utxo.datum_info
 
+func datum() -> PlutusData:
+	if not _utxo.datum_info.has_datum():
+		return null
+	var result := PlutusData.deserialize(datum_info().datum_value().unsafe_value().hex_decode())
+	if result == null:
+		push_error('Invalid datum for UTxO %s#%d' % [tx_hash().to_hex(), output_index()])
+	return result
+
 func output_index() -> int:
 	return _utxo.output_index
 
@@ -66,5 +74,23 @@ static func create(
 	
 func _init(utxo: _Utxo) -> void:
 	_utxo = utxo
-	
 
+func _to_string() -> String:
+	return """{
+		transaction_hash: %s,
+		output_index: %d,
+		address: %s,
+		coin: %s,
+		assets: %s,
+		datum: %s
+	}""" % [
+		_utxo.tx_hash.to_hex(),
+		_utxo.output_index,
+		_utxo.address._to_bech32().unsafe_value(),
+		_utxo.coin.to_str(),
+		MultiAsset.new(_utxo.assets).to_dictionary(),
+		datum().serialize().value.hex_encode() if datum() else null
+	]
+	
+func to_out_ref_string() -> String:
+	return "%s#%d" % [_utxo.tx_hash.to_hex(), _utxo.output_index]

@@ -11,6 +11,7 @@
     hercules-ci-effects.inputs.nixpkgs.follows = "nixpkgs";
     devshell.url = "github:numtide/devshell";
     devshell.inputs.nixpkgs.follows = "nixpkgs";
+    aiken.url = "github:aiken-lang/aiken?tag=v1.0.28-alpha";
 
     # plutip test
     cardano-nix.url = "github:mlabs-haskell/cardano.nix";

@@ -148,8 +148,8 @@ var extra_plutus_data_cbor: PackedByteArray:
 		return PackedByteArray()
 	set(v):
 		var result = PlutusData.deserialize(v)
-		if result.is_ok():
-			extra_plutus_data = result.value
+		if result != null:
+			extra_plutus_data = result
 			extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
 			extra_plutus_data_json_path = ""
 @export
@@ -208,22 +208,22 @@ var initial_quantity: int = 1:
 		assert(v == 1 or fungible, "Only fungible tokens can have a non-one quantity")
 		initial_quantity = v
 		
-func get_user_token_name() -> PackedByteArray:
+func get_user_token_name() -> AssetName:
 	var user_token_name := "000de140".hex_decode() if not fungible else "0014df10".hex_decode()
 	user_token_name.append_array(token_name)
-	return user_token_name
+	return AssetName.from_bytes(user_token_name).value
 	
-func get_ref_token_name() -> PackedByteArray:
+func get_ref_token_name() -> AssetName:
 	var ref_token_name := "000643b0".hex_decode()
 	ref_token_name.append_array(token_name)
-	return ref_token_name
+	return AssetName.from_bytes(ref_token_name).value
 
 func get_quantity() -> BigInt:
-	return BigInt.from_int(initial_quantity)
+	return BigInt.from_int(initial_quantity) if fungible else BigInt.one()
 	
 ## The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data].
 ## The CIP25 metadata follows its own rules.
-func to_data(_strict: bool = true) -> Variant:
+func to_data() -> Cip68Datum:
 	# We add the standard fields on top of the non-standard ones, overwriting.
 	var cip25_metadata := non_standard_metadata
 	cip25_metadata["name"] = name
@@ -243,36 +243,36 @@ func to_data(_strict: bool = true) -> Variant:
 			BigInt.one(),
 			extra_plutus_data,
 		])
-	return cip68_datum
+	return Cip68Datum.from_constr(cip68_datum)
 
 var big_int_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/big_int.gd")
 var file_details_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/file_details.gd")
 
 # Convert any non-strict keys and values to their strict PlutusData counterpart
 # (if possible). Fail if invalid types are found by returning null.
-func _homogenize_or_fail(v: Variant) -> Variant:
+func _homogenize_or_fail(v: Variant) -> PlutusData:
 	match typeof(v):
 		TYPE_STRING:
-			return (v as String).to_utf8_buffer()
+			return PlutusBytes.new((v as String).to_utf8_buffer())
 		TYPE_INT:
 			return BigInt.from_int(v)
 		TYPE_PACKED_BYTE_ARRAY:
 			return v
 		TYPE_ARRAY:
-			var homogenized_v = []
+			var homogenized_v: Array[PlutusData] = []
 			for val in v:
 				var homogenized_val = _homogenize_or_fail(val)
 				if homogenized_val == null:
 					return null
 				else:
 					homogenized_v.push_back(homogenized_val)
-			return homogenized_v
+			return PlutusList.new(homogenized_v)
 		TYPE_DICTIONARY:
 			var homogenized_v: Dictionary = {}
 			for key in v:
 				var homogenized_key
 				if typeof(key) == TYPE_STRING:
-					homogenized_key = (key as String).to_utf8_buffer()
+					homogenized_key = PlutusBytes.new((key as String).to_utf8_buffer())
 				elif typeof(key) == TYPE_PACKED_BYTE_ARRAY:
 					homogenized_key = key
 				else:
@@ -284,7 +284,7 @@ func _homogenize_or_fail(v: Variant) -> Variant:
 				if homogenized_val == null:
 					return null
 				homogenized_v[homogenized_key] = homogenized_val
-			return homogenized_v
+			return PlutusMap.new(homogenized_v)
 		TYPE_OBJECT:
 			var script = v.get_script()
 			if script != big_int_script and script != file_details_script:
@@ -299,13 +299,13 @@ func _homogenize_or_fail(v: Variant) -> Variant:
 func make_user_asset_class(script: PlutusScript) -> AssetClass:
 	return AssetClass.new(
 		PolicyId.from_script(script),
-		AssetName.from_bytes(get_user_token_name()).value
+		get_user_token_name()
 	)
 
 func make_ref_asset_class(script: PlutusScript) -> AssetClass:
 	return AssetClass.new(
 		PolicyId.from_script(script),
-		AssetName.from_bytes(get_ref_token_name()).value
+		get_ref_token_name()
 	)
 
 func _validate_property(property):

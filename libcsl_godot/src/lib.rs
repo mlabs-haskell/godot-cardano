@@ -98,10 +98,10 @@ struct GTxBuilder {
     max_ex_units: (u64, u64),
     slot_config: (u64, u64, u32),
     cost_models: Costmdls,
-    fee: Option<u64>,
     minted_assets:
         BTreeMap<CSL::crypto::ScriptHash, (CSL::plutus::PlutusScript, Dictionary, PackedByteArray)>,
     data: BTreeSet<PlutusData>,
+    previous_build: Option<CSL::Transaction>,
 }
 
 #[derive(Debug)]
@@ -226,13 +226,13 @@ impl GTxBuilder {
             inputs_builder: TxInputsBuilder::new(),
             mint_builder: MintBuilder::new(),
             uses_plutus_scripts: false,
-            fee: None,
             max_ex_units: (params.max_cpu_units, params.max_mem_units),
             slot_config: (0, 0, 0),
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
 
             minted_assets: BTreeMap::new(),
             data: BTreeSet::new(),
+            previous_build: None,
         })
     }
 
@@ -557,14 +557,13 @@ impl GTxBuilder {
         tx_builder.set_inputs(&self.inputs_builder.clone());
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
+
+        let fee = match self.previous_build.as_ref().map(|tx| tx.body().fee()) {
+            Some(fee) => fee.into(),
+            // overestimate fee for preliminary passes and change calculation
+            None => 2_000_000u64,
+        };
         if self.uses_plutus_scripts {
-            let fee = match self.fee {
-                Some(set_fee) => set_fee,
-                None => match self.tx_builder.min_fee() {
-                    Ok(fee) => fee.into(),
-                    Err(_) => 0,
-                },
-            };
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
             let collateral_amount = BigNum::from(min_collateral);
             let mut collateral_inputs_builder = TxInputsBuilder::new();
@@ -599,29 +598,25 @@ impl GTxBuilder {
                 &BigNum::from(min_collateral),
                 &change_address.bind().address,
             )?;
+        }
+
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::RandomImproveMultiAsset)?;
+
+        if self.uses_plutus_scripts {
             tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
 
-        match self.fee {
-            Some(_fee) => {
-                tx_builder
-                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
-                tx_builder.add_change_if_needed(&change_address.bind().address)?;
-            }
-            None => {
-                tx_builder.set_fee(&BigNum::from(5_000_000u64));
-                tx_builder
-                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
-            }
-        }
-        self.fee = Some(tx_builder.get_fee_if_set().unwrap().into());
+        tx_builder.add_change_if_needed(&change_address.bind().address)?;
+
         let tx = tx_builder.build_tx()?;
 
         let mut witnesses = tx.witness_set();
         let vkey_witnesses = Vkeywitnesses::new();
         witnesses.set_vkeys(&vkey_witnesses);
+        let transaction = CSL::Transaction::new(&tx.body(), &witnesses, None);
+        self.previous_build = Some(transaction.clone());
         Ok(Transaction {
-            transaction: CSL::Transaction::new(&tx.body(), &witnesses, None),
+            transaction,
             max_ex_units: self.max_ex_units,
             slot_config: self.slot_config,
             cost_models: self.cost_models.clone(),
@@ -643,7 +638,6 @@ impl GTxBuilder {
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
     ) -> Result<Transaction, TxBuilderError> {
-        let inputs = self.inputs_builder.inputs();
         let input_witnesses = self.inputs_builder.get_plutus_input_scripts();
         let mut replaced_inputs = InputsWithScriptWitness::new();
         let mut script_input_index = 0;
@@ -667,7 +661,7 @@ impl GTxBuilder {
                 }
                 CSL::plutus::RedeemerTagKind::Spend => {
                     let index: u64 = bound.index().into();
-                    let input = inputs.get(
+                    let input = self.previous_build.clone().unwrap().body().inputs().get(
                         index
                             .try_into()
                             .map_err(|_| TxBuilderError::UnknownRedeemerIndex(index))?,
@@ -701,7 +695,6 @@ impl GTxBuilder {
         }
         self.inputs_builder
             .add_required_script_input_witnesses(&replaced_inputs);
-        self.fee = Some(eval_result.bind().fee);
         self.balance_and_assemble(gutxos, change_address)
     }
 

@@ -14,3 +14,6 @@ func _unwrap() -> Variant:
 
 func _to_json() -> Dictionary:
 	return { "list": _data.map(to_json) }
+
+func get_data() -> Array[PlutusData]:
+	return _data

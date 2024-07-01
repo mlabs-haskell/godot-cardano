@@ -18,7 +18,7 @@ func _unwrap() -> Variant:
 	
 func get_data() -> Dictionary:
 	return _data
-
+	
 func _to_json() -> Dictionary:
 	var map := []
 	for key in _data:

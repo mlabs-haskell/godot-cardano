@@ -27,10 +27,17 @@ class FromUnitResult extends Result:
 			_asset_name = results.value[1] as AssetName
 
 static func from_unit(asset_unit: String) -> FromUnitResult:
+	if asset_unit == "lovelace":
+		asset_unit = ""
+		
 	return FromUnitResult.new(Result.sequence([
 		PolicyId.from_hex(asset_unit.substr(0, 56)),
 		AssetName.from_hex(asset_unit.substr(56,))
 	]))
 
 func to_unit() -> String:
-	return _policy_id.to_hex() + _asset_name.to_hex()
+	var policy_id = _policy_id.to_hex()
+	var asset_name = _asset_name.to_hex()
+	if policy_id == "" and asset_name == "":
+		return "lovelace"
+	return policy_id + asset_name
