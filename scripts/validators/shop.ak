@@ -41,7 +41,7 @@ validator(_tag: Int) {
             tx_info.reference_inputs,
             fn (input) {
               trace string.join([
-                @"Trying",
+                @"Trying ",
                 bytearray.to_hex(input.output_reference.transaction_id.hash),
                 @"#",
                 string.from_int(input.output_reference.output_index)

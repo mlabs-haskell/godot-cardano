@@ -73,12 +73,10 @@ func _on_wallet_ready():
 		WalletSingleton.provider.chain_asset(conf.make_ref_asset_class(minting_policy))
 	print('using shop %s' % shop_address.to_bech32())
 	print('using minting policy %s' % minting_policy.hash_as_hex())
-	mint_tokens()
-	data_updated.emit()
-	update_timer.timeout.emit()
 	busy = true
-	await data_updated
+	await mint_tokens()
 	busy = false
+	data_updated.emit()
 
 func _on_data_updated():
 	var i := 0
@@ -181,7 +179,9 @@ func mint_tokens():
 	if new_tx_result.is_err():
 		push_error("Could not create transaction: %s" % new_tx_result.error)
 		return
-
+	var shop_address := provider.make_address(
+		Credential.from_script(shop_script)
+	)
 	var tx_builder = new_tx_result.value
 
 	var new_mint = false
@@ -193,16 +193,14 @@ func mint_tokens():
 			tx_builder.mint_cip68_pair(minting_policy, VoidData.new().to_data(), conf)
 			tx_builder.pay_cip68_ref_token(
 				minting_policy,
-				WalletSingleton.provider.make_address(
+				provider.make_address(
 					Credential.from_script(ref_lock),
 				),
 				conf
 			)
 			tx_builder.pay_cip68_user_tokens_with_datum(
 				minting_policy,
-				WalletSingleton.provider.make_address(
-					Credential.from_script(shop_script)
-				),
+				shop_address,
 				PlutusBytes.new(owner_pub_key_hash.to_bytes()),
 				conf
 			)
@@ -224,6 +222,7 @@ func mint_tokens():
 		push_error("Failed to submit transaction: %s" % submit_result.error)
 		return
 
+	provider.invalidate_cache()
 	update_timer.timeout.emit()
 	print("Minted")
 	busy = false
@@ -244,16 +243,16 @@ func burn_tokens():
 	var shop_utxos = await provider.get_utxos_at_address(
 		provider.make_address(Credential.from_script(shop_script))
 	)
-		
+
 	var owner_shop_utxos = shop_utxos.filter(
 		func (utxo: Utxo):
 			return PlutusBytes.new(owner_pub_key_hash.to_bytes()).equals(utxo.datum())
 	)
-	
+
 	var ref_lock_utxos = await provider.get_utxos_at_address(
 		provider.make_address(Credential.from_script(ref_lock))
 	)
-	
+
 	var burns: Array[TxBuilder.MintToken] = []
 	for conf in cip68_data:
 		var user_asset_class := conf.make_user_asset_class(minting_policy)
@@ -262,12 +261,12 @@ func burn_tokens():
 			quantity_remaining = quantity_remaining.add(
 				utxo.assets().get_asset_quantity(user_asset_class)
 			)
-			
+
 		if quantity_remaining.gt(BigInt.zero()):
 			burns.push_back(
 				TxBuilder.MintToken.new(user_asset_class._asset_name, quantity_remaining.negate()),
 			)
-		
+
 		var ref_asset_class := conf.make_ref_asset_class(minting_policy)
 		for utxo in ref_lock_utxos:
 			var ref_count = utxo.assets().get_asset_quantity(ref_asset_class)
@@ -278,7 +277,7 @@ func burn_tokens():
 
 	if burns.is_empty():
 		return
-		
+
 	tx_builder.collect_from_script(
 		PlutusScriptSource.from_script(ref_lock),
 		ref_lock_utxos,

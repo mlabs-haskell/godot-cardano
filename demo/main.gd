@@ -167,21 +167,13 @@ func _on_mint_token_button_pressed() -> void:
 	tx.mint_cip68_pair(policy_script, redeemer, mint_token_conf)
 
 	# Create MultiAsset with both tokens
-	var policy_hex := policy_script.hash_as_hex()
-	var minted_value_dict := {}
-	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_user_token_name().hex_encode()]] = BigInt.one()._b
-	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_ref_token_name().hex_encode()]] = BigInt.one()._b
-	var minted_value_result := MultiAsset.from_dictionary(minted_value_dict)
-	if minted_value_result.is_err():
-		push_error("Could not created minted value from dictionary: ", minted_value_result.error)
-	var minted_value := minted_value_result.value
+	tx.mint_cip68_pair(policy_script, VoidData.new().to_data(), mint_token_conf)
 	
 	# Send both tokens to myself and set its corresponding metadata
-	tx.pay_to_address_with_datum(
+	tx.pay_cip68_ref_token(
+		policy_script,
 		address,
-		BigInt.from_int(5_000_000),
-		minted_value,
-		mint_token_conf.to_data(true)
+		mint_token_conf
 	)
 
 	var result := await tx.complete()

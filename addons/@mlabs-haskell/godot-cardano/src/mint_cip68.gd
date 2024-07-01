@@ -223,7 +223,7 @@ func get_quantity() -> BigInt:
 	
 ## The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data].
 ## The CIP25 metadata follows its own rules.
-func to_data() -> Variant:
+func to_data() -> Cip68Datum:
 	# We add the standard fields on top of the non-standard ones, overwriting.
 	var cip25_metadata := non_standard_metadata
 	cip25_metadata["name"] = name
@@ -243,7 +243,7 @@ func to_data() -> Variant:
 			BigInt.one(),
 			extra_plutus_data,
 		])
-	return cip68_datum
+	return Cip68Datum.from_constr(cip68_datum)
 
 var big_int_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/big_int.gd")
 var file_details_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/file_details.gd")
@@ -259,14 +259,14 @@ func _homogenize_or_fail(v: Variant) -> PlutusData:
 		TYPE_PACKED_BYTE_ARRAY:
 			return v
 		TYPE_ARRAY:
-			var homogenized_v = []
+			var homogenized_v: Array[PlutusData] = []
 			for val in v:
 				var homogenized_val = _homogenize_or_fail(val)
 				if homogenized_val == null:
 					return null
 				else:
 					homogenized_v.push_back(homogenized_val)
-			return homogenized_v
+			return PlutusList.new(homogenized_v)
 		TYPE_DICTIONARY:
 			var homogenized_v: Dictionary = {}
 			for key in v:

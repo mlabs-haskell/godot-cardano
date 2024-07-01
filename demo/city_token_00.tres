@@ -31,8 +31,10 @@ extra_plutus_data_int = 0
 extra_plutus_data_bytes = PackedByteArray()
 extra_plutus_data_as_hex = ""
 extra_plutus_data_as_utf8 = ""
-extra_plutus_data_cbor_hex = ""
-extra_plutus_data_json = ""
+extra_plutus_data_cbor_hex = "00"
+extra_plutus_data_json = "{
+  \"int\": \"0\"
+}"
 extra_plutus_data_json_path = ""
 fungible = false
 initial_quantity = 1
