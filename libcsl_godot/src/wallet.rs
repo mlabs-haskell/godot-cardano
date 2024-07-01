@@ -21,8 +21,11 @@ use pkcs5::{pbes2, Error};
 use rand::{RngCore, SeedableRng};
 use scrypt::errors::InvalidParams;
 
+use crate::cip_30_sign::DataSignature;
+use crate::cip_8_sign;
 use crate::gresult::{FailsWith, GResult};
 use crate::ledger::transaction::{Address, Signature, Transaction};
+use cardano_message_signing as cms;
 
 /// A single address wallet is a wallet with possibly many accounts and where
 /// each account has one address.
@@ -51,6 +54,7 @@ pub enum SingleAddressWalletError {
     BadDecryptedKey(JsError),
     Bech32Error(JsError),
     NonExistentAccount(u32),
+    DataSignCip30Error(cms::error::JsError),
 }
 
 impl GodotConvert for SingleAddressWalletError {
@@ -65,6 +69,7 @@ impl ToGodot for SingleAddressWalletError {
             BadDecryptedKey(_) => 2,
             Bech32Error(_) => 3,
             NonExistentAccount(_) => 4,
+            DataSignCip30Error(_) => 5,
         }
     }
 }
@@ -115,6 +120,45 @@ impl SingleAddressWallet {
     fn _sign_transaction(&self, password: PackedByteArray, gtx: Gd<Transaction>) -> Gd<GResult> {
         Self::to_gresult_class(self.sign_transaction(password, gtx))
     }
+
+    // Sign a data using the given account's key. This operation requires
+    // the wallet password.
+    pub fn sign_data(
+        &self,
+        password: Vec<u8>,
+        data: Vec<u8>,
+    ) -> Result<DataSignature, SingleAddressWalletError> {
+        let pbes2_params = unsafe_get_pbes2_params(&self.aes_iv, &self.scrypt_params, &self.salt);
+        let current_account = self.account.bind();
+        let res = with_account_private_key(
+            pbes2_params,
+            self.encrypted_master_private_key.as_slice(),
+            password.to_vec().as_slice(),
+            current_account.index,
+            &mut |account_private_key| {
+                let spend_key = account_private_key.derive(0).derive(0);
+                cip_8_sign::sign_data(
+                    &spend_key,
+                    self.account.bind().address.to_bytes(),
+                    data.to_vec(),
+                )
+                .map_err(SingleAddressWalletError::DataSignCip30Error)
+            },
+        );
+        match res {
+            Ok(sign_result) => Ok(DataSignature::from(sign_result)),
+            Err(other_err) => Err(other_err),
+        }
+    }
+
+    #[func]
+    fn _sign_data(&self, password: PackedByteArray, data: PackedByteArray) -> Gd<GResult> {
+        Self::to_gresult_class(self.sign_data(password.to_vec(), data.to_vec()))
+    }
+
+    // pub fn get_base_address(&self) -> CSLAddress {
+    //     address_from_key(self.network_id, &self.account_info.public_key)
+    // }
 
     pub fn get_address(&self) -> Gd<Address> {
         Gd::from_object(Address {
