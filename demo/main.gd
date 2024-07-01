@@ -1,7 +1,7 @@
 extends Node2D
 
 @export
-var mint_token_conf: MintCip68Pair
+var mint_token_conf: MintCip68
 
 var provider: Provider
 var wallet: Wallet.MnemonicWallet = null

@@ -74,8 +74,10 @@ class MnemonicWallet extends Wallet:
 		add_child(timer)
 		if auto_update_utxos:
 			timer.autostart = true
-			# Initialize UTxOs immediately
-			update_utxos()
+		
+	func _ready():
+		# Initialize UTxOs immediately
+		update_utxos()
 		
 	## Update the cached utxos. The same as [MnemonicWallet.get_utxos], but
 	## without returning the updated utxos.

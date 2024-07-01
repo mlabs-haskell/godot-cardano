@@ -15,9 +15,13 @@ class FromHexResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
-		
+
 static func from_hex(hash: String) -> FromHexResult:
 	return FromHexResult.new(_PolicyId._from_hex(hash))
+
+static func from_script(script: PlutusScript) -> PolicyId:
+	var result = _PolicyId._from_hex(script.hash_as_hex())
+	return new(result.unsafe_value())
 	
 func to_hex() -> String:
 	return _policy_id.to_hex()

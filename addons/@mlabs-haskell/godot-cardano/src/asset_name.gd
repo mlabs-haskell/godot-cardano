@@ -16,8 +16,19 @@ class FromHexResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 		
+class FromBytesResult extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: AssetName:
+		get: return AssetName.new(_res.unsafe_value())
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
+		
 static func from_hex(hash: String) -> FromHexResult:
 	return FromHexResult.new(_AssetName._from_hex(hash))
+
+static func from_bytes(bytes: PackedByteArray) -> FromBytesResult:
+	return FromBytesResult.new(_AssetName._from_bytes(bytes))
 	
 func to_hex() -> String:
 	return _asset_name.to_hex()

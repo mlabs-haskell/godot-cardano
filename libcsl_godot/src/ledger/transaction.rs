@@ -1,7 +1,10 @@
+use crate::plutus::to_aiken;
 use cardano_serialization_lib as CSL;
+use uplc::ast::DeBruijn;
+use uplc::ast::Program;
 use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
 use CSL::error::JsError;
-use CSL::plutus::{ExUnits, Language, PlutusData, RedeemerTag};
+use CSL::plutus::{ExUnits, Language, RedeemerTag};
 use CSL::tx_builder::tx_inputs_builder::{self};
 use CSL::utils::*;
 use CSL::{TransactionInput, TransactionOutput};
@@ -539,7 +542,7 @@ impl Redeemer {
             3 => Ok(RedeemerTag::new_reward()),
             _ => Err(RedeemerError::UnknownRedeemerTag(tag)),
         }?;
-        let data = &PlutusData::from_bytes(data.to_vec())?;
+        let data = &CSL::plutus::PlutusData::from_bytes(data.to_vec())?;
         Ok(Redeemer {
             redeemer: CSL::plutus::Redeemer::new(
                 &redeemer_tag,
@@ -581,6 +584,7 @@ pub struct PlutusScript {
     pub script: CSL::plutus::PlutusScript,
 }
 
+// FIXME: handle errors in here and support Plutus V1
 #[godot_api]
 impl PlutusScript {
     #[func]
@@ -600,6 +604,23 @@ impl PlutusScript {
     #[func]
     fn hash_as_hex(&self) -> GString {
         self.hash().bind().hash.to_hex().to_godot()
+    }
+
+    fn apply_params(&self, args: Array<Variant>) -> PlutusScript {
+        let mut buffer: Vec<u8> = Vec::new();
+        let prog: Program<DeBruijn> =
+            Program::from_cbor(self.script.bytes().as_slice(), &mut buffer).unwrap();
+        let mut applied_prog = prog.clone();
+        for arg in args.iter_shared() {
+            applied_prog = applied_prog.apply_data(to_aiken(arg));
+        }
+        let script = CSL::plutus::PlutusScript::new_v2(applied_prog.to_cbor().unwrap());
+        Self { script }
+    }
+
+    #[func]
+    fn _apply_params(&self, args: Array<Variant>) -> Gd<PlutusScript> {
+        Gd::from_object(self.apply_params(args))
     }
 }
 
@@ -777,7 +798,7 @@ impl Utxo {
         match (datum_info.data_hash.clone(), datum_info.datum_value.clone()) {
             (_, Some(UtxoDatumValue::Inline(inline_datum))) => {
                 output.set_plutus_data(
-                    &PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
+                    &CSL::plutus::PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
                 );
             }
             (Some(datum_hash), _) => {

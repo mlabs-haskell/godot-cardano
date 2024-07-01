@@ -175,7 +175,7 @@ func export() -> SingleAddressWalletResource:
 		account_res.public_key = account.public_key
 		res.accounts.push_back(account_res)
 	res.encrypted_master_private_key = dict["encrypted_master_private_key"]
-	res.scrypt_salt = dict["scrypt_salt"]
+	res.salt = dict["salt"]
 	res.scrypt_log_n = dict["scrypt_log_n"]
 	res.scrypt_r = dict["scrypt_r"]
 	res.scrypt_p = dict["scrypt_p"]
