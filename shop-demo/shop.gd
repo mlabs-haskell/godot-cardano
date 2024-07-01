@@ -185,8 +185,8 @@ func mint_tokens():
 	var new_mint = false
 	for conf in cip68_data:
 		var asset_class := conf.make_ref_asset_class(minting_policy)
-		var utxos := await provider.get_utxos_with_asset(asset_class)
-		if utxos.size() == 0:
+		var utxo := await provider.get_utxo_with_nft(asset_class)
+		if utxo == null:
 			new_mint = true
 			tx_builder.mint_cip68_pair(minting_policy, VoidData.new().to_data(), conf)
 			tx_builder.pay_cip68_ref_token(
@@ -245,10 +245,9 @@ func buy_item(conf: MintCip68, quantity: int) -> bool:
 	var shop_utxos = await provider.get_utxos_at_address(
 		provider.make_address(Credential.from_script(shop_script))
 	)
-	var ref_utxo := await provider.get_utxos_with_asset(
+	var ref_utxo := await provider.get_utxo_with_nft(
 		conf.make_ref_asset_class(minting_policy)
 	)
-	
 	var user_asset_class = conf.make_user_asset_class(minting_policy)
 	var selected_utxo: Utxo = null
 	if quantity > 0:
@@ -268,7 +267,7 @@ func buy_item(conf: MintCip68, quantity: int) -> bool:
 		VoidData.new().to_data()
 	)
 
-	tx_builder.add_reference_input(ref_utxo[0])
+	tx_builder.add_reference_input(ref_utxo)
 
 	var assets := selected_utxo.assets().duplicate()
 	assets.add_asset(conf.make_user_asset_class(minting_policy), BigInt.from_int(-quantity))

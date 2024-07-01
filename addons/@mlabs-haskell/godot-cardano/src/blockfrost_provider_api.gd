@@ -1,6 +1,8 @@
 extends ProviderApi
 class_name BlockfrostProviderApi
 
+enum ResultsOrder { ASCENDING, DESCENDING }
+
 class Epoch extends Abstract:
 	const _abstract_name := "Epoch"
 	
@@ -81,6 +83,19 @@ class UtxosAtAddressRequest extends Request:
 		
 	func _url() -> String:
 		return "addresses/%s/utxos?page=%d" % [_address, _page]
+		
+class UtxosAtAddressWithAssetRequest extends Request:
+	var _address: String
+	var _asset_unit: String
+	var _page: int
+	
+	func _init(address: String, asset_unit: String, page := 1) -> void:
+		_address = address
+		_asset_unit = asset_unit
+		_page = page
+		
+	func _url() -> String:
+		return "addresses/%s/utxos/%s?page=%d" % [_address, _asset_unit, _page]
 
 class AssetsAddressesRequest extends Request:
 	var _asset_unit: String
@@ -92,6 +107,23 @@ class AssetsAddressesRequest extends Request:
 		
 	func _url() -> String:
 		return "assets/%s/addresses?page=%d" % [_asset_unit, _page]
+		
+class AssetTransactionsRequest extends Request:
+	var _asset_unit: String
+	var _page: int
+	var _order: ResultsOrder
+	
+	func _init(asset_unit: String, page := 1, order := ResultsOrder.DESCENDING) -> void:
+		_asset_unit = asset_unit
+		_page = page
+		_order = order
+		
+	func _url() -> String:
+		return "assets/%s/transactions?page=%d&order=%s" % [
+			_asset_unit,
+			_page,
+			"asc" if _order == ResultsOrder.ASCENDING else "desc"
+		]
 
 class DatumCborFromHash extends Request:
 	var _hash: String
@@ -182,7 +214,7 @@ func blockfrost_request(request: Request) -> Variant:
 	)
 	
 	if status != OK:
-		print("Creating Blockfrost request failed: %s, %s" % [status, request])
+		push_error("Creating Blockfrost request failed: %s, %s" % [status, request])
 		http_request.queue_free()
 		return null
 
@@ -198,8 +230,8 @@ func blockfrost_request(request: Request) -> Variant:
 		#		this may be phased out
 		if status_code == 404 or status_code == 400:
 			return JSON.parse_string(content)
-		print("Blockfrost request failed with status code ", status_code, ". Response content: ")
-		print(content)
+		push_error("Blockfrost request failed with status code ", status_code, ". Response content: ")
+		push_error(content)
 		return null
 
 	return JSON.parse_string(content)
@@ -262,14 +294,17 @@ func utxo_assets(utxo: Dictionary) -> Dictionary:
 				push_error("There was an error while reading the assets from a utxo", res.error)
 	)
 	return assets
-	
-func _get_utxos_at_address(address: Address) -> Array[Utxo]:
+
+func _get_utxos_at_address(address: Address, asset: AssetClass = null) -> Array[Utxo]:
 	var utxos_json: Array = await _paged_request(
 		func (page: int) -> Request:
-			return UtxosAtAddressRequest.new(address.to_bech32(), page)
+			if asset == null:
+				return UtxosAtAddressRequest.new(address.to_bech32(), page) 
+			else:
+				return UtxosAtAddressWithAssetRequest.new(address.to_bech32(), asset.to_unit(), page)
 	)
 	var utxos := await _utxos_from_json(utxos_json)
-	got_utxos_at_address.emit(UtxosAtAddressResult.new(address, utxos))
+	got_utxos_at_address.emit(UtxosAtAddressResult.new(address, utxos, asset))
 	return utxos
 
 func _get_asset_addresses(asset: AssetClass) -> Array[Address]:
@@ -294,7 +329,7 @@ func _get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 	var utxos: Array[Utxo] = []
 	
 	for address: Address in addresses:
-		var address_utxos = await _get_utxos_at_address(address)
+		var address_utxos = await _get_utxos_at_address(address, asset)
 		utxos.append_array(address_utxos.filter(
 			func (utxo: Utxo) -> bool:
 				return utxo.assets().get_asset_quantity(asset).gt(BigInt.zero())
@@ -302,22 +337,45 @@ func _get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 
 	got_utxos_with_asset.emit(UtxosWithAssetResult.new(asset, utxos))
 	return utxos
+	
+func _get_utxo_with_nft(asset: AssetClass) -> Utxo:
+	var asset_unit = asset.to_unit()
+	var transactions := await blockfrost_request(
+		AssetTransactionsRequest.new(asset_unit, 1, ResultsOrder.DESCENDING)
+	)
+	if transactions.has("status_code"):
+		return null
+	var transaction_utxos := await blockfrost_request(
+		TransactionUtxosRequest.new(transactions[0].tx_hash)
+	)
+	if transaction_utxos.has("status_code"):
+		return null
+	var utxos_filtered = transaction_utxos.outputs.filter(
+		func (json): return json.amount.any(func (asset): return asset.unit == asset_unit)
+	)
+	if utxos_filtered.is_empty():
+		return null
+	var utxo_json = utxos_filtered[0]
+	utxo_json['tx_hash'] = transactions[0].tx_hash
+	var utxo = (await _utxos_from_json([utxo_json]))[0]
+	got_utxos_with_asset.emit([UtxoByOutRefResult.new(utxo)])
+
+	return utxo
 
 func _get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 	var response: Dictionary = await blockfrost_request(
 		TransactionUtxosRequest.new(tx_hash.to_hex())
 	)
-	if response.outputs.size() < output_index + 1:
+	if response.has("status_code") or response.outputs.size() < output_index + 1:
 		return null
 	
 	var utxo_json = response.outputs[output_index]
 	# There may be better ways to handle this, but the structure of the outputs
 	# here doesn't match the usual UTxO structure returned by Blockfrost
 	utxo_json['tx_hash'] = tx_hash.to_hex()
-	utxo_json['tx_index'] = output_index
-	var utxo = await _utxos_from_json([utxo_json])
-	got_utxo_by_out_ref.emit(UtxoByOutRefResult.new(utxo[0]))
-	return utxo[0]
+	var utxo = (await _utxos_from_json([utxo_json]))[0]
+	got_utxo_by_out_ref.emit(UtxoByOutRefResult.new(utxo))
+	return utxo
 	
 func _paged_request(make_request: Callable, page_size := 100) -> Array:
 	var results: Array = []
@@ -352,7 +410,7 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 				var coin: BigInt = assets['lovelace']
 				var _erased := assets.erase('lovelace')
 				var tx_hash: String = utxo.tx_hash
-				var tx_index: int = utxo.tx_index
+				var output_index: int = utxo.output_index
 				var address: String = utxo.address
 				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
 				var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
@@ -365,7 +423,7 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 				
 				var result := Utxo.create(
 					tx_hash,
-					tx_index,
+					output_index,
 					address,
 					coin.to_str(),
 					assets,

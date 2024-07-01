@@ -107,10 +107,12 @@ class UtxoByOutRefResult:
 
 class UtxosAtAddressResult:
 	var _address: Address
+	var _asset: AssetClass
 	var _utxos: Array[Utxo]
 	
-	func _init(address: Address, utxos: Array[Utxo]) -> void:
+	func _init(address: Address, utxos: Array[Utxo], asset: AssetClass = null) -> void:
 		_address = address
+		_asset = asset
 		_utxos = utxos
 
 signal got_network_genesis(genesis: NetworkGenesis)
@@ -140,13 +142,21 @@ func _get_protocol_parameters() -> ProtocolParameters:
 	await _empty
 	return null
 
-func _get_utxos_at_address(_address: Address) -> Array[Utxo]:
+## Should return the full set of UTxOs at a given address, optionally holding a given asset.
+func _get_utxos_at_address(_address: Address, asset: AssetClass = null) -> Array[Utxo]:
 	await _empty
 	return []
-
+	
 func _get_utxos_with_asset(_asset: AssetClass) -> Array[Utxo]:
 	await _empty
 	return []
+
+## Should return the UTxO carrying the given asset class with the assumption that
+## it is unique in the ledger. Should return null if the asset does not currently
+## exist.
+func _get_utxo_with_nft(_asset: AssetClass) -> Utxo:
+	await _empty
+	return null
 
 func _get_utxo_by_out_ref(_tx_hash: TransactionHash, _output_index: int) -> Utxo:
 	await _empty

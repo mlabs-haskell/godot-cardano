@@ -309,11 +309,13 @@ func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Ad
 		stake_cred
 	)
 
-func get_utxos_at_address(address: Address) -> Array[Utxo]:
+## Returns the full set of UTxOs at the given address, optionally carrying the given
+## asset class.
+func get_utxos_at_address(address: Address, asset: AssetClass = null) -> Array[Utxo]:
 	var query_id = address.to_bech32()
 	return await _get_utxos(
 		query_id,
-		func (): return await _provider_api._get_utxos_at_address(address)
+		func (): return await _provider_api._get_utxos_at_address(address, asset)
 	)
 
 func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
@@ -322,6 +324,12 @@ func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 		query_id,
 		func (): return await _provider_api._get_utxos_with_asset(asset)
 	)
+
+## Returns the most recent UTxO containing a given asset class, or null if the
+## asset does not currently exist in the ledger.
+func get_utxo_with_nft(asset: AssetClass) -> Utxo:
+	var query_id = asset.to_unit()
+	return await _provider_api._get_utxo_with_nft(asset)
 
 func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 	return await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)
