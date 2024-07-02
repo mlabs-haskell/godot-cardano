@@ -2,10 +2,10 @@ extends GridContainer
 
 class_name Buttons
 
-var _godot_wallet: SingleAddressWallet
+var _cip_30_wallet: Cip30WalletApi
 var _game_middleware: GameMiddleware
 var _window
-var _godot_login_info
+var _godot_login_info: PaimaMiddleware.LoginInfo
 
 # Buttons
 var _login_button
@@ -14,11 +14,11 @@ var _step_right_button
 var _player_pos_button
 
 func _init(
-		godot_wallet: SingleAddressWallet, 
+		cip_30_wallet: Cip30WalletApi, 
 		godot_login_info: PaimaMiddleware.LoginInfo,
 		window
 	) -> void:
-	_godot_wallet = godot_wallet
+	_cip_30_wallet = cip_30_wallet
 	_godot_login_info = godot_login_info
 	_window = window
 
@@ -27,7 +27,7 @@ func _ready():
 	if _window && _window.paima:
 		print("init Paima")
 		add_paima_game_buttons(_window)
-	if _godot_wallet:
+	if _cip_30_wallet:
 		add_test_sign_button()
 #
 func add_paima_game_buttons(window):
@@ -95,18 +95,29 @@ func test_sing():
 	var test_hex = test_data.to_utf8_buffer().hex_encode()
 	prints("Signing known test data - hex of", test_data, ": ", test_hex)
 	
-	var signing_address = _godot_wallet.get_address_bech32()
-	prints("Test sig address hex: ", _godot_wallet.get_address_hex())
-	prints("Test sig address bech32: ", signing_address)
-	var sign_res = sign_data(signing_address, test_hex)
-	if sign_res.is_err():
-		prints("Failed to sign data: ", sign_res.error)
-		return
-	prints("Test sig COSE key: ", sign_res.value._cose_key_hex())
-	prints("Test sig COSE sig1: ", sign_res.value._cose_sig1_hex())
+	prints("Test sig address hex: ", _cip_30_wallet.get_address())
+	var key: String
+	var signature: String
+	## JavaScriptBridge always creates `null` object if not in browser context
+	if _window:
+		print("Sign in JS")
+		var sign_res = _cip_30_wallet.sign_data("", test_hex)
+		key = sign_res.key
+		signature = sign_res.signature
+	else:
+		print("Sign native")
+		var sign_res = _cip_30_wallet._single_address_wallet.sign_data("", test_hex)
+		if sign_res.is_err():
+			prints("Failed to sign data: ", sign_res.error)
+			return
+		key = sign_res.value._cose_key_hex()
+		signature = sign_res.value._cose_sig1_hex()
+		
+	prints("Test sig COSE key: ", key)
+	prints("Test sig COSE sig1: ", signature)
 
 func sign_data(signing_address, payload):
-	return _godot_wallet.sign_data("", payload);
+	return 
 
 var since_last_stats_refresh = 0 
 var stats_refresh_period = 3 # seconds

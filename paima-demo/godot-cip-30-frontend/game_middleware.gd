@@ -16,6 +16,7 @@ func _init(paima_middleware: PaimaMiddleware) -> void:
 ## Login
 ### The func
 func login(login_info: PaimaMiddleware.LoginInfo):
+	print("login here")
 	_middleware.login(login_info)
 
 ## Join world

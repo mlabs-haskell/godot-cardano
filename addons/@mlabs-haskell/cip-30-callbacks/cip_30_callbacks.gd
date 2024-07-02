@@ -11,7 +11,8 @@ extends Node
 ## (see https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)
 
 class_name Cip30Callbacks
-var _godot_wallet: SingleAddressWallet
+
+var _cip_30_wallet: Cip30WalletApi
 
 # This references must be kept
 # See example: https://docs.godotengine.org/en/stable/classes/class_javascriptobject.html#javascriptobject
@@ -19,8 +20,8 @@ var _js_cb_get_unused_addresses = JavaScriptBridge.create_callback(_cb_get_unuse
 var _js_cb_get_used_addresses = JavaScriptBridge.create_callback(_cb_get_used_addresses)
 var _js_cb_sign_data = JavaScriptBridge.create_callback(_cb_sign_data)
 
-func _init(godot_wallet):
-	_godot_wallet = godot_wallet
+func _init(cip_30_wallet: Cip30WalletApi):
+	_cip_30_wallet = cip_30_wallet
 
 # TODO: CIP-30 compliant errors
 # CIP-30 callbacks
@@ -39,7 +40,7 @@ func add_to(window):
 func _cb_get_used_addresses(args):
 	prints("GD: _cb_get_used_addresses")
 	var addresses = JavaScriptBridge.create_object("Array", 1)
-	addresses[0] = _godot_wallet.get_address_hex()
+	addresses[0] = _cip_30_wallet.get_address()
 	var promise_resolve: JavaScriptObject = args[0]
 	promise_resolve.call("call", promise_resolve.this, addresses)
 
@@ -66,7 +67,9 @@ func _cb_sign_data(args):
 	
 	# TODO: If we want proper CIP-30 support, we should parse the address (could be hex or bech32)
 	# to pub key and differentiate between ProofGeneration and AddressNotPK errors
-	if !_address_matches_own(signing_address):
+	
+	# Paima framework will pass bech32 encoded Address into the sing request if the wallet is not Nami
+	if !_cip_30_wallet.owns_address(signing_address):
 		var sign_error = JavaScriptBridge.create_object("Object")
 		sign_error.code = 1
 		sign_error.info = "Wallet can't sign data - address does not belong to the wallet, or not properly encoded (expecting hex)"
@@ -74,18 +77,8 @@ func _cb_sign_data(args):
 		return
 	
 	prints("GD:CIP-30:sign data:", "address: ", signing_address, ", data hex: ", data_hex)
-	var sign_result = _godot_wallet.sign_data("", data_hex)
-	promise_resolve.call("call", promise_resolve.this, _mk_sign_response(sign_result))
-
-func _address_matches_own(address: String):
-	# Paima framework will pass bech32 encoded Address into the sing request if the wallet is not Nami
-	return address == _godot_wallet.get_address_bech32() || address == _godot_wallet.get_address_hex()
-
-func _mk_sign_response(sign_result):
-	var sign_response = JavaScriptBridge.create_object("Object")
-	sign_response.key = sign_result.value._cose_key_hex()
-	sign_response.signature = sign_result.value._cose_sig1_hex()
-	return sign_response
+	var sign_result = _cip_30_wallet.sign_data("", data_hex)
+	promise_resolve.call("call", promise_resolve.this, sign_result)
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

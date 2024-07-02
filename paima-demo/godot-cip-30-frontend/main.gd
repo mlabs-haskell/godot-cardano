@@ -44,11 +44,12 @@ func _remove_buttons():
 		buttons_grid = null
 
 func _on_godot_wallet_ready():
-	init_buttons()
-	Cip30Callbacks.new(wallet).add_to(window)
+	var cip_30_wrapper = Cip30SingleAddressWallet.new(wallet)
+	init_buttons(cip_30_wrapper)
+	Cip30Callbacks.new(cip_30_wrapper).add_to(window)
 
-func init_buttons():
-	buttons_grid = Buttons.new(wallet, godot_login_info, window)
+func init_buttons(cip_30_wallet: Cip30WalletApi):
+	buttons_grid = Buttons.new(cip_30_wallet, godot_login_info, window)
 	buttons_grid.set_name("Buttons")
 	ui_grid.add_child(buttons_grid)
 

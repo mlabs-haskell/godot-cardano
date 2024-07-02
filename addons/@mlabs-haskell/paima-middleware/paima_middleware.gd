@@ -35,10 +35,20 @@ var console = JavaScriptBridge.get_interface("console")
 
 func _init(window) -> void:
 	assert(window)
+	#_inject_self_to_window() #TODO
 	_middleware = window.paima
 	assert(_middleware)
 	_endpoints = _middleware.endpoints
 	assert(_endpoints)
+
+func _inject_self_to_window():
+	JavaScriptBridge.eval("""
+	import endpoints, { WalletMode } from './paima/paimaMiddleware.js';
+	const {parse} = require('node-html-parser');
+	window.pppaima = {
+			endpoints: endpoints,
+		}
+	""", true)
 
 func get_enpoints():
 	return _endpoints
@@ -71,6 +81,7 @@ func wallet_is_set():
 	return  _paima_wallet && _paima_wallet.success
 
 func _to_js_login_info(login_info: LoginInfo):
+	print("here 1")
 	var pref = _new_js_obj()
 	pref.name = login_info._wallet_name
 	var info = _new_js_obj()
