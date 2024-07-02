@@ -8,6 +8,12 @@ var wallet
 var buttons_grid
 var ui_grid
 
+var godot_login_info := PaimaMiddleware.LoginInfo.new(
+	"godot", 
+	PaimaMiddleware.WalletMode.CARDANO, 
+	true
+	)
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("GD: starting cardano-godot Paima demo")
@@ -42,7 +48,7 @@ func _on_godot_wallet_ready():
 	Cip30Callbacks.new(wallet).add_to(window)
 
 func init_buttons():
-	buttons_grid = Buttons.new(wallet, window)
+	buttons_grid = Buttons.new(wallet, godot_login_info, window)
 	buttons_grid.set_name("Buttons")
 	ui_grid.add_child(buttons_grid)
 

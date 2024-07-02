@@ -3,18 +3,23 @@ extends GridContainer
 class_name Buttons
 
 var _godot_wallet: SingleAddressWallet
-var _paima_middleware
+var _game_middleware: GameMiddleware
 var _window
+var _godot_login_info
 
 # Buttons
-var login_button
-var join_button
-var step_right_button
+var _login_button
+var _join_button
+var _step_right_button
+var _player_pos_button
 
-var player_pos_button
-
-func _init(godot_wallet: SingleAddressWallet, window):
+func _init(
+		godot_wallet: SingleAddressWallet, 
+		godot_login_info: PaimaMiddleware.LoginInfo,
+		window
+	) -> void:
 	_godot_wallet = godot_wallet
+	_godot_login_info = godot_login_info
 	_window = window
 
 # Called when the node enters the scene tree for the first time.
@@ -26,7 +31,7 @@ func _ready():
 		add_test_sign_button()
 #
 func add_paima_game_buttons(window):
-	_paima_middleware = PaimaMiddleware.new(window)
+	_game_middleware = GameMiddleware.new(PaimaMiddleware.new(window))
 	
 	var sep1 = Label.new()
 	sep1.text = "Paima buttons"
@@ -34,31 +39,31 @@ func add_paima_game_buttons(window):
 	add_child(sep1)
 	
 	# Login
-	login_button = Button.new()
-	login_button.text = "Paima login with wallet"
-	login_button.pressed.connect(_paima_middleware.login)
-	add_child(login_button)
+	_login_button = Button.new()
+	_login_button.text = "Paima login with wallet"
+	_login_button.pressed.connect(_game_middleware.login.bind(_godot_login_info))
+	add_child(_login_button)
 	
 	# Join world
-	join_button = Button.new()
-	join_button.text = "Paima Join World"
-	join_button.pressed.connect(_paima_middleware.join_world)
-	join_button.disabled = true
-	add_child(join_button)
+	_join_button = Button.new()
+	_join_button.text = "Paima Join World"
+	_join_button.pressed.connect(_game_middleware.join_world)
+	_join_button.disabled = true
+	add_child(_join_button)
 	
 	# Step right
-	step_right_button = Button.new()
-	step_right_button.text = "Step right"
-	step_right_button.pressed.connect(test_step_right)
-	step_right_button.disabled = true
-	add_child(step_right_button)
+	_step_right_button = Button.new()
+	_step_right_button.text = "Step right"
+	_step_right_button.pressed.connect(test_step_right)
+	_step_right_button.disabled = true
+	add_child(_step_right_button)
 	
 	# Button to refresh and show player posiotion
-	player_pos_button = Button.new()
-	player_pos_button.text = "Player position: N/A"
-	player_pos_button.pressed.connect(_paima_middleware.update_player_stats)
-	player_pos_button.disabled = true
-	add_child(player_pos_button)
+	_player_pos_button = Button.new()
+	_player_pos_button.text = "Player position: N/A"
+	_player_pos_button.pressed.connect(_game_middleware.update_player_stats)
+	_player_pos_button.disabled = true
+	add_child(_player_pos_button)
 	
 	var sep2 = Label.new()
 	sep2.text = "Paima debug buttons"
@@ -66,14 +71,14 @@ func add_paima_game_buttons(window):
 	add_child(sep2)
 	
 	# Show Paima wallet
-	var showWalletB = Button.new()
-	showWalletB.text = "Show Paima status"
-	showWalletB.pressed.connect(_paima_middleware.show_status)
-	add_child(showWalletB)
+	var show_status_button = Button.new()
+	show_status_button.text = "Show Paima status"
+	show_status_button.pressed.connect(_game_middleware.show_status)
+	add_child(show_status_button)
 
 func test_step_right():
 	# TODO: unsafe, but enough for tests - need to check world boundaries
-	_paima_middleware.submit_moves(_paima_middleware.get_x() + 1, 0)
+	_game_middleware.submit_moves(_game_middleware.get_x() + 1, 0)
 
 func add_test_sign_button():
 	var sep = Label.new()
@@ -108,23 +113,22 @@ var stats_refresh_period = 3 # seconds
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	if _paima_middleware:
+	if _game_middleware:
 		since_last_stats_refresh = since_last_stats_refresh + delta
 		if since_last_stats_refresh > stats_refresh_period:
 			since_last_stats_refresh = 0
-			if _paima_middleware._player_stats:
-				_paima_middleware.update_player_stats()
-		
-		if _paima_middleware._paima_wallet:
-			join_button.disabled = false
-			login_button.disabled = true
-		if _paima_middleware.has_player_stats():
-			player_pos_button.disabled = false
-			join_button.disabled = true
-			step_right_button.disabled = false
-			player_pos_button.text = str(
+			if _game_middleware._player_stats:
+				_game_middleware.update_player_stats()
+		if _game_middleware.wallet_is_set():
+			_join_button.disabled = false
+			_login_button.disabled = true
+		if _game_middleware.has_player_stats():
+			_player_pos_button.disabled = false
+			_join_button.disabled = true
+			_step_right_button.disabled = false
+			_player_pos_button.text = str(
 				"Player position: x=", 
-				_paima_middleware.get_x(),
+				_game_middleware.get_x(),
 				", y=",
-				_paima_middleware.get_y(),
+				_game_middleware.get_y(),
 				)
