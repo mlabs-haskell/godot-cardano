@@ -1,0 +1,9 @@
+batcher
+open-world
+packaged
+.env.localhost
+extensions.yml
+logs.log
+paima-engine
+web-server/godot-web-export
+godot-cip-30-frontend/addons
