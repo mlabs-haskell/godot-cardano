@@ -35,7 +35,7 @@ var console = JavaScriptBridge.get_interface("console")
 
 func _init(window) -> void:
 	assert(window)
-	#_inject_self_to_window() #TODO
+	#_inject_self_to_window() # TODO
 	_middleware = window.paima
 	assert(_middleware)
 	_endpoints = _middleware.endpoints
@@ -44,7 +44,7 @@ func _init(window) -> void:
 func _inject_self_to_window():
 	JavaScriptBridge.eval("""
 	import endpoints, { WalletMode } from './paima/paimaMiddleware.js';
-	const {parse} = require('node-html-parser');
+	
 	window.pppaima = {
 			endpoints: endpoints,
 		}

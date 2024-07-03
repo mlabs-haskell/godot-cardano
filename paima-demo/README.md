@@ -12,7 +12,7 @@
     - [Start Paima node and required infrastructure](#start-paima-node-and-required-infrastructure)
     - [Starting frontend](#starting-frontend)
   - [Notes](#notes)
-  - [Custom HTML shell](#custom-html-shell)
+    - [Note on getting access to Paima endpoints](#note-on-getting-access-to-paima-endpoints)
     - [Note on CIP-30 callbacks](#note-on-cip-30-callbacks)
   - [CIP-30 API](#cip-30-api)
     - [Note #1](#note-1)
@@ -81,9 +81,7 @@ If `.so` is added, project can be run from Godot editor, but only one button to 
 ### Export Godot demo project
 
 1. Open `paima-demo/godot-cip-30-frontend` in Godot. If `.so` library is not compiled and added to the project, editor will report a lot of errors, but web-export should work w/o issues regardless. If `.so` was compiled, you can run the project from the editor to check that library and addons work as expected - UI should show single button `Test data sign`. When button is pressed (and if the wallet seed phrase was not change) you should see *exactly* [this output](#note-3-sign-data-test-output)
-2. Do web-export to `paima-demo/web-server/godot-web-export/index.html`. The project already have web-export config, but just in case make sure that in the web-export form:
-   1. `Custom HTML Shell` is set to `res://extra-resources/cip-30-paima-shell.html`
-   2. `Extensions Support` is `On`
+2. Do web-export to `paima-demo/web-server/godot-web-export/index.html`. The project already have web-export config, but just in case make sure that in the web-export form `Extensions Support` is `On`
 
 It should is possible to run web-exported demo already via `make godot-website` and going to `http://localhost:8060/index.html`. `Test data sign` button should work, and (unless the wallet seed phrase was changed) will output to the browser console *exactly* [this output](#note-3-sign-data-test-output).
 
@@ -109,30 +107,25 @@ It should is possible to run web-exported demo already via `make godot-website` 
 
 1. Any changes to Paima middleware and related packages source code should be followed by `make paima-middleware` and `make distribute-middleware`
 
-## Custom HTML shell
-
-Custom HTML Shell ([source](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html)) is used for WEB-export. Essentially, it is small extension of default one  that Godot generates (additions can be found by `NOTE: Paima integration` and `NOTE: CIP-30 integration` comments). It serves two purposes:
-
-  1. Adds Paima middleware endpoints to the `window.paima` so they can be accessed from GDScript
-  2. Wraps GDScript CIP-30 callbacks from `window.cardano.godot.callbacks` (which are set from GDScript) to provide Promise-based CIP-30 API for `window.cardano.godot`
+### Note on getting access to Paima endpoints
+TODO!
 
 ### Note on CIP-30 callbacks
 
 It is not quite clear at the moment how to "properly" get returned value from GDScript callbacks wrapped with `JavaScriptBridge` (see [godotengine forum](https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)). The one way, is to set returned value to some object either available globally or passed as an argument to GDScript callback (see also [here](https://godotengine.org/article/godot-web-progress-report-9/)). After some experiments current solution is implemented as follows:
 
-1. On GDScript side:
-   1. Callbacks are created in [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and added to the `window.cardano.godot.callbacks` *after engine starts*
-   2. As first argument - `args[0]`, all this callbacks receive `resolve` callback of JS `Promise` (more on this below). For data signing callback, additionally `reject` is passed to `args[1]`
-   3. When GDScript callback finishes work an need to return result, it calls `resolve` callback passed as `args[0]` using the following code: `promise_callback.call("call", promise_callback.this, value_to_return)`
-2. On JS side script was added to [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (see `NOTE: CIP-30 integration` comments) which does couple things:
-   1. Adds CIP-30 compliant `window.cardano.godot` object *before engine starts*.
-   2. Adds `window.cardano.godot.callbacks` object *before engine starts*.
+1. Callbacks are created by [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and added to the `window.cardano.godot.callbacks` object
+2. As first argument - `args[0]`, all this callbacks receive `resolve` callback of JS `Promise` (more on this below). For data signing callback, additionally `reject` is passed to `args[1]`
+3. When GDScript callback finishes work an need to return result, it calls `resolve` callback passed as `args[0]` using the following code: `promise_callback.call("call", promise_callback.this, value_to_return)`
+4. [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd) has single function that executes raw JS which does the following:
+   1. Adds CIP-30 compliant `window.cardano.godot` with Promise based API
+   2. Adds `window.cardano.godot.callbacks` object
    3. Adds CIP-30 API functions to `window.cardano.godot`. To enable communication with wallet, callbacks from `window.cardano.godot.callbacks` are wrapped here in such a way that:
       1. `Promise` is created via `Promise.withResolvers()`
-      2. `resolve` is passed to GDScript callback (from `window.cardano.godot.callbacks`) as first argument (will become `args[0]`)
-      3. `Promise` instance is returned to the caller
+      2. `resolve` is passed to GDScript callback (from `window.cardano.godot.callbacks`) as first argument (will become `args[0]`). For data signing `reject` passed as well as `args[1]`
+      3. `Promise` instance is returned to the caller  
 
-So this way, when GDScript callback will execute `promise_callback.call("call", promise_callback.this, value_to_return)`, `Promise` will be resolved and returned value can be obtained on JS side. It also naturally fits into `Promise` based CIP-30 API.
+As a result of all this manipulations, when GDScript callback will execute `promise_callback.call("call", promise_callback.this, value_to_return)`, `Promise` will be resolved and returned value can be obtained on JS side. JS code execution function from [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd) is invoked by [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) right before setting callbacks to the `window.cardano.godot.callbacks`. After executing JS code and adding callbacks, user can get CIP-30 compliant API when calling `enable()` on `window.cardano.godot` object in the browser.
 
 ## CIP-30 API
 
@@ -149,7 +142,7 @@ Currently implemented:
 
 ### Note #1
 
-Currently, CIP-30 setup is split between [cip_30_callbacks.gd](./godot-cip-30-frontend/cip_30_callbacks.gd) and [custom HTML shell](./godot-cip-30-frontend/extra-resources/cip-30-paima-shell.html) (marked by `NOTE: CIP-30 integration` comments). It should be possible to do custom HTML shell part in GDScript also, but most certainly require a lot of whapping using `JavaScriptBridge` and associated debugging.
+Currently, CIP-30 API initialization is split between [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd). It should be possible to implement JS code evaluation from `cip_30_js_api.gd` as GDScript code also, but most certainly require a lot of whapping using `JavaScriptBridge` and associated debugging.
 
 ### Note #2
 

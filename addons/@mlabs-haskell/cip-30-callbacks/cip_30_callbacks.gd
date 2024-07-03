@@ -30,12 +30,15 @@ func add_to(window):
 	if !window:
 		print("GD: Browser 'window' not found - skip adding CIP-30 callbacks")
 		return
-	# `window.cardano.godot` Object is created via custom HTML shell and expected to be not null
-	# see res://extra-resources/cip-30-paima-shell.html
+	
+	# JsCip30Api initiates `window.cardano.godot` Object where callbacks are added
+	# so this step should be executed before setting GDScript callbacks
+	JsCip30Api.new().init_cip_30_api()
+	# Setting GDScript callbacks
 	window.cardano.godot.callbacks.get_used_addresses = _js_cb_get_used_addresses
 	window.cardano.godot.callbacks.get_unused_addresses = _js_cb_get_unused_addresses
 	window.cardano.godot.callbacks.sign_data = _js_cb_sign_data
-	print("GD: adding CIP-30 callbacks to `window.cardano.godot.callbacks` is done")
+	print("GD: CIP-30 JS API initialization is done")
 
 func _cb_get_used_addresses(args):
 	prints("GD: _cb_get_used_addresses")

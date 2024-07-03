@@ -160,51 +160,6 @@
 		<div id="status-notice" class="godot" style="display: none;"></div>
 	</div>
 
-	<!-- NOTE: CIP-30 integration -->
-	<script>
-		// TODO: move all this to GDScript?
-		function initCip30Godot() {
-			if (!window.cardano) {
-				window.cardano = new Object();
-			}
-			window.cardano.godot = cip30Godot;
-			console.log('JS: done setting CIP-30 Godot wallet to `window.cardano.godot`');
-		}
-
-		const cip30Godot = {
-			name: "godot",
-			icon: null,
-			enable: enableGodotCardano,
-			callbacks: new Object()
-
-		}
-
-		async function enableGodotCardano() {
-			return cip30ApiGodot
-		}
-
-		const cip30ApiGodot = {
-			name: "godot",
-			getUsedAddresses: () => wrapCb(window.cardano.godot.callbacks.get_used_addresses),
-			getUnusedAddresses: () => wrapCb(window.cardano.godot.callbacks.get_unused_addresses),
-			signData: (address, message) => wrapSignCb(
-				window.cardano.godot.callbacks.sign_data,
-				address,
-				message
-			),
-		}
-
-		function wrapCb(cb) {
-			let { promise, resolve, reject } = Promise.withResolvers();
-			cb(resolve);
-			return promise;
-		}
-
-		function wrapSignCb(cb, address, message) {
-			let { promise, resolve, reject } = Promise.withResolvers();
-			cb(resolve, reject, address, message);
-			return promise;
-		}
 	</script>
 	<script src="index.js"></script>
 	<script type="module">
@@ -219,7 +174,7 @@
 
 		// NOTE: CIP-30 integration
 		// Setup CIP-30 API for cardano-godot using script defined above
-		initCip30Godot();
+		// initCip30Godot();
 
 		// NOTE: CIP-30 integration
 		// Code from default Godot HTML shell (unchanged)
