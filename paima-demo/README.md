@@ -27,7 +27,7 @@ This is combination of Paima's "open-world" template and Godot project that serv
 - Figure out what is required to rename `csl_godot.wasm` to match other extensions names. Currently if WASM filename does not match `name` in `config.toml`, WASM will fail to load with `file not found`. Maybe changing name in custom HTML shell `GODOT_CONFIG.gdextensionLibs` is sufficient
 - CIP-30 compliant errors
 - Possible improvement: reduce the [spread of CIP-30 API initialization across multiple source files](#note-1)
-- Is there any other way to get access to Paima middleware besides adding it to global state in `window`?
+- Is there any other way to get access to Paima middleware endpoints besides adding them to the global state in `window`? (see [Note on getting access to Paima endpoints](#note-on-getting-access-to-paima-endpoints))
 
 ## Prerequisites
 
@@ -45,7 +45,18 @@ This is combination of Paima's "open-world" template and Godot project that serv
 
 ### Add `addons`
 
-1. Link or copy `addons` to `paima-demo/godot-cip-30-frontend`
+Link or copy `addons` to `paima-demo/godot-cip-30-frontend`.
+
+Should get structure like this:
+
+```bash
+$ tree -L 2 paima-demo/godot-cip-30-frontend/addons
+paima-demo/godot-cip-30-frontend/addons
+└── @mlabs-haskell
+    ├── cip-30-callbacks
+    ├── godot-cardano
+    └── paima-middleware
+```
 
 ### Compile WASM
 
@@ -108,7 +119,19 @@ It should is possible to run web-exported demo already via `make godot-website` 
 1. Any changes to Paima middleware and related packages source code should be followed by `make paima-middleware` and `make distribute-middleware`
 
 ### Note on getting access to Paima endpoints
-TODO!
+
+To make instances of `GameMiddleware` and `PaimaMiddleware` classes we need to get JS object with Paima Middleware endpoints somehow. Current approach is to add them to the `window` object via Godot web-export tools and then read from `window` in GDScript using `JavaScriptBridge`.
+
+[Export config](./godot-cip-30-frontend/export_presets.cfg) currently adds the following JS script to the header of Godot's web-export  HTML shell
+
+```js
+<script type="module">
+import endpoints from './paima/paimaMiddleware.js';
+window.paima_endpoints =  endpoints;
+</script>
+```
+
+Couple attempts to do the same via `JavaScriptBridge` (like evaluating JS in [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd)) were not successful so far.
 
 ### Note on CIP-30 callbacks
 

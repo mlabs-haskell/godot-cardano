@@ -1,3 +1,6 @@
+## Adaptor for `SingleAddressWallet` to conform `Cip30WalletApi` interface
+## and be usable with `Cip30Callbacks` 
+
 extends Cip30WalletApi
 
 class_name  Cip30SingleAddressWallet
@@ -17,7 +20,7 @@ func sign_data(password: String, hex_encoded_data: String) -> JavaScriptObject:
 	var sign_result := _single_address_wallet.sign_data(password, hex_encoded_data)
 	return _mk_sign_response(sign_result)
 
-func _mk_sign_response(sign_result):
+func _mk_sign_response(sign_result) -> JavaScriptObject:
 	var sign_response = JavaScriptBridge.create_object("Object")
 	sign_response.key = sign_result.value._cose_key_hex()
 	sign_response.signature = sign_result.value._cose_sig1_hex()

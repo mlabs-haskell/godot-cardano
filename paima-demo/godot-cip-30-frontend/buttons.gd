@@ -24,14 +24,14 @@ func _init(
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	if _window && _window.paima:
+	if _window && _window.paima_endpoints:
 		print("init Paima")
-		add_paima_game_buttons(_window)
+		add_paima_game_buttons(_window.paima_endpoints)
 	if _cip_30_wallet:
 		add_test_sign_button()
 #
-func add_paima_game_buttons(window):
-	_game_middleware = GameMiddleware.new(PaimaMiddleware.new(window))
+func add_paima_game_buttons(paima_endpoints):
+	_game_middleware = GameMiddleware.new(PaimaMiddleware.new(paima_endpoints))
 	
 	var sep1 = Label.new()
 	sep1.text = "Paima buttons"
@@ -98,14 +98,14 @@ func test_sing():
 	prints("Test sig address hex: ", _cip_30_wallet.get_address())
 	var key: String
 	var signature: String
-	## JavaScriptBridge always creates `null` object if not in browser context
+	## JavaScriptBridge always creates `null` object if not in the browser context
 	if _window:
-		print("Sign in JS")
+		print("Signing in browser env")
 		var sign_res = _cip_30_wallet.sign_data("", test_hex)
 		key = sign_res.key
 		signature = sign_res.signature
 	else:
-		print("Sign native")
+		print("Signing in native env")
 		var sign_res = _cip_30_wallet._single_address_wallet.sign_data("", test_hex)
 		if sign_res.is_err():
 			prints("Failed to sign data: ", sign_res.error)

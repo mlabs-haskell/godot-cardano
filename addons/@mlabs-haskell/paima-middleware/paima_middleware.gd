@@ -27,33 +27,19 @@ class LoginInfo:
 		_mode = 	mode
 		_prefer_batcher = prefer_batcher
 
-var _middleware # JS Object
-var _endpoints # JS Object
-var _paima_wallet # JS Object
+var _endpoints: JavaScriptObject
+var _paima_wallet: JavaScriptObject
 
 var console = JavaScriptBridge.get_interface("console")
 
-func _init(window) -> void:
-	assert(window)
-	#_inject_self_to_window() # TODO
-	_middleware = window.paima
-	assert(_middleware)
-	_endpoints = _middleware.endpoints
+func _init(endpoints: JavaScriptObject) -> void:
+	_endpoints = endpoints
 	assert(_endpoints)
 
-func _inject_self_to_window():
-	JavaScriptBridge.eval("""
-	import endpoints, { WalletMode } from './paima/paimaMiddleware.js';
-	
-	window.pppaima = {
-			endpoints: endpoints,
-		}
-	""", true)
-
-func get_enpoints():
+func get_enpoints() -> JavaScriptObject:
 	return _endpoints
 	
-func get_wallet():
+func get_wallet() -> JavaScriptObject:
 	return _paima_wallet
 
 func get_wallet_address():
@@ -61,14 +47,14 @@ func get_wallet_address():
 	
 ## Login
 ### The func
-func login(login_info: LoginInfo):
+func login(login_info: LoginInfo) -> void:
 	var js_login_info = _to_js_login_info(login_info)
 	console.log("GD:Paima: login_info: ", js_login_info)
 	_endpoints.userWalletLogin(js_login_info).then(_on_login_js)
 
 ### Callback
 var _on_login_js = JavaScriptBridge.create_callback(_on_login)
-func _on_login(args):
+func _on_login(args) -> void:
 	var wallet = args[0]
 	if wallet && wallet.success:
 		_paima_wallet = wallet
@@ -77,11 +63,10 @@ func _on_login(args):
 		prints("GD:Paima: Paima login error: wallet not set!")
 		console.log("Paima wallet login result:", wallet)
 
-func wallet_is_set():
+func wallet_is_set() -> bool:
 	return  _paima_wallet && _paima_wallet.success
 
-func _to_js_login_info(login_info: LoginInfo):
-	print("here 1")
+func _to_js_login_info(login_info: LoginInfo) -> JavaScriptObject:
 	var pref = _new_js_obj()
 	pref.name = login_info._wallet_name
 	var info = _new_js_obj()
@@ -90,5 +75,5 @@ func _to_js_login_info(login_info: LoginInfo):
 	info.preference = pref
 	return info
 	
-func _new_js_obj():
+func _new_js_obj() -> JavaScriptObject:
 	return JavaScriptBridge.create_object("Object")

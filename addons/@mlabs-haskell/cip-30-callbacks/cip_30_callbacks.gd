@@ -5,7 +5,7 @@ extends Node
 
 ## Provides CIP-30 compliant functions for Godot wallet.
 ## Used to add GDScript callbacks wrapped with JavaScriptBridge into `window.cardano.godot` Object.
-## res://extra-resources/cip-30-paima-shell.html contains JS script that creates `window.cardano.godot` Object
+## Class `JsCip30Api` (`cip_30_js_api.gd`) contains JS script that creates `window.cardano.godot` Object
 ## and also wraps this callbacks one more time to return Promise result on the JS side
 ## as it is not clear how to get `return` value back from JavaScriptBridge callbacks
 ## (see https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)

@@ -3,9 +3,9 @@ extends RefCounted
 class_name GameMiddleware
 
 var console = JavaScriptBridge.get_interface("console")
-var _player_stats # JS Object
+var _player_stats: JavaScriptObject
 var _middleware: PaimaMiddleware
-var _endpoints # JS Object
+var _endpoints: JavaScriptObject
 
 #TODO: figure out endpoints type 
 func _init(paima_middleware: PaimaMiddleware) -> void:
@@ -16,7 +16,6 @@ func _init(paima_middleware: PaimaMiddleware) -> void:
 ## Login
 ### The func
 func login(login_info: PaimaMiddleware.LoginInfo):
-	print("login here")
 	_middleware.login(login_info)
 
 ## Join world
