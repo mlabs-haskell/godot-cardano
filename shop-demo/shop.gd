@@ -362,13 +362,19 @@ func buy_item(conf: MintCip68, quantity: int) -> bool:
 
 	var assets := selected_utxo.assets().duplicate()
 	assets.add_asset(conf.make_user_asset_class(minting_policy), BigInt.from_int(-quantity))
+
+	if !selected_utxo.datum_info().has_datum_inline():
+		push_error("Selected UTxO does not have an inline datum")
+		return false
+	var shop_datum := selected_utxo.datum()
+	
 	tx_builder.pay_to_address_with_datum(
 		WalletSingleton.provider.make_address(
 			Credential.from_script(shop_script)
 		),
 		selected_utxo.coin().add(BigInt.from_int(conf.extra_plutus_data.to_int() * quantity)),
 		assets,
-		PlutusBytes.new(owner_pub_key_hash.to_bytes())
+		shop_datum
 	)
 
 	var complete_result := await tx_builder.complete()
