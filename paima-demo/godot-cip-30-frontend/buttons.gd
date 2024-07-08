@@ -75,6 +75,12 @@ func add_paima_game_buttons(paima_endpoints):
 	show_status_button.text = "Show Paima status"
 	show_status_button.pressed.connect(_game_middleware.show_status)
 	add_child(show_status_button)
+	
+	# Test round executor
+	var test_round_ex = Button.new()
+	test_round_ex.text = "Test round executor"
+	test_round_ex.pressed.connect(_game_middleware._middleware.process_round_executor)
+	add_child(test_round_ex)
 
 func test_step_right():
 	# TODO: unsafe, but enough for tests - need to check world boundaries

@@ -41,6 +41,25 @@ func get_enpoints() -> JavaScriptObject:
 	
 func get_wallet() -> JavaScriptObject:
 	return _paima_wallet
+	
+func process_round_executor():
+	_endpoints.getRoundExecutor("ff", 1).then(_on_ex_js)
+	
+
+var _on_ex_js = JavaScriptBridge.create_callback(_on_ex)
+func _on_ex(args):
+	var rex = args[0]
+	console.log("rex success", rex.success)
+	prints("print rex result", rex.result)
+	console.log("log rex result", rex.result)
+	var tick = rex.result.tick()
+	prints("print rex tick", tick)
+	console.log("log rex tick", tick)
+	
+	var len = JavaScriptBridge.get_interface("Array").from(tick).length
+	prints("len: ", len)
+	
+
 
 func get_wallet_address():
 	return _paima_wallet.result.walletAddress
