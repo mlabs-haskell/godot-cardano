@@ -14,11 +14,7 @@ extends RefCounted
 ## This class tries to abstract most of the complexity by allowing the use of
 ## of nested native types and SDK types (like the aforementioned) to construct
 ## any PlutusData desired. These can subsequentely be converted into valid
-## CBOR (the format used in transactions) with [method serialize]. In practice
-## most users should not need to interact with this class directly, as most
-## functions requiring [PlutusData] will take a [Variant] and do the conversion
-## themselves.
-
+## CBOR (the format used in transactions) with [method serialize].
 # TODO: Add a specific tutorial on PlutusData conversions.
 class_name PlutusData
 
@@ -103,6 +99,8 @@ static func from_json(json: Dictionary) -> PlutusData:
 			return result
 	return null
 
+## Apply the given [param params] to the passed [param script]. This only makes
+## sense in unapplied, parameterized scripts.
 static func apply_script_parameters(
 	script: PlutusScript,
 	params: Array[PlutusData]
@@ -121,5 +119,6 @@ func _to_json() -> Dictionary:
 func _to_string() -> String:
 	return "%s" % _unwrap()
 
+## Serialize into CBOR format.
 func serialize() -> Cbor.SerializeResult:
 	return Cbor.serialize(_unwrap())

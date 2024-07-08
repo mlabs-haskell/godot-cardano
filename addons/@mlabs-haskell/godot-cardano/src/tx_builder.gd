@@ -132,9 +132,11 @@ func set_cost_models(cost_models: CostModels) -> TxBuilder:
 	return self
 	
 ## Pay to a given [param address]. [param coin] specifies the quantity of
-## lovelace to transfer, while [param assets] specifies any additional native
-## assets to transfer.
-func pay_to_address(address: Address, coin: BigInt, assets: MultiAsset) -> TxBuilder:
+## lovelace to transfer, while the optional parameter [param assets] specifies
+## any additional assets to transfer.[br]
+## NOTE: If [param assets] contains ADA it will be added to the amount set by
+## [param coin].
+func pay_to_address(address: Address, coin: BigInt, assets: MultiAsset = MultiAsset.empty()) -> TxBuilder:
 	_builder.pay_to_address(address._address, coin._b, assets._multi_asset)
 	return self
 

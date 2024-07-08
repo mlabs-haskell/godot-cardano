@@ -97,7 +97,9 @@ class TransactionStatus:
 	## Hash of the transaction
 	var _tx_hash: TransactionHash
 	## Whether the transaction could be confirmed or not by the [Provider]
-	## implementation
+	## implementation [i]at the moment the request was made[/i].[br][br]
+	## NOTE: This does not imply failure! Keep in mind settling times in Cardano
+	## can be quite long, so set the `timeout` parameter of [Provider.await_tx] appropriately.
 	var _confirmed: bool
 	
 	func _init(tx_hash: TransactionHash, confirmed: bool) -> void:
