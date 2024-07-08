@@ -14,7 +14,7 @@ func _ready():
 	add_child(sep1)
 	
 	_seed_field = LineEdit.new()
-	_seed_field.text = "camp fly lazy street predict cousin pen science during nut hammer pool palace play vague divide tower option relax need clinic chapter common coast"
+	_seed_field.text = ""
 	add_child(_seed_field)
 	
 	var set_seed_btn = Button.new()
