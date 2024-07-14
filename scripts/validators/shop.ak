@@ -7,6 +7,11 @@ use aiken/transaction.{ScriptContext, Spend, InlineDatum}
 use aiken/transaction/credential.{VerificationKey}
 use aiken/transaction/value.{PolicyId, AssetName}
 
+// WARNING: These scripts are provided as-is for reference only and should not be
+// expected to protect assets on Cardano mainnet. This code has not been
+// audited and provides no security guarantees. Failure to acknowledge this may
+// lead to loss of funds.
+
 type Cip68Ref {
   metadata: Data,
   version: Int,
