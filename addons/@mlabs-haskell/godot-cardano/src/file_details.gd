@@ -18,3 +18,16 @@ func as_dict():
 	if name != "":
 		dict["name"] = ""
 	return dict
+
+static func from_dict(dict: Dictionary) -> FileDetails:
+	var file_details = new()
+	file_details.additional_properties = dict.duplicate(true)
+	file_details.media_type = file_details.additional_properties.media_type
+	file_details.src = file_details.additional_properties.src
+	file_details.name = ""
+	if file_details.additional_properties.has("name"):
+		file_details.name = file_details.additional_properties.name
+	file_details.additional_properties.erase("mediaType")
+	file_details.additional_properties.erase("src")
+	file_details.additional_properties.erase("name")
+	return file_details

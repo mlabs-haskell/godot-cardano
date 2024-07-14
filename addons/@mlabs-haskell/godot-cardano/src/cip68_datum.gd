@@ -4,7 +4,7 @@ extends Constr
 var _unwrapped: Dictionary
 
 # TODO: validate structure
-static func from_constr(data: Constr) -> Cip68Datum:
+static func unsafe_from_constr(data: Constr) -> Cip68Datum:
 	var datum = new(data._constructor, data._fields)
 	datum._unwrapped = datum._fields[0]._unwrap()
 	return datum
@@ -22,11 +22,24 @@ func media_type() -> String:
 	return get_metadata("mediaType")._unwrap().get_string_from_utf8()
 
 func description() -> String:
-	return get_metadata("description")._unwrap().get_string_from_utf8()
+	var description = get_metadata("description")
+	return "" if description == null else description._unwrap().get_string_from_utf8()
 
-# FIXME: not correct, shold return `Array[FileDetails]`
-func files() -> PlutusData:
-	return get_metadata("files")
+func files() -> Array[FileDetails]:
+	var files: PlutusList = get_metadata("files")
+	var result: Array[FileDetails] = []
+	if files != null:
+		for file: PlutusMap in files.get_data():
+			result.push_back(FileDetails.from_dict(file.get_data()))
+			pass
+	return result
 
-func get_extra_plutus_data() -> PlutusData:
+func extra_plutus_data() -> PlutusData:
 	return _fields[2]
+
+func copy_to_conf(conf: MintCip68) -> void:
+	conf.name = name()
+	conf.image = image_url()
+	conf.media_type = media_type()
+	conf.description = description()
+	conf.extra_plutus_data.data = extra_plutus_data()

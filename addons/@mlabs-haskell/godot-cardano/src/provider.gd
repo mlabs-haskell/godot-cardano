@@ -353,7 +353,7 @@ func get_cip68_datum(conf: MintCip68) -> Cip68Datum:
 	var utxos := await get_utxos_with_asset(asset_class)
 	if utxos.size() == 0:
 		return null
-	return Cip68Datum.from_constr(utxos[0].datum())
+	return Cip68Datum.unsafe_from_constr(utxos[0].datum())
 
 ## Have the Provider chain UTxOs by address. Locally spent UTxOs will be translated
 ## to outputs of the spending transaction by matching the input and output address.

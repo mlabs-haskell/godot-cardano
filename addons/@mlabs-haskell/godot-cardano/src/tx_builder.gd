@@ -193,11 +193,8 @@ func mint_assets(
 	_results.push_back(result)
 	
 	return self
-	
-func mint_cip68_pair(
-	redeemer: PlutusData,
-	conf: MintCip68
-) -> TxBuilder:
+
+func mint_cip68_pair(redeemer: PlutusData, conf: MintCip68) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
 
@@ -211,10 +208,22 @@ func mint_cip68_pair(
 	)
 	return self
 
-func pay_cip68_ref_token(
-	address: Address,
-	conf: MintCip68
+func mint_cip68_user_tokens(
+	redeemer: PlutusData,
+	conf: MintCip68,
+	quantity := conf.get_quantity()
 ) -> TxBuilder:
+	if conf.minting_policy_source == null:
+		await conf.init_script(_provider)
+
+	mint_assets(
+		conf.minting_policy_source, 
+		[TxBuilder.MintToken.new(conf.get_user_token_name(), quantity)],
+		redeemer
+	)
+	return self
+
+func pay_cip68_ref_token(address: Address, conf: MintCip68) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
 
@@ -223,10 +232,7 @@ func pay_cip68_ref_token(
 	pay_to_address(address, BigInt.zero(), assets, conf.to_data())
 	return self
 
-func pay_cip68_user_tokens(
-	address: Address,
-	conf: MintCip68
-) -> TxBuilder:
+func pay_cip68_user_tokens(address: Address, conf: MintCip68) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
 
@@ -383,9 +389,7 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 	_builder._add_dummy_redeemers()
 	
 	var balance_result := await balance()
-	
 	var error = _results.any(func (result: Result) -> bool: return result.is_err())
-	
 	_results.push_back(balance_result)
 	
 	if not error and balance_result.is_ok():

@@ -358,6 +358,7 @@ func update_data() -> void:
 			if v.conf == conf:
 				item = v
 				break
+		item.from_item(await cip68_to_item(conf, true))
 		item.stock = shop_assets.get_asset_quantity(
 			conf.make_user_asset_class()
 		).to_int()
@@ -389,7 +390,7 @@ func load_script_from_blueprint(path: String, validator_name: String) -> PlutusS
 	return null
 
 func cip68_to_item(conf: MintCip68, local_data := false) -> Item:
-	var data: Cip68Datum = Cip68Datum.from_constr(conf.to_data())
+	var data: Cip68Datum = Cip68Datum.unsafe_from_constr(conf.to_data())
 	if not local_data:
 		var remote_data := await WalletSingleton.provider.get_cip68_datum(conf)
 		if remote_data != null:
@@ -397,7 +398,7 @@ func cip68_to_item(conf: MintCip68, local_data := false) -> Item:
 
 	var item := ShopItem.instantiate() as ShopItem
 	item.item_name = data.name()
-	item.price.b = data.get_extra_plutus_data()
+	item.price.b = data.extra_plutus_data()
 	item.conf = conf
 	item.stock = -1
 	var red: BigInt = data.get_metadata("Red")
@@ -444,3 +445,35 @@ func load_script_and_create_ref(filename: String) -> PlutusScriptSource:
 			ResourceSaver.save(res, "user://cip68_data/%s" % filename)
 			source = await provider.load_script(res)
 	return source
+
+## Updates the configuration in the given [param filename] using the 
+## [param update] provided. The result will be saved under user://cip68_data/
+## and will be used when this config is loaded in future.
+func update_cip68_conf(filename: String, update: Callable) -> void:
+	var conf = update.call(load_user_or_res("cip68_data/%s" % filename))
+	var ref_utxo := await provider.get_utxo_with_nft(
+		conf.make_ref_asset_class()
+	)
+	wallet.tx_with(
+		func (tx_builder: TxBuilder) -> void:
+			tx_builder.collect_from_script(
+				ref_lock_source,
+				[ref_utxo],
+				VoidData.to_data()
+			)
+			tx_builder.pay_cip68_ref_token(
+				provider.make_address(
+					Credential.from_script_source(ref_lock_source)
+				),
+				conf
+			),
+		func (tx: TxComplete) -> void:
+			tx.sign("1234")
+	)
+	ResourceSaver.save(conf, "user://cip68_data/%s" % filename)
+	
+func sync_cip68_conf_from_chain(filename: String) -> void:
+	var conf = load_user_or_res("cip68_data/%s" % filename)
+	var new_datum := await provider.get_cip68_datum(conf)
+	new_datum.copy_to_conf(conf)
+	ResourceSaver.save(conf, "user://cip68_data/%s" % filename)

@@ -12,6 +12,8 @@ extends Resource
 class_name MintCip68
 
 @export
+## The minting policy associated with this CIP68 config. This minting policy
+## must be used by both the ref and user tokens to satisfy the CIP68 specifications.
 var minting_policy: ScriptResource
 var minting_policy_source: PlutusScriptSource
 
@@ -140,7 +142,7 @@ func to_data() -> Cip68Datum:
 			BigInt.one(),
 			extra_plutus_data.data,
 		])
-	return Cip68Datum.from_constr(cip68_datum)
+	return Cip68Datum.unsafe_from_constr(cip68_datum)
 
 var big_int_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/big_int.gd")
 var file_details_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/file_details.gd")
@@ -215,5 +217,7 @@ func _validate_property(property):
 	if hide_conditions.any(func (x): return x):
 		property.usage &= ~PROPERTY_USAGE_EDITOR
 
+## Load the minting policy from file or by querying the Provider. This must be
+## performed in before most actions with this config will be possible.
 func init_script(provider: Provider) -> void:
 	minting_policy_source = await provider.load_script(minting_policy)
