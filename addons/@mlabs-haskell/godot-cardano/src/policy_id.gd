@@ -23,6 +23,10 @@ static func from_script(script: PlutusScript) -> PolicyId:
 	var result = _PolicyId._from_hex(script.hash_as_hex())
 	return new(result.unsafe_value())
 	
+static func from_script_source(script_source: PlutusScriptSource) -> PolicyId:
+	var result = _PolicyId._from_hex(script_source.hash().to_hex())
+	return new(result.unsafe_value())
+	
 func to_hex() -> String:
 	return _policy_id.to_hex()
 

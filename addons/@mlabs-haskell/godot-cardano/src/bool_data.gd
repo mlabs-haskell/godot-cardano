@@ -7,7 +7,7 @@ var _b: bool
 func _init(b: bool) -> void:
 	_b = b
 
-func to_data(_strict := false) -> PlutusData:
+func to_data() -> PlutusData:
 	return Constr.new(BigInt.zero(), []) if not _b else Constr.new(BigInt.one(), [])
 	
 static func from_data(v: PlutusData) -> BoolData:

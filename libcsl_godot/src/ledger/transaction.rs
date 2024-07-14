@@ -749,6 +749,13 @@ impl PlutusScript {
     }
 
     #[func]
+    fn create_v1(script: PackedByteArray) -> Gd<PlutusScript> {
+        return Gd::from_object(PlutusScript {
+            script: CSL::plutus::PlutusScript::new(script.to_vec()),
+        });
+    }
+
+    #[func]
     fn hash(&self) -> Gd<ScriptHash> {
         Gd::from_object(ScriptHash {
             hash: self.script.hash(),
@@ -782,29 +789,61 @@ impl PlutusScript {
 #[class(base=RefCounted, rename=PlutusScriptSource)]
 pub struct PlutusScriptSource {
     pub source: CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
+    pub bytes: Option<Vec<u8>>,
+    pub hash: CSL::crypto::ScriptHash,
+    pub is_ref: bool,
 }
 
 #[godot_api]
 impl PlutusScriptSource {
     #[func]
-    fn from_script(script: Gd<PlutusScript>) -> Gd<PlutusScriptSource> {
+    fn from_script(gscript: Gd<PlutusScript>) -> Gd<PlutusScriptSource> {
+        let script = gscript.bind().script.clone();
         Gd::from_object(Self {
-            source: tx_inputs_builder::PlutusScriptSource::new(&script.bind().script),
+            source: tx_inputs_builder::PlutusScriptSource::new(&script),
+            bytes: Some(script.bytes()),
+            hash: script.hash(),
+            is_ref: false,
         })
     }
 
-    // TODO: Add a version that picks up the script hash from the Utxo automatically
     #[func]
-    fn from_ref(script_hash: GString, input: Gd<Utxo>) -> Gd<PlutusScriptSource> {
-        let hash = CSL::crypto::ScriptHash::from_hex(&script_hash.to_string())
-            .expect("Could not parse script hash");
-        Gd::from_object(Self {
-            source: tx_inputs_builder::PlutusScriptSource::new_ref_input_with_lang_ver(
-                &hash,
-                &input.bind().to_transaction_input(),
-                &Language::new_plutus_v2(),
-            ),
+    fn from_ref(gutxo: Gd<Utxo>) -> Option<Gd<PlutusScriptSource>> {
+        let utxo = gutxo.bind();
+        utxo.script_ref.as_ref().map(|script_ref| {
+            let hash = script_ref.bind().hash().bind().hash.clone();
+            Gd::from_object(Self {
+                source: tx_inputs_builder::PlutusScriptSource::new_ref_input_with_lang_ver(
+                    &hash,
+                    &utxo.to_transaction_input(),
+                    &Language::new_plutus_v2(),
+                ),
+                bytes: None,
+                hash,
+                is_ref: true,
+            })
         })
+    }
+
+    #[func]
+    fn hash(&self) -> Gd<ScriptHash> {
+        Gd::from_object(ScriptHash {
+            hash: self.hash.clone(),
+        })
+    }
+
+    #[func]
+    fn script(&self) -> Option<Gd<PlutusScript>> {
+        self.bytes.as_ref().map(|bytes| {
+            Gd::from_object(PlutusScript {
+                script: CSL::plutus::PlutusScript::new_v2(bytes.clone()),
+            })
+        })
+    }
+
+    #[func]
+    fn is_ref(&self) -> bool {
+        self.is_ref
     }
 }
 
@@ -927,6 +966,8 @@ pub struct Utxo {
     pub assets: Gd<MultiAsset>,
     #[var(get)]
     pub datum_info: Gd<UtxoDatumInfo>,
+    #[var(get)]
+    pub script_ref: Option<Gd<PlutusScript>>,
 }
 
 #[godot_api]
@@ -939,6 +980,7 @@ impl Utxo {
         coin: Gd<BigInt>,
         assets: Gd<MultiAsset>,
         datum_info: Gd<UtxoDatumInfo>,
+        script_ref: Option<Gd<PlutusScript>>,
     ) -> Gd<Utxo> {
         Gd::from_object(Self {
             tx_hash,
@@ -947,6 +989,7 @@ impl Utxo {
             coin,
             assets,
             datum_info,
+            script_ref,
         })
     }
 
@@ -1346,6 +1389,20 @@ impl Transaction {
                 datum_info = UtxoDatumInfo::create_with_hash(hash.to_string().into_godot());
             }
 
+            let script_ref = match output.script_ref() {
+                Some(script_ref) => {
+                    if !script_ref.is_plutus_script() {
+                        godot_warn!("Native script refs are not currently supported");
+                        None
+                    } else {
+                        script_ref
+                            .plutus_script()
+                            .map(|script| Gd::from_object(PlutusScript { script }))
+                    }
+                }
+                None => None,
+            };
+
             outputs.push(Gd::from_object(Utxo {
                 tx_hash: tx_hash.clone(),
                 output_index,
@@ -1357,6 +1414,7 @@ impl Transaction {
                 )),
                 assets: Gd::from_object(MultiAsset { assets }),
                 datum_info,
+                script_ref,
             }));
             output_index += 1;
         }

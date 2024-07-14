@@ -1,7 +1,7 @@
 class_name VoidData
 extends RefCounted
 
-func to_data(_strict := false) -> PlutusData:
+static func to_data() -> PlutusData:
 	return Constr.new(BigInt.from_int(0), [])
 
 static func from_data(v: Variant) -> VoidData:

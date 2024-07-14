@@ -101,7 +101,7 @@ class MintToken:
 	
 	func _to_string() -> String:
 		return "%s" % { [_asset_name.to_hex()]: _quantity.to_str() }
-		
+
 ## Create a TxBuilder object from a Provider. This action may fail.
 static func create(provider: Provider) -> CreateResult:
 	var params := await provider.get_protocol_parameters()
@@ -123,51 +123,45 @@ func set_cost_models(cost_models: CostModels) -> TxBuilder:
 	_builder.set_cost_models(cost_models._cost_models)
 	return self
 	
-func pay_to_address(address: Address, coin: BigInt, assets: MultiAsset) -> TxBuilder:
-	_builder.pay_to_address(address._address, coin._b, assets._multi_asset)
-	return self
-
-func pay_to_address_with_datum(
+func pay_to_address(
 	address: Address,
 	coin: BigInt,
 	assets: MultiAsset,
-	datum: PlutusData
+	datum: PlutusData = null,
+	script_ref: PlutusScript = null,
+	hash_datum := false
 ) -> TxBuilder:
-	var serialize_result := datum.serialize()
+	var datum_serialized: Datum = null
+	if datum != null:
+		var serialize_result := datum.serialize()
 	
-	if serialize_result.is_err():
-		_results.push_back(serialize_result)
-	else:
-		_builder._pay_to_address_with_datum(
-			address._address,
-			coin._b,
-			assets._multi_asset,
-			Datum.inline(serialize_result.value)
-		)
+		if serialize_result.is_err():
+			_results.push_back(serialize_result)
+		elif hash_datum:
+			datum_serialized = Datum.hashed(serialize_result.value)
+		else:
+			datum_serialized = Datum.inline(serialize_result.value)
 	
+	_builder._pay_to_address(
+		address._address,
+		coin._b,
+		assets._multi_asset,
+		datum_serialized,
+		script_ref
+	)
 	return self
 	
 func pay_to_address_with_datum_hash(
 	address: Address,
 	coin: BigInt,
 	assets: MultiAsset,
-	datum: PlutusData
+	datum: PlutusData,
+	script_ref: PlutusScript = null
 ) -> TxBuilder:
-	var serialize_result := datum.serialize()
-
-	if serialize_result.is_err():
-		_results.push_back(serialize_result)
-	else:
-		_builder._pay_to_address_with_datum(
-			address._address,
-			coin._b,
-			assets._multi_asset,
-			Datum.hashed(serialize_result.value)
-		)
-	return self
+	return pay_to_address(address, coin, assets, datum, script_ref, true)
 
 func mint_assets(
-	minting_policy: PlutusScript,
+	minting_policy: PlutusScriptSource,
 	tokens: Array[MintToken],
 	redeemer: PlutusData
 ) -> TxBuilder:
@@ -198,7 +192,7 @@ func mint_assets(
 	return self
 	
 func mint_cip68_pair(
-	minting_policy: PlutusScript,
+	minting_policy: PlutusScriptSource,
 	redeemer: PlutusData,
 	conf: MintCip68
 ) -> TxBuilder:
@@ -213,17 +207,17 @@ func mint_cip68_pair(
 	return self
 
 func pay_cip68_ref_token(
-	minting_policy: PlutusScript,
+	minting_policy: PlutusScriptSource,
 	address: Address,
 	conf: MintCip68
 ) -> TxBuilder:
 	var assets = MultiAsset.empty()
 	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), BigInt.one())
-	pay_to_address_with_datum(address, BigInt.zero(), assets, conf.to_data())
+	pay_to_address(address, BigInt.zero(), assets, conf.to_data())
 	return self
 
 func pay_cip68_user_tokens(
-	minting_policy: PlutusScript,
+	minting_policy: PlutusScriptSource,
 	address: Address,
 	conf: MintCip68
 ) -> TxBuilder:
@@ -233,7 +227,7 @@ func pay_cip68_user_tokens(
 	return self
 	
 func pay_cip68_user_tokens_with_datum(
-	minting_policy: PlutusScript,
+	minting_policy: PlutusScriptSource,
 	address: Address,
 	datum: PlutusData,
 	conf: MintCip68,
@@ -241,7 +235,7 @@ func pay_cip68_user_tokens_with_datum(
 ) -> TxBuilder:
 	var assets = MultiAsset.empty()
 	assets.set_asset_quantity(conf.make_user_asset_class(minting_policy), amount)
-	pay_to_address_with_datum(address, BigInt.zero(), assets, datum)
+	pay_to_address(address, BigInt.zero(), assets, datum)
 	return self
 
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:

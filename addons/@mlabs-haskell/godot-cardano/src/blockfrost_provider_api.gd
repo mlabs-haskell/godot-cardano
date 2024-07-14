@@ -150,6 +150,24 @@ class DatumCborFromHash extends Request:
 
 	func _url() -> String:
 		return "scripts/datum/%s/cbor" % _hash
+
+class ScriptInfoFromHash extends Request:
+	var _hash: String
+
+	func _init(script_hash: String) -> void:
+		_hash = script_hash
+
+	func _url() -> String:
+		return "scripts/%s/cbor" % _hash
+
+class ScriptCborFromHash extends Request:
+	var _hash: String
+
+	func _init(script_hash: String) -> void:
+		_hash = script_hash
+
+	func _url() -> String:
+		return "scripts/%s" % _hash
 		
 class SubmitTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
@@ -421,14 +439,28 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 	var utxos: Array[Utxo] = []
 	
 	var data_map := {}
+	var script_map := {}
 	
 	for utxo: Dictionary in utxos_json:
 		var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
 		var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
-		if inline_datum_str == "" and data_hash != "":
+		if inline_datum_str == "" and data_hash != "" and not data_map.has(data_hash):
 			var resolve_result: Variant = await blockfrost_request(DatumCborFromHash.new(data_hash))
 			if resolve_result.get('status_code', null) != 404 and resolve_result.has('cbor'):
 				data_map[data_hash] = resolve_result.cbor
+		
+		var script_hash: String = "" if utxo.reference_script_hash == null else utxo.reference_script_hash
+		if script_hash != "" and not script_map.has(script_hash):
+			var info_result: Variant = await blockfrost_request(ScriptInfoFromHash.new(script_hash))
+			var resolve_result: Variant = await blockfrost_request(ScriptCborFromHash.new(script_hash))
+			if (info_result.get('status_code', null) != 404 and
+				resolve_result.get('status_code', null) != 404 and
+				resolve_result.has('cbor')):
+				if info_result.type == "plutusV1":
+					# can't be used as a reference input, but might be useful as script storage?
+					script_map[script_hash] = PlutusScript.create_v1(resolve_result.cbor)
+				if info_result.type == "plutusV2":
+					script_map[script_hash] = PlutusScript.create(resolve_result.cbor)
 	
 	utxos.assign(
 		utxos_json.map(
@@ -442,6 +474,7 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 				var data_hash: String = "" if utxo.data_hash == null else utxo.data_hash
 				var inline_datum_str: String = utxo.inline_datum if utxo.inline_datum != null else ""
 				var resolved_datum_str: String = ""
+				var script_ref: PlutusScript = null if utxo.reference_script_hash == null else script_map[utxo.reference_script_hash]
 				
 				if inline_datum_str == "" and data_hash != "" and data_map.has(data_hash):
 					resolved_datum_str = data_map.get(data_hash)
@@ -454,7 +487,8 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 					address,
 					coin.to_str(),
 					assets,
-					datum_info
+					datum_info,
+					script_ref
 				)
 				
 				if result.is_err():

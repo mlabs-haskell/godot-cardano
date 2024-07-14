@@ -296,15 +296,15 @@ func _homogenize_or_fail(v: Variant) -> PlutusData:
 			assert(false, "Found value of unexpected type " + type_string(typeof(v)))
 			return null
 
-func make_user_asset_class(script: PlutusScript) -> AssetClass:
+func make_user_asset_class(script_source: PlutusScriptSource) -> AssetClass:
 	return AssetClass.new(
-		PolicyId.from_script(script),
+		PolicyId.from_script_source(script_source),
 		get_user_token_name()
 	)
 
-func make_ref_asset_class(script: PlutusScript) -> AssetClass:
+func make_ref_asset_class(script_source: PlutusScriptSource) -> AssetClass:
 	return AssetClass.new(
-		PolicyId.from_script(script),
+		PolicyId.from_script_source(script_source),
 		get_ref_token_name()
 	)
 

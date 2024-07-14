@@ -2,29 +2,36 @@ extends RefCounted
 
 class_name Utxo
 
+
+func _init(utxo: _Utxo) -> void:
+	_utxo = utxo
+	
 class CreateResult extends Result:
-	var _utxo: _Utxo
+	var _utxo: Utxo
 	
 	## WARNING: This function may fail! First match on `tag` or call `is_ok`.
 	var value: Utxo:
-		get: return Utxo.new(_utxo)
+		get: return _utxo
 	## WARNING: This function may fail! First match on `tag` or call `is_err`.
 	var error: String:
 		get: return _res.unsafe_error()
 	
 	func _init(results: ArrayResult):
 		super(results._res)
-		
+
 		if results.is_ok():
-			_utxo = _Utxo.create(
-				(results.value[0] as TransactionHash)._transaction_hash,
-				results.value[1],
-				(results.value[2] as Address)._address,
-				(results.value[3] as BigInt)._b,
-				(results.value[4] as MultiAsset)._multi_asset,
-				(results.value[5])
+			_utxo = Utxo.new(
+				_Utxo.create(
+					(results.value[0] as TransactionHash)._transaction_hash,
+					results.value[1],
+					(results.value[2] as Address)._address,
+					(results.value[3] as BigInt)._b,
+					(results.value[4] as MultiAsset)._multi_asset,
+					(results.value[5]),
+					(results.value[6] as PlutusScript)
+				)
 			)
-		
+
 var _utxo : _Utxo
 
 func tx_hash() -> TransactionHash:
@@ -59,7 +66,8 @@ static func create(
 	address: String,
 	coin: String,
 	assets: Dictionary,
-	datum_info: UtxoDatumInfo
+	datum_info: UtxoDatumInfo,
+	script_ref: PlutusScript
 ) -> CreateResult:
 	var results := Result.sequence([
 		TransactionHash.from_hex(tx_hash),
@@ -67,13 +75,11 @@ static func create(
 		Address.from_bech32(address),
 		BigInt.from_str(coin),
 		MultiAsset.from_dictionary(assets),
-		Result.Ok.new(datum_info)
+		Result.Ok.new(datum_info),
+		Result.Ok.new(script_ref)
 	])
-	
+
 	return CreateResult.new(results)
-	
-func _init(utxo: _Utxo) -> void:
-	_utxo = utxo
 
 func _to_string() -> String:
 	return """{
@@ -94,3 +100,8 @@ func _to_string() -> String:
 	
 func to_out_ref_string() -> String:
 	return "%s#%d" % [_utxo.tx_hash.to_hex(), _utxo.output_index]
+
+func to_script_source() -> PlutusScriptSource:
+	if _utxo.script_ref == null:
+		return null
+	return PlutusScriptSource.from_ref(_utxo)

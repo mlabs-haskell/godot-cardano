@@ -34,7 +34,7 @@ var _chaining_map: Dictionary = {}
 var use_chaining: bool = false
 
 var _utxo_cache: Dictionary = {}
-## Enables caching of UTxOs queries via this Provider. This allows for faster
+## Enables caching of UTxO queries via this Provider. This allows for faster
 ## and smoother interactions at the cost of data consistency.
 var use_caching: bool = false
 ## The time in milliseconds for which a cached entry is valid.
@@ -334,14 +334,14 @@ func get_utxo_with_nft(asset: AssetClass) -> Utxo:
 func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 	return await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)
 
-func get_cip68_datum(conf: MintCip68, minting_policy: PlutusScript) -> Cip68Datum:
+func get_cip68_datum(conf: MintCip68, minting_policy: PlutusScriptSource) -> Cip68Datum:
 	var asset_class := conf.make_ref_asset_class(minting_policy)
 	var utxos := await get_utxos_with_asset(asset_class)
 	if utxos.size() == 0:
 		return null
 	return Cip68Datum.from_constr(utxos[0].datum())
 
-## Have the Provider chain UTxOs by address. Locally-spent UTxOs will be translated
+## Have the Provider chain UTxOs by address. Locally spent UTxOs will be translated
 ## to outputs of the spending transaction by matching the input and output address.
 ## Note that this currently will not chain with remotely submitted transactions,
 ## such as those in the mempool.
