@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ScriptFromBlueprint" load_steps=3 format=3 uid="uid://c34h845l5rnm8"]
+
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/script_resource/script_from_blueprint.gd" id="1_h4dhd"]
+[ext_resource type="Resource" uid="uid://c1tawdbn3fvl5" path="res://cip68_data/scripts_tag.tres" id="2_hgmy6"]
+
+[resource]
+script = ExtResource("1_h4dhd")
+blueprint_path = "res://scripts.json"
+validator_name = "shop.tagged_spend"
+script_args = Array[Resource("res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd")]([ExtResource("2_hgmy6")])

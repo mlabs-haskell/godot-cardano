@@ -35,9 +35,12 @@ class SignTxResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()
-		
+
 func _sign_transaction(_password: String, _transaction: Transaction) -> SignTxResult:
 	return null
+
+func sign_transaction(password: String, transaction: Transaction) -> SignTxResult:
+	return _sign_transaction(password, transaction)
 
 func get_address() -> Address:
 	return _get_change_address()
@@ -157,3 +160,7 @@ class MnemonicWallet extends Wallet:
 		var transaction := await builder.complete()
 		transaction.sign(password)
 		transaction.submit()
+
+	## See [method Provider.tx_with]
+	func tx_with(builder: Callable, signer: Callable) -> TransactionHash:
+		return await _provider.tx_with(self, builder, signer)

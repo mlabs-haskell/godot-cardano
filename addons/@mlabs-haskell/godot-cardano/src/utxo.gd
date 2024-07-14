@@ -88,14 +88,16 @@ func _to_string() -> String:
 		address: %s,
 		coin: %s,
 		assets: %s,
-		datum: %s
+		datum: %s,
+		ref_script: %s,
 	}""" % [
 		_utxo.tx_hash.to_hex(),
 		_utxo.output_index,
 		_utxo.address._to_bech32().unsafe_value(),
 		_utxo.coin.to_str(),
 		MultiAsset.new(_utxo.assets).to_dictionary(),
-		datum().serialize().value.hex_encode() if datum() else null
+		datum().serialize().value.hex_encode() if datum() else null,
+		null if _utxo.script_ref == null else _utxo.script_ref.hash_as_hex()
 	]
 	
 func to_out_ref_string() -> String:

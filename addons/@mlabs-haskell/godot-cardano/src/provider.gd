@@ -304,7 +304,7 @@ func await_utxos_at(
 
 func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Address:
 	return Address.build(
-		1 if _provider_api.network == ProviderApi.Network.MAINNET else 0,
+		_provider_api.network,
 		payment_cred,
 		stake_cred
 	)
@@ -318,6 +318,7 @@ func get_utxos_at_address(address: Address, asset: AssetClass = null) -> Array[U
 		func (): return await _provider_api._get_utxos_at_address(address, asset)
 	)
 
+## Returns the full set of UTxOs carrying the given asset class.
 func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 	var query_id = asset.to_unit()
 	return await _get_utxos(
@@ -329,13 +330,26 @@ func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 ## asset does not currently exist in the ledger.
 func get_utxo_with_nft(asset: AssetClass) -> Utxo:
 	var query_id = asset.to_unit()
-	return await _provider_api._get_utxo_with_nft(asset)
+	return (await _get_utxos(
+		query_id,
+		func (): return [await _provider_api._get_utxo_with_nft(asset)] as Array[Utxo]
+	))[0]
 
+	
+## Returns the output associated with the given reference.
+# FIXME: The Blockfrost provider does not offer a way to distinguish between
+# a spent and unspent output using this query.
 func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
-	return await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)
+	var query_id = "%s#%d" % [tx_hash.to_hex(), output_index]
+	return (await _get_utxos(
+		query_id,
+		func (): return [await _provider_api._get_utxo_by_out_ref(tx_hash, output_index)] as Array[Utxo]
+	))[0]
 
-func get_cip68_datum(conf: MintCip68, minting_policy: PlutusScriptSource) -> Cip68Datum:
-	var asset_class := conf.make_ref_asset_class(minting_policy)
+## Returns the datum attached to the ref token for the given CIP68 config, or
+## null if the ref token does not currently exist in the ledger.
+func get_cip68_datum(conf: MintCip68) -> Cip68Datum:
+	var asset_class := conf.make_ref_asset_class()
 	var utxos := await get_utxos_with_asset(asset_class)
 	if utxos.size() == 0:
 		return null
@@ -364,3 +378,69 @@ func invalidate_cache(key: String = "") -> void:
 		_utxo_cache = {}
 	else:
 		_utxo_cache.erase(key)
+
+func load_script(res: ScriptResource) -> PlutusScriptSource:
+	if res is ScriptFromBlueprint:
+		var contents := FileAccess.get_file_as_string(res.blueprint_path)
+		var contents_json: Dictionary = JSON.parse_string(contents)
+		for validator: Dictionary in contents_json['validators']:
+			if validator['title'] == res.validator_name:
+				var script = PlutusScript.create((validator['compiledCode'] as String).hex_decode())
+				var args: Array[PlutusData] = []
+				for arg: PlutusDataResource in res.script_args:
+					args.push_back(arg.data)
+				return PlutusScriptSource.from_script(PlutusData.apply_script_parameters(script, args))
+		push_error("Failed to load %s from %s" % [res.validator_name, res.blueprint_path])
+		return null
+	elif res is ScriptFromOutRef:
+		var tx_hash_result := TransactionHash.from_hex(res.tx_hash)
+		
+		if tx_hash_result.is_ok():
+			var utxo = await _provider_api._get_utxo_by_out_ref(
+				tx_hash_result.value,
+				res.output_index
+			)
+			if utxo == null:
+				push_error("Failed to get script from out ref: UTxO not found")
+			else:
+				var script_source = PlutusScriptSource.from_ref(utxo._utxo)
+				if script_source == null:
+					push_error("Failed to get script from out ref: UTxO has no script ref")
+				return script_source
+		else:
+			push_error("Failed to get script from out ref: %s" % [tx_hash_result.error])
+	return null
+
+## Builds, signs and submits a transaction using the provided functions.
+## [param wallet] is the wallet to use for balancing the transaction
+## [param builder] should expect a [class TxBuilder]
+## [param signer] should expect a [class TxComplete]
+## Returns a transaction hash on success which can be awaited, or null on failure.
+func tx_with(
+	wallet: Wallet,
+	builder: Callable,
+	signer: Callable
+) -> TransactionHash:
+	var new_tx_result := await new_tx()
+	if new_tx_result.is_err():
+		push_error("Failed to create transaction: %s" % new_tx_result.error)
+		return null
+	var tx_builder := new_tx_result.value
+	
+	tx_builder.set_wallet(wallet)
+	await builder.call(tx_builder)
+	
+	var complete_result := await tx_builder.complete()
+	if complete_result.is_err():
+		push_error("Failed to build transaction: %s" % complete_result.error)
+		return
+
+	var tx := complete_result.value
+	await signer.call(tx)
+	
+	var submit_result := await tx.submit()
+	if submit_result.is_err():
+		push_error("Failed to submit transaction: %s" % submit_result.error)
+		return
+	
+	return submit_result.value

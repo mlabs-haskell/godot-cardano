@@ -17,28 +17,11 @@ var cip68_data: Array[MintCip68] = []
 
 var owner_pub_key_hash: PubKeyHash = null
 var tag: BigInt = BigInt.from_int(239058)
-# TODO: make scripts resources?
-@onready
-var minting_policy := PlutusData.apply_script_parameters(
-	load_script_from_blueprint("res://scripts.json", "shop.tagged_mint"),
-	[tag]
-)
-@onready
-var minting_policy_source := PlutusScriptSource.from_script(minting_policy)
-@onready
-var ref_lock := PlutusData.apply_script_parameters(
-	load_script_from_blueprint("res://scripts.json", "shop.tagged_spend"),
-	[tag]
-)
-@onready
-var ref_lock_source := PlutusScriptSource.from_script(ref_lock)
-@onready
-var shop_script := PlutusData.apply_script_parameters(
-	load_script_from_blueprint("res://scripts.json", "shop.spend"),
-	[tag]
-)
-@onready
-var shop_script_source := PlutusScriptSource.from_script(shop_script)
+var ref_lock_source: PlutusScriptSource
+var shop_script_source: PlutusScriptSource
+
+var provider: Provider
+var wallet: Wallet.MnemonicWallet
 
 signal data_updated
 
@@ -53,7 +36,9 @@ func _ready():
 
 	var cip68_files := DirAccess.get_files_at("res://cip68_data")
 	for path in cip68_files:
-		cip68_data.push_back(load("res://cip68_data/%s" % path))
+		var res = load_user_or_res("cip68_data/%s" % path)
+		if res is MintCip68:
+			cip68_data.push_back(res)
 
 	for conf: MintCip68 in cip68_data:
 		var item = await cip68_to_item(conf, true)
@@ -71,14 +56,26 @@ func _ready():
 	WalletSingleton.wallet_ready.connect(_on_wallet_ready)
 
 func _on_wallet_ready():
-	await WalletSingleton.wallet.got_updated_utxos
-	var shop_address := WalletSingleton.provider.make_address(Credential.from_script(shop_script))
-	WalletSingleton.provider.chain_address(shop_address)
-	owner_pub_key_hash = WalletSingleton.wallet.get_payment_pub_key_hash()
+	wallet = WalletSingleton.wallet
+	provider = WalletSingleton.provider
+	
 	for conf in cip68_data:
-		WalletSingleton.provider.chain_asset(conf.make_ref_asset_class(minting_policy_source))
+		await conf.init_script(provider)
+		WalletSingleton.provider.chain_asset(conf.make_ref_asset_class())
+		
+	DirAccess.make_dir_absolute("user://cip68_data")
+	ref_lock_source = await load_script_and_create_ref("ref_lock.tres")
+	shop_script_source = await load_script_and_create_ref("shop_script.tres")
+	
+	await wallet.got_updated_utxos
+
+	var shop_address := provider.make_address(
+		Credential.from_script_source(shop_script_source)
+	)
+	provider.chain_address(shop_address)
+	owner_pub_key_hash = wallet.get_payment_pub_key_hash()
 	print('using shop %s' % shop_address.to_bech32())
-	print('using minting policy %s' % minting_policy.hash_as_hex())
+	print('using minting policy %s' % cip68_data[0].minting_policy_source.hash().to_hex())
 	busy = true
 	await mint_tokens()
 	busy = false
@@ -180,32 +177,29 @@ func _on_select_inventory_item(selection: InventoryItem):
 
 func mint_tokens():
 	busy = true
-	var provider: Provider = WalletSingleton.provider
-	var new_tx_result := await WalletSingleton.wallet.new_tx()
+	var new_tx_result := await wallet.new_tx()
 	if new_tx_result.is_err():
 		push_error("Could not create transaction: %s" % new_tx_result.error)
 		return
 	var shop_address := provider.make_address(
-		Credential.from_script(shop_script)
+		Credential.from_script_source(shop_script_source)
 	)
 	var tx_builder = new_tx_result.value
 
 	var new_mint = false
 	for conf in cip68_data:
-		var asset_class := conf.make_ref_asset_class(minting_policy_source)
+		var asset_class := conf.make_ref_asset_class()
 		var utxo := await provider.get_utxo_with_nft(asset_class)
 		if utxo == null:
 			new_mint = true
-			tx_builder.mint_cip68_pair(minting_policy_source, VoidData.new().to_data(), conf)
+			tx_builder.mint_cip68_pair(VoidData.new().to_data(), conf)
 			tx_builder.pay_cip68_ref_token(
-				minting_policy_source,
 				provider.make_address(
-					Credential.from_script(ref_lock),
+					Credential.from_script_source(ref_lock_source),
 				),
 				conf
 			)
 			tx_builder.pay_cip68_user_tokens_with_datum(
-				minting_policy_source,
 				shop_address,
 				PlutusBytes.new(owner_pub_key_hash.to_bytes()),
 				conf
@@ -236,18 +230,9 @@ func mint_tokens():
 func burn_tokens():
 	busy = true
 	deselect_item()
-	var provider: Provider = WalletSingleton.provider
-	var new_tx_result := await WalletSingleton.wallet.new_tx()
-
-	if new_tx_result.is_err():
-		push_error("Could not create transaction: %s" % new_tx_result.error)
-		busy = false
-		return false
-
-	var tx_builder = new_tx_result.value
 
 	var shop_utxos = await provider.get_utxos_at_address(
-		provider.make_address(Credential.from_script(shop_script))
+		provider.make_address(Credential.from_script_source(shop_script_source))
 	)
 
 	var owner_shop_utxos = shop_utxos.filter(
@@ -256,12 +241,12 @@ func burn_tokens():
 	)
 
 	var ref_lock_utxos = await provider.get_utxos_at_address(
-		provider.make_address(Credential.from_script(ref_lock))
+		provider.make_address(Credential.from_script_source(ref_lock_source))
 	)
 
 	var burns: Array[TxBuilder.MintToken] = []
 	for conf in cip68_data:
-		var user_asset_class := conf.make_user_asset_class(minting_policy_source)
+		var user_asset_class := conf.make_user_asset_class()
 		var quantity_remaining := BigInt.zero()
 		for utxo in owner_shop_utxos:
 			quantity_remaining = quantity_remaining.add(
@@ -273,7 +258,7 @@ func burn_tokens():
 				TxBuilder.MintToken.new(user_asset_class._asset_name, quantity_remaining.negate()),
 			)
 
-		var ref_asset_class := conf.make_ref_asset_class(minting_policy_source)
+		var ref_asset_class := conf.make_ref_asset_class()
 		for utxo in ref_lock_utxos:
 			var ref_count = utxo.assets().get_asset_quantity(ref_asset_class)
 			if ref_count.eq(BigInt.zero()):
@@ -283,33 +268,23 @@ func burn_tokens():
 
 	if burns.is_empty():
 		return
+	
+	var tx_hash := await wallet.tx_with(
+		func (tx_builder: TxBuilder):
+			tx_builder.collect_from_script(ref_lock_source, ref_lock_utxos, VoidData.to_data())
+			# FIXME: should have better way to burn CIP68 tokens
+			tx_builder.mint_assets(cip68_data[0].minting_policy_source, burns, VoidData.to_data())
 
-	tx_builder.collect_from_script(ref_lock_source, ref_lock_utxos, VoidData.to_data())
-	tx_builder.mint_assets(minting_policy_source, burns, VoidData.to_data())
-
-	tx_builder.collect_from_script(shop_script_source, owner_shop_utxos, VoidData.to_data())
-	tx_builder.add_required_signer(WalletSingleton.wallet.get_payment_pub_key_hash())
-
-	var complete_result := await tx_builder.complete()
-
-	if complete_result.is_err():
-		push_error("Failed to build transaction: %s" % complete_result.error)
-		busy = false
-		return false
-
-	var tx := complete_result.value
-	tx.sign("1234")
-	var submit_result := await tx.submit()
-
-	if submit_result.is_err():
-		push_error("Failed to submit transaction: %s" % submit_result.error)
-		busy = false
-		return false
+			tx_builder.collect_from_script(shop_script_source, owner_shop_utxos, VoidData.to_data())
+			tx_builder.add_required_signer(wallet.get_payment_pub_key_hash()),
+		func (tx: TxComplete):
+			tx.sign("1234")
+	)
 
 	update_timer.timeout.emit()
 	print("Burned")
 	busy = false
-	return true
+	return tx_hash != null
 
 func buy_item(conf: MintCip68, quantity: int) -> bool:
 	if quantity == 0:
@@ -317,23 +292,14 @@ func buy_item(conf: MintCip68, quantity: int) -> bool:
 
 	busy = true
 	deselect_item()
-	var provider: Provider = WalletSingleton.provider
-	var new_tx_result := await WalletSingleton.wallet.new_tx()
-
-	if new_tx_result.is_err():
-		push_error("Could not create transaction: %s" % new_tx_result.error)
-		busy = false
-		return false
-
-	var tx_builder = new_tx_result.value
-
+	
 	var shop_utxos = await provider.get_utxos_at_address(
-		provider.make_address(Credential.from_script(shop_script))
+		provider.make_address(Credential.from_script_source(shop_script_source))
 	)
 	var ref_utxo := await provider.get_utxo_with_nft(
-		conf.make_ref_asset_class(minting_policy_source)
+		conf.make_ref_asset_class()
 	)
-	var user_asset_class = conf.make_user_asset_class(minting_policy_source)
+	var user_asset_class = conf.make_user_asset_class()
 	var selected_utxo: Utxo = null
 	if quantity > 0:
 		for utxo in shop_utxos:
@@ -342,55 +308,46 @@ func buy_item(conf: MintCip68, quantity: int) -> bool:
 				break
 	else:
 		for utxo: Utxo in shop_utxos:
-			if utxo.coin().to_int() > conf.extra_plutus_data.to_int() * -quantity:
+			if utxo.coin().to_int() > conf.extra_plutus_data.data.to_int() * -quantity:
 				selected_utxo = utxo
 				break
 
-	tx_builder.collect_from_script(shop_script_source, [selected_utxo], VoidData.to_data())
-
-	tx_builder.add_reference_input(ref_utxo)
-
 	var assets := selected_utxo.assets().duplicate()
-	assets.add_asset(conf.make_user_asset_class(minting_policy_source), BigInt.from_int(-quantity))
-
+	assets.add_asset(conf.make_user_asset_class(), BigInt.from_int(-quantity))
+	
 	if !selected_utxo.datum_info().has_datum_inline():
 		push_error("Selected UTxO does not have an inline datum")
+		busy = false
 		return false
 	var shop_datum := selected_utxo.datum()
 	
-	tx_builder.pay_to_address_with_datum(
-		WalletSingleton.provider.make_address(
-			Credential.from_script(shop_script)
-		),
-		selected_utxo.coin().add(BigInt.from_int(conf.extra_plutus_data.to_int() * quantity)),
-		assets,
-		shop_datum
+	var tx_hash := await wallet.tx_with(
+		func (tx_builder: TxBuilder):
+			tx_builder.collect_from_script(
+				shop_script_source,
+				[selected_utxo],
+				VoidData.to_data()
+			)
+			tx_builder.add_reference_input(ref_utxo)
+			tx_builder.pay_to_address(
+				WalletSingleton.provider.make_address(
+					Credential.from_script_source(shop_script_source)
+				),
+				selected_utxo.coin().add(BigInt.from_int(conf.extra_plutus_data.data.to_int() * quantity)),
+				assets,
+				shop_datum
+			),
+		func (tx: TxComplete):
+			tx.sign("1234")
 	)
-
-	var complete_result := await tx_builder.complete()
-
-	if complete_result.is_err():
-		push_error("Failed to build transaction: %s" % complete_result.error)
-		busy = false
-		return false
-
-	var tx := complete_result.value
-	tx.sign("1234")
-	var submit_result := await tx.submit()
-
-	if submit_result.is_err():
-		push_error("Failed to submit transaction: %s" % submit_result.error)
-		busy = false
-		return false
 
 	update_timer.timeout.emit()
 	busy = false
-	return true
+	return tx_hash != null
 
 func update_data() -> void:
-	var provider: Provider = WalletSingleton.provider
 	var shop_utxos = await provider.get_utxos_at_address(
-		provider.make_address(Credential.from_script(shop_script))
+		provider.make_address(Credential.from_script_source(shop_script_source))
 	)
 	var shop_assets = MultiAsset.empty()
 	for utxo in shop_utxos:
@@ -402,15 +359,15 @@ func update_data() -> void:
 				item = v
 				break
 		item.stock = shop_assets.get_asset_quantity(
-			conf.make_user_asset_class(minting_policy_source)
+			conf.make_user_asset_class()
 		).to_int()
 
-	var wallet_utxos: Array[Utxo] = await WalletSingleton.wallet._get_updated_utxos()
+	var wallet_utxos: Array[Utxo] = await wallet._get_updated_utxos()
 	var new_inventory_items: Array[InventoryItem] = []
 	for utxo in wallet_utxos:
 		for conf: MintCip68 in cip68_data:
 			var quantity := utxo.assets().get_asset_quantity(
-				conf.make_user_asset_class(minting_policy_source)
+				conf.make_user_asset_class()
 			)
 			for i in range(quantity.to_int()):
 				var user_item: InventoryItem = InventoryItem.instantiate()
@@ -418,7 +375,7 @@ func update_data() -> void:
 				new_inventory_items.push_back(user_item)
 
 	inventory_items = new_inventory_items
-	WalletSingleton.wallet.update_utxos()
+	wallet.update_utxos()
 	data_updated.emit()
 
 func load_script_from_blueprint(path: String, validator_name: String) -> PlutusScript:
@@ -434,7 +391,7 @@ func load_script_from_blueprint(path: String, validator_name: String) -> PlutusS
 func cip68_to_item(conf: MintCip68, local_data := false) -> Item:
 	var data: Cip68Datum = Cip68Datum.from_constr(conf.to_data())
 	if not local_data:
-		var remote_data := await WalletSingleton.provider.get_cip68_datum(conf, minting_policy_source)
+		var remote_data := await WalletSingleton.provider.get_cip68_datum(conf)
 		if remote_data != null:
 			data = remote_data
 
@@ -453,3 +410,37 @@ func cip68_to_item(conf: MintCip68, local_data := false) -> Item:
 	)
 	item.item_bought.connect(_on_buy_shop_item)
 	return item
+
+func load_user_or_res(path: String, type_hint := "") -> Resource:
+	var res_path := "res://%s" % path
+	var user_path := "user://%s" % path
+	
+	return ResourceLoader.load(
+		user_path if FileAccess.file_exists(user_path) else res_path,
+		type_hint
+	)
+
+func load_script_and_create_ref(filename: String) -> PlutusScriptSource:
+	var source := await provider.load_script(load_user_or_res("cip68_data/%s" % filename) as ScriptResource)
+	if not source.is_ref():
+		var tx_hash := await wallet.tx_with(
+			func(tx_builder: TxBuilder):
+				tx_builder.pay_to_address(
+					provider.make_address(
+						Credential.from_script_source(source)
+					),
+					BigInt.zero(),
+					MultiAsset.empty(),
+					VoidData.to_data(),
+					source.script()
+				),
+			func (tx: TxComplete):
+				tx.sign("1234")
+		)
+
+		if tx_hash != null:
+			var res := ScriptFromOutRef.new(tx_hash, 0)
+			await provider.await_tx(tx_hash)
+			ResourceSaver.save(res, "user://cip68_data/%s" % filename)
+			source = await provider.load_script(res)
+	return source

@@ -158,6 +158,9 @@ func _get_utxo_with_nft(_asset: AssetClass) -> Utxo:
 	await _empty
 	return null
 
+## Should return the transaction output with the given output reference.
+## Ideally would return null if the output has been spent; currently this is not
+## the behavior of the Blockfrost provider. 
 func _get_utxo_by_out_ref(_tx_hash: TransactionHash, _output_index: int) -> Utxo:
 	await _empty
 	return null

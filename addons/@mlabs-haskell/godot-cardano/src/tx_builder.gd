@@ -161,7 +161,7 @@ func pay_to_address_with_datum_hash(
 	return pay_to_address(address, coin, assets, datum, script_ref, true)
 
 func mint_assets(
-	minting_policy: PlutusScriptSource,
+	minting_policy_source: PlutusScriptSource,
 	tokens: Array[MintToken],
 	redeemer: PlutusData
 ) -> TxBuilder:
@@ -179,9 +179,12 @@ func mint_assets(
 			tokens_dict[asset_name] = prev.add(token._quantity._b)
 	)
 	
+	if minting_policy_source.is_ref():
+		add_reference_input(Utxo.new(minting_policy_source.utxo()))
+		
 	var result := Result.VariantResult.new(
 		_builder._mint_assets(
-			minting_policy,
+			minting_policy_source,
 			tokens_dict,
 			serialize_result.value
 		)
@@ -192,12 +195,14 @@ func mint_assets(
 	return self
 	
 func mint_cip68_pair(
-	minting_policy: PlutusScriptSource,
 	redeemer: PlutusData,
 	conf: MintCip68
 ) -> TxBuilder:
+	if conf.minting_policy_source == null:
+		await conf.init_script(_provider)
+
 	mint_assets(
-		minting_policy, 
+		conf.minting_policy_source, 
 		[
 			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity()),
 			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one())
@@ -207,34 +212,40 @@ func mint_cip68_pair(
 	return self
 
 func pay_cip68_ref_token(
-	minting_policy: PlutusScriptSource,
 	address: Address,
 	conf: MintCip68
 ) -> TxBuilder:
+	if conf.minting_policy_source == null:
+		await conf.init_script(_provider)
+
 	var assets = MultiAsset.empty()
-	assets.set_asset_quantity(conf.make_ref_asset_class(minting_policy), BigInt.one())
+	assets.set_asset_quantity(conf.make_ref_asset_class(), BigInt.one())
 	pay_to_address(address, BigInt.zero(), assets, conf.to_data())
 	return self
 
 func pay_cip68_user_tokens(
-	minting_policy: PlutusScriptSource,
 	address: Address,
 	conf: MintCip68
 ) -> TxBuilder:
+	if conf.minting_policy_source == null:
+		await conf.init_script(_provider)
+
 	var assets = MultiAsset.empty()
-	assets.set_asset_quantity(conf.make_user_asset_class(minting_policy), conf.get_quantity())
+	assets.set_asset_quantity(conf.make_user_asset_class(), conf.get_quantity())
 	pay_to_address(address, BigInt.zero(), assets)
 	return self
 	
 func pay_cip68_user_tokens_with_datum(
-	minting_policy: PlutusScriptSource,
 	address: Address,
 	datum: PlutusData,
 	conf: MintCip68,
 	amount := conf.get_quantity()
 ) -> TxBuilder:
+	if conf.minting_policy_source == null:
+		await conf.init_script(_provider)
+		
 	var assets = MultiAsset.empty()
-	assets.set_asset_quantity(conf.make_user_asset_class(minting_policy), amount)
+	assets.set_asset_quantity(conf.make_user_asset_class(), amount)
 	pay_to_address(address, BigInt.zero(), assets, datum)
 	return self
 
@@ -264,6 +275,9 @@ func collect_from_script(
 	)
 	
 	_script_utxos.append_array(utxos)
+
+	if plutus_script_source.is_ref():
+		add_reference_input(Utxo.new(plutus_script_source.utxo()))
 
 	_builder._collect_from_script(
 		plutus_script_source,
@@ -372,9 +386,8 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 	
 	var error = _results.any(func (result: Result) -> bool: return result.is_err())
 	
-	if balance_result.is_ok():
-		pass
 	_results.push_back(balance_result)
+	
 	if not error and balance_result.is_ok():
 		var eval_result := balance_result.value.evaluate(wallet_utxos + _script_utxos)
 		

@@ -10,17 +10,6 @@ enum Status { SUCCESS = 0, COULD_NOT_PARSE_BIGINT = 1, COULD_NOT_DESERIALIZE_BIG
 
 var _b: _BigInt
 
-@export
-var value: String:
-	get:
-		return _b.to_str()
-	set(v):
-		var result = _BigInt._from_str(v)
-		if result.is_ok():
-			_b = result.unsafe_value()
-		else:
-			push_error("Could not parse BigInt: %s" % result.error)
-		
 func _init(b: _BigInt) -> void:
 	_b = b
 

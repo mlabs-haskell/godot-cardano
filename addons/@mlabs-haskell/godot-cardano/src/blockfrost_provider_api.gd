@@ -158,8 +158,8 @@ class ScriptInfoFromHash extends Request:
 		_hash = script_hash
 
 	func _url() -> String:
-		return "scripts/%s/cbor" % _hash
-
+		return "scripts/%s" % _hash
+		
 class ScriptCborFromHash extends Request:
 	var _hash: String
 
@@ -167,7 +167,7 @@ class ScriptCborFromHash extends Request:
 		_hash = script_hash
 
 	func _url() -> String:
-		return "scripts/%s" % _hash
+		return "scripts/%s/cbor" % _hash
 		
 class SubmitTransactionRequest extends Request:
 	var _tx_cbor: PackedByteArray
@@ -456,11 +456,12 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 			if (info_result.get('status_code', null) != 404 and
 				resolve_result.get('status_code', null) != 404 and
 				resolve_result.has('cbor')):
+				var cbor_hex: String = resolve_result.cbor
 				if info_result.type == "plutusV1":
 					# can't be used as a reference input, but might be useful as script storage?
-					script_map[script_hash] = PlutusScript.create_v1(resolve_result.cbor)
+					script_map[script_hash] = PlutusScript.create_v1(cbor_hex.hex_decode())
 				if info_result.type == "plutusV2":
-					script_map[script_hash] = PlutusScript.create(resolve_result.cbor)
+					script_map[script_hash] = PlutusScript.create(cbor_hex.hex_decode())
 	
 	utxos.assign(
 		utxos_json.map(

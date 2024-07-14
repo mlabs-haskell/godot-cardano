@@ -33,6 +33,12 @@ func _init(credential: _Credential):
 static func from_script(script: PlutusScript) -> Credential:
 	return new(_Credential.from_script_hash(script.hash()))
 	
+static func from_script_hash(script_hash: ScriptHash) -> Credential:
+	return new(_Credential.from_script_hash(script_hash._script_hash))
+	
+static func from_script_source(script_source: PlutusScriptSource) -> Credential:
+	return new(_Credential.from_script_hash(script_source.hash()))
+	
 static func from_key_hash(key_hash: PubKeyHash) -> Credential:
 	return new(_Credential.from_key_hash(key_hash._pub_key_hash))
 

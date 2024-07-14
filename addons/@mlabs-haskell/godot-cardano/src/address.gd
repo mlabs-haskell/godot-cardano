@@ -41,13 +41,13 @@ func _to_string() -> String:
 	return to_bech32()
 	
 static func build(
-	network_id: int,
+	network: ProviderApi.Network,
 	payment_cred: Credential,
 	stake_cred: Credential = null
 ) -> Address:
 	return new(
 		_Address.build(
-			network_id,
+			1 if network == ProviderApi.Network.MAINNET else 0,
 			payment_cred._credential,
 			stake_cred._credential if stake_cred else null
 		)

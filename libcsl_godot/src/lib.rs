@@ -106,6 +106,8 @@ struct GTxBuilder {
             PackedByteArray,
         ),
     >,
+    input_script_sources:
+        BTreeMap<CSL::TransactionInput, CSL::tx_builder::tx_inputs_builder::PlutusScriptSource>,
     data: BTreeSet<PlutusData>,
     previous_build: Option<CSL::Transaction>,
 }
@@ -237,6 +239,7 @@ impl GTxBuilder {
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
 
             minted_assets: BTreeMap::new(),
+            input_script_sources: BTreeMap::new(),
             data: BTreeSet::new(),
             previous_build: None,
         })
@@ -303,6 +306,10 @@ impl GTxBuilder {
             _ => PlutusWitness::new_with_ref_without_datum(&script_source.bind().source, &redeemer),
         };
 
+        self.input_script_sources.insert(
+            utxo.to_transaction_input(),
+            script_source.bind().source.clone(),
+        );
         self.uses_plutus_scripts = true;
         self.inputs_builder
             .add_plutus_script_input(&witness, &input, &value);
@@ -672,21 +679,26 @@ impl GTxBuilder {
                         .as_ref()
                         .ok_or(TxBuilderError::MissingWitnesses)?
                         .get(script_input_index);
-                    let script = witness
-                        .script()
+                    let script_source = self
+                        .input_script_sources
+                        .get(&input)
                         .ok_or(TxBuilderError::MissingScriptForInput(index))?;
                     script_input_index += 1;
                     match witness.datum() {
                         Some(datum) => {
                             replaced_inputs.add(&InputWithScriptWitness::new_with_plutus_witness(
                                 &input,
-                                &PlutusWitness::new(&script, &datum, &bound),
+                                &PlutusWitness::new_with_ref(
+                                    &script_source,
+                                    &CSL::tx_builder::tx_inputs_builder::DatumSource::new(&datum),
+                                    &bound,
+                                ),
                             ));
                         }
                         None => {
                             replaced_inputs.add(&InputWithScriptWitness::new_with_plutus_witness(
                                 &input,
-                                &PlutusWitness::new_without_datum(&script, &bound),
+                                &PlutusWitness::new_with_ref_without_datum(&script_source, &bound),
                             ));
                         }
                     }

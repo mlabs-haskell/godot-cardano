@@ -756,6 +756,11 @@ impl PlutusScript {
     }
 
     #[func]
+    fn bytes(&self) -> PackedByteArray {
+        PackedByteArray::from(self.script.bytes().as_slice())
+    }
+
+    #[func]
     fn hash(&self) -> Gd<ScriptHash> {
         Gd::from_object(ScriptHash {
             hash: self.script.hash(),
@@ -791,7 +796,7 @@ pub struct PlutusScriptSource {
     pub source: CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
     pub bytes: Option<Vec<u8>>,
     pub hash: CSL::crypto::ScriptHash,
-    pub is_ref: bool,
+    pub utxo: Option<Gd<Utxo>>,
 }
 
 #[godot_api]
@@ -803,7 +808,7 @@ impl PlutusScriptSource {
             source: tx_inputs_builder::PlutusScriptSource::new(&script),
             bytes: Some(script.bytes()),
             hash: script.hash(),
-            is_ref: false,
+            utxo: None,
         })
     }
 
@@ -820,7 +825,7 @@ impl PlutusScriptSource {
                 ),
                 bytes: None,
                 hash,
-                is_ref: true,
+                utxo: Some(gutxo.clone()),
             })
         })
     }
@@ -842,8 +847,13 @@ impl PlutusScriptSource {
     }
 
     #[func]
+    fn utxo(&self) -> Option<Gd<Utxo>> {
+        self.utxo.clone()
+    }
+
+    #[func]
     fn is_ref(&self) -> bool {
-        self.is_ref
+        self.utxo.is_some()
     }
 }
 
@@ -1023,6 +1033,9 @@ impl Utxo {
             }
             _ => (),
         }
+        self.script_ref.as_ref().map(|script| {
+            output.set_script_ref(&CSL::ScriptRef::new_plutus_script(&script.bind().script))
+        });
         TransactionUnspentOutput::new(&self.to_transaction_input(), &output)
     }
 

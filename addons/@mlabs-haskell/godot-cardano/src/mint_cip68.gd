@@ -11,6 +11,10 @@ extends Resource
 
 class_name MintCip68
 
+@export
+var minting_policy: ScriptResource
+var minting_policy_source: PlutusScriptSource
+
 @export_category("Token Name")
 @export
 ## The token name *body* (i.e: the part of the token name
@@ -73,121 +77,14 @@ var non_standard_metadata: Dictionary = {}:
 	set(v):
 		non_standard_metadata = v
 		_homogenize_or_fail(non_standard_metadata)
+
+@export_category("Extra Plutus Data")
+@export
 ## This corresponds to the third field of the CIP-68 datum. Use this if you need
 ## to store data in any form that is not compliant with CIP-25. No restrictions
 ## apply other than the usual ones for encoding a datum.
-var extra_plutus_data: PlutusData = VoidData.new().to_data():
-	get:
-		if FileAccess.file_exists(extra_plutus_data_json_path):
-			var json := JSON.parse_string(FileAccess.get_file_as_string(extra_plutus_data_json_path))
-			if json != null:
-				return PlutusData.from_json(json)
-		return extra_plutus_data
-	set(v):
-		assert(v.serialize().is_ok()
-		, "Failed to serialize of extra_plutus_data")
-		extra_plutus_data = v
-enum ExtraPlutusDataType {
-	INT,
-	BYTES,
-	JSON_FILE,
-	JSON_INLINE,
-	CBOR_HEX
-}
+var extra_plutus_data: PlutusDataResource = PlutusDataResource.new()
 
-# TODO: Use _set and _get instead of allocating data where possible
-@export_category("Extra Plutus Data")
-@export
-var extra_plutus_data_type: ExtraPlutusDataType = 0:
-	set(v):
-		extra_plutus_data_type = v
-		notify_property_list_changed()
-@export
-var extra_plutus_data_int: int:
-	get:
-		if extra_plutus_data is BigInt:
-			return extra_plutus_data.to_str().to_int()
-		return 0
-	set(v):
-		extra_plutus_data = BigInt.from_int(v)
-		extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
-		extra_plutus_data_json_path = ""
-
-@export
-var extra_plutus_data_bytes: PackedByteArray:
-	get:
-		if extra_plutus_data is PlutusBytes:
-			return extra_plutus_data.get_data()
-		return PackedByteArray()
-	set(v):
-		extra_plutus_data = PlutusBytes.new(v)
-		extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
-		extra_plutus_data_json_path = ""
-
-@export
-# FIXME: Currently this doesn't work if you put one character at a time.
-var extra_plutus_data_as_hex: String:
-	get:
-		return extra_plutus_data_bytes.hex_encode()
-	set(v):
-		if (v.length() % 2 == 0):
-			extra_plutus_data_bytes = v.hex_decode()
-@export
-var extra_plutus_data_as_utf8: String:
-	get:
-		return extra_plutus_data_bytes.get_string_from_utf8()
-	set(v):
-		extra_plutus_data_bytes = v.to_utf8_buffer()
-
-var extra_plutus_data_cbor: PackedByteArray:
-	get:
-		var result = extra_plutus_data.serialize()
-		if result.is_ok():
-			return result.value
-		push_error("Failed to serialize PlutusData: %s" % result.error)
-		return PackedByteArray()
-	set(v):
-		var result = PlutusData.deserialize(v)
-		if result != null:
-			extra_plutus_data = result
-			extra_plutus_data_json = JSON.stringify(extra_plutus_data.to_json())
-			extra_plutus_data_json_path = ""
-@export
-# FIXME: Currently this doesn't work if you put one character at a time.
-var extra_plutus_data_cbor_hex: String:
-	get:
-		return extra_plutus_data_cbor.hex_encode()
-	set(v):
-		if (v.length() % 2 == 0):
-			extra_plutus_data_cbor = v.hex_decode()
-
-@export_multiline
-var extra_plutus_data_json: String:
-	get:
-		var json = JSON.new()
-		var error = json.parse(extra_plutus_data_json)
-		if error != OK:
-			return extra_plutus_data_json
-		var parsed := PlutusData.from_json(json.data)
-		if parsed == null:
-			return extra_plutus_data_json
-		var from_data = JSON.stringify(extra_plutus_data.to_json(), "  ")
-		return from_data
-	set(v):
-		var json := JSON.parse_string(v)
-		extra_plutus_data_json = v
-		if json != null:
-			var data = PlutusData.from_json(json)
-			if data != null:
-				extra_plutus_data = data
-			else:
-				push_error("Failed to parse PlutusData")
-		else:
-			push_error("Failed to parse JSON")
-
-@export_file("*.json")
-var extra_plutus_data_json_path: String = ""
-		
 @export_category("Minting")
 @export
 ## Whether or not multiple user tokens can be minted. This determines the asset 
@@ -241,7 +138,7 @@ func to_data() -> Cip68Datum:
 		Constr.new(BigInt.zero(), [
 			cip25_metadata_homogenized,
 			BigInt.one(),
-			extra_plutus_data,
+			extra_plutus_data.data,
 		])
 	return Cip68Datum.from_constr(cip68_datum)
 
@@ -296,33 +193,27 @@ func _homogenize_or_fail(v: Variant) -> PlutusData:
 			assert(false, "Found value of unexpected type " + type_string(typeof(v)))
 			return null
 
-func make_user_asset_class(script_source: PlutusScriptSource) -> AssetClass:
+func _make_asset_class(script_source: PlutusScriptSource, token_name: AssetName) -> AssetClass:
+	if script_source == null:
+		push_error("Could not make CIP68 asset class: set minting_policy_source or provide a script source")
+		return null
 	return AssetClass.new(
 		PolicyId.from_script_source(script_source),
-		get_user_token_name()
+		token_name
 	)
+	
+func make_user_asset_class(script_source := minting_policy_source) -> AssetClass:
+	return _make_asset_class(script_source, get_user_token_name())
 
-func make_ref_asset_class(script_source: PlutusScriptSource) -> AssetClass:
-	return AssetClass.new(
-		PolicyId.from_script_source(script_source),
-		get_ref_token_name()
-	)
+func make_ref_asset_class(script_source := minting_policy_source) -> AssetClass:
+	return _make_asset_class(script_source, get_ref_token_name())
 
 func _validate_property(property):
 	var hide_conditions: Array[bool] = [
 		property.name == 'initial_quantity' and not self.fungible,
-		property.name == 'extra_plutus_data_int' and extra_plutus_data_type != ExtraPlutusDataType.INT,
-		property.name == 'extra_plutus_data_bytes' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
-		property.name == 'extra_plutus_data_as_hex' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
-		property.name == 'extra_plutus_data_as_utf8' and extra_plutus_data_type != ExtraPlutusDataType.BYTES,
-		property.name == 'extra_plutus_data_json_path' and extra_plutus_data_type != ExtraPlutusDataType.JSON_FILE,
-		property.name == 'extra_plutus_data_json' and extra_plutus_data_type != ExtraPlutusDataType.JSON_INLINE,
-		property.name == 'extra_plutus_data_cbor_hex' and extra_plutus_data_type != ExtraPlutusDataType.CBOR_HEX,
-	]
-	var readonly_conditions: Array[bool] = [
-		property.name == 'extra_plutus_data_json' and FileAccess.file_exists(extra_plutus_data_json_path)
 	]
 	if hide_conditions.any(func (x): return x):
 		property.usage &= ~PROPERTY_USAGE_EDITOR
-	if readonly_conditions.any(func (x): return x):
-		property.usage |= PROPERTY_USAGE_READ_ONLY
+
+func init_script(provider: Provider) -> void:
+	minting_policy_source = await provider.load_script(minting_policy)

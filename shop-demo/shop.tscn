@@ -42,7 +42,6 @@ content_margin_bottom = 5.0
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_n7hu2")
-display_inventory = null
 
 [node name="MainScreen" type="VBoxContainer" parent="."]
 layout_mode = 0
