@@ -2,7 +2,7 @@
 class_name InventoryItem
 extends Item
 
-func _process(delta: float):
+func _process(_delta: float):
 	$Sprite.modulate = color
 
 func _on_gui_input(event: InputEvent) -> void:

@@ -152,6 +152,7 @@ func import_from_resource(resource: SingleAddressWalletResource) -> WalletImport
 			)
 		)
 		var res: WalletImportResult = await import_completed
+		thread.wait_to_finish()
 		return res
 		
 ## Export the wallet to a [class SingleAddressWalletResource], which can

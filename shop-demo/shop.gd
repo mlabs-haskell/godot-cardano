@@ -1,8 +1,8 @@
 extends Control
 
-var ShopItem = preload("res://shop_item.tscn")
-var InventoryItem = preload("res://inventory_item.tscn")
-var UserMessage = preload("res://user_message.tscn")
+var ShopItemRes = preload("res://shop_item.tscn")
+var InventoryItemRes = preload("res://inventory_item.tscn")
+var UserMessageRes = preload("res://user_message.tscn")
 
 var shop_items: Array[ShopItem] = []
 var inventory_items: Array[InventoryItem] = []
@@ -148,14 +148,14 @@ func _on_main_screen_gui_input(event: InputEvent) -> void:
 		display_inventory = false
 
 func _on_selected_item_sell_button_confirmed() -> void:
-	var new_message = UserMessage.instantiate()
+	var new_message = UserMessageRes.instantiate()
 	new_message.set_message("+%s t₳" % selected_item.price.b.format_price())
 	new_message.set_color(Color.GREEN)
 	if await buy_item(selected_item.conf, -1):
 		add_child(new_message)
 
 func _on_buy_shop_item(item: ShopItem):
-	var new_message := UserMessage.instantiate()
+	var new_message := UserMessageRes.instantiate()
 	if WalletSingleton.user_funds.lt(item.price.b):
 		new_message.set_message("Insufficient funds")
 		new_message.set_color(Color.RED)
@@ -192,7 +192,7 @@ func mint_tokens():
 		var utxo := await provider.get_utxo_with_nft(asset_class)
 		if utxo == null:
 			new_mint = true
-			tx_builder.cip68_config_pair(VoidData.new().to_data(), conf)
+			tx_builder.cip68_config_pair(VoidData.to_data(), conf)
 			tx_builder.pay_cip68_ref_token(
 				provider.make_address(
 					Credential.from_script_source(ref_lock_source),
@@ -371,7 +371,7 @@ func update_data() -> void:
 				conf.make_user_asset_class()
 			)
 			for i in range(quantity.to_int()):
-				var user_item: InventoryItem = InventoryItem.instantiate()
+				var user_item: InventoryItem = InventoryItemRes.instantiate()
 				user_item.from_item(await cip68_to_item(conf, true))
 				new_inventory_items.push_back(user_item)
 
@@ -396,7 +396,7 @@ func cip68_to_item(conf: Cip68Config, local_data := false) -> Item:
 		if remote_data != null:
 			data = remote_data
 
-	var item := ShopItem.instantiate() as ShopItem
+	var item := ShopItemRes.instantiate() as ShopItem
 	item.item_name = data.name()
 	item.price.b = data.extra_plutus_data()
 	item.conf = conf

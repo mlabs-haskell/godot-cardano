@@ -7,7 +7,7 @@ var stock: int
 @export
 var busy: bool = false
 
-func _process(delta: float):
+func _process(_delta: float):
 	if stock > 0:
 		%StickerLabel.text = "x%d" % stock
 	elif stock < 0:

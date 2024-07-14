@@ -58,10 +58,10 @@ func create_new_wallet() -> SingleAddressWallet:
 		push_error("Failed to create wallet: %s" % new_wallet_result.error)
 		return
 	
-	var wallet := new_wallet_result.value.wallet
+	var new_wallet := new_wallet_result.value.wallet
 	
-	ResourceSaver.save(wallet.export(), wallet_path)
-	return wallet
+	ResourceSaver.save(new_wallet.export(), wallet_path)
+	return new_wallet
 
 func load_wallet() -> SingleAddressWalletLoader.WalletImportResult:
 	var wallet_resource: SingleAddressWalletResource = load(wallet_path)
