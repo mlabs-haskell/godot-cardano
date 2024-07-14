@@ -13,7 +13,7 @@ var selection_stylebox: StyleBox = null
 var unselected_stylebox: StyleBox = null
 var update_timer: Timer = null
 
-var cip68_data: Array[MintCip68] = []
+var cip68_data: Array[Cip68Config] = []
 
 var owner_pub_key_hash: PubKeyHash = null
 var tag: BigInt = BigInt.from_int(239058)
@@ -37,10 +37,10 @@ func _ready():
 	var cip68_files := DirAccess.get_files_at("res://cip68_data")
 	for path in cip68_files:
 		var res = load_user_or_res("cip68_data/%s" % path)
-		if res is MintCip68:
+		if res is Cip68Config:
 			cip68_data.push_back(res)
 
-	for conf: MintCip68 in cip68_data:
+	for conf: Cip68Config in cip68_data:
 		var item = await cip68_to_item(conf, true)
 		shop_items.push_back(item)
 		%ItemContainer.add_child(item)
@@ -192,7 +192,7 @@ func mint_tokens():
 		var utxo := await provider.get_utxo_with_nft(asset_class)
 		if utxo == null:
 			new_mint = true
-			tx_builder.mint_cip68_pair(VoidData.new().to_data(), conf)
+			tx_builder.cip68_config_pair(VoidData.new().to_data(), conf)
 			tx_builder.pay_cip68_ref_token(
 				provider.make_address(
 					Credential.from_script_source(ref_lock_source),
@@ -286,7 +286,7 @@ func burn_tokens():
 	busy = false
 	return tx_hash != null
 
-func buy_item(conf: MintCip68, quantity: int) -> bool:
+func buy_item(conf: Cip68Config, quantity: int) -> bool:
 	if quantity == 0:
 		return false
 
@@ -352,7 +352,7 @@ func update_data() -> void:
 	var shop_assets = MultiAsset.empty()
 	for utxo in shop_utxos:
 		shop_assets.merge(utxo.assets())
-	for conf: MintCip68 in cip68_data:
+	for conf: Cip68Config in cip68_data:
 		var item: ShopItem = null
 		for v in shop_items:
 			if v.conf == conf:
@@ -366,7 +366,7 @@ func update_data() -> void:
 	var wallet_utxos: Array[Utxo] = await wallet._get_updated_utxos()
 	var new_inventory_items: Array[InventoryItem] = []
 	for utxo in wallet_utxos:
-		for conf: MintCip68 in cip68_data:
+		for conf: Cip68Config in cip68_data:
 			var quantity := utxo.assets().get_asset_quantity(
 				conf.make_user_asset_class()
 			)
@@ -389,7 +389,7 @@ func load_script_from_blueprint(path: String, validator_name: String) -> PlutusS
 	push_error("Failed to load %s from %s" % [validator_name, path])
 	return null
 
-func cip68_to_item(conf: MintCip68, local_data := false) -> Item:
+func cip68_to_item(conf: Cip68Config, local_data := false) -> Item:
 	var data: Cip68Datum = Cip68Datum.unsafe_from_constr(conf.to_data())
 	if not local_data:
 		var remote_data := await WalletSingleton.provider.get_cip68_datum(conf)

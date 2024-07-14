@@ -226,7 +226,7 @@ func mint_assets(
 
 ## Mint a pair of CIP68 user and reference tokens using the given 
 ## [param redeemer] and minting configuration in [param conf].
-func mint_cip68_pair(redeemer: PlutusData, conf: MintCip68) -> TxBuilder:
+func cip68_config_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
 
@@ -242,10 +242,10 @@ func mint_cip68_pair(redeemer: PlutusData, conf: MintCip68) -> TxBuilder:
 
 ## Mint user tokens for a given [param conf]. This should generally be used
 ## for fungible tokens after the initial mint has been performed by
-## [method mint_cip68_pair].
-func mint_cip68_user_tokens(
+## [method cip68_config_pair].
+func cip68_config_user_tokens(
 	redeemer: PlutusData,
-	conf: MintCip68,
+	conf: Cip68Config,
 	quantity := conf.get_quantity()
 ) -> TxBuilder:
 	if conf.minting_policy_source == null:
@@ -260,7 +260,7 @@ func mint_cip68_user_tokens(
 
 ## Pay the CIP68 reference token specified by [param minting_policy] and
 ## [param conf] to the given [param address].
-func pay_cip68_ref_token(address: Address, conf: MintCip68) -> TxBuilder:
+func pay_cip68_ref_token(address: Address, conf: Cip68Config) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
 
@@ -273,7 +273,7 @@ func pay_cip68_ref_token(address: Address, conf: MintCip68) -> TxBuilder:
 ## [param conf] to the given [param address].
 func pay_cip68_user_tokens(
 	address: Address,
-	conf: MintCip68,
+	conf: Cip68Config,
 	quantity := conf.get_quantity()
 ) -> TxBuilder:
 	if conf.minting_policy_source == null:
@@ -290,7 +290,7 @@ func pay_cip68_user_tokens(
 func pay_cip68_user_tokens_with_datum(
 	address: Address,
 	datum: PlutusData,
-	conf: MintCip68,
+	conf: Cip68Config,
 	quantity := conf.get_quantity()
 ) -> TxBuilder:
 	if conf.minting_policy_source == null:

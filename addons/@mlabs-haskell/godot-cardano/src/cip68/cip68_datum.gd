@@ -37,7 +37,7 @@ func files() -> Array[FileDetails]:
 func extra_plutus_data() -> PlutusData:
 	return _fields[2]
 
-func copy_to_conf(conf: MintCip68) -> void:
+func copy_to_conf(conf: Cip68Config) -> void:
 	conf.name = name()
 	conf.image = image_url()
 	conf.media_type = media_type()

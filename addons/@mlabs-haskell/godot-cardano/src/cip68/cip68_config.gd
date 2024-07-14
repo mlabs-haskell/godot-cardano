@@ -12,7 +12,7 @@ extends Resource
 ## to create a resource in the inspector and edit the fields manually instead
 ## of programmatically to take advantage of this.
 
-class_name MintCip68
+class_name Cip68Config
 
 @export
 ## The minting policy associated with this CIP68 config. This minting policy
@@ -78,7 +78,7 @@ var file_details : Array[FileDetails] = []
 ## 6. [Dictionary], [b]but only if its keys and values are valid[/b].[br][br]
 ##
 ## Notably, you may not use neither [bool] nor [Constr]. If these conditions are
-## too restrictive, take a look at [member MintCip68Pair.extra_plutus_data].
+## too restrictive, take a look at [member Cip68ConfigPair.extra_plutus_data].
 @export
 var non_standard_metadata: Dictionary = {}:
 	set(v):
@@ -101,7 +101,7 @@ var fungible: bool = false:
 		fungible = v
 		notify_property_list_changed()
 @export
-## Initial quantity minted via [method TxBuilder.mint_cip68_pair]. In cases where
+## Initial quantity minted via [method TxBuilder.cip68_config_pair]. In cases where
 ## the minting policy is one-shot, this will be the total supply for this token.
 var initial_quantity: int = 1:
 	get:
@@ -127,7 +127,7 @@ func get_ref_token_name() -> AssetName:
 func get_quantity() -> BigInt:
 	return BigInt.from_int(initial_quantity) if fungible else BigInt.one()
 	
-## The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data].
+## The flag only applies for serializing the [member Cip68ConfigPair.extra_plutus_data].
 ## The CIP25 metadata follows its own rules for serialization.
 func to_data() -> Variant:
 	# We add the standard fields on top of the non-standard ones, overwriting.

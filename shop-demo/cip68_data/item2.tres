@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="MintCip68" load_steps=5 format=3 uid="uid://ds1mah0y6tcdq"]
+[gd_resource type="Resource" script_class="Cip68Config" load_steps=5 format=3 uid="uid://ds1mah0y6tcdq"]
 
-[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/cip68/mint_cip68.gd" id="1_2qe1b"]
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/cip68/cip68_config.gd" id="1_2qe1b"]
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd" id="1_gh3cl"]
 [ext_resource type="Resource" uid="uid://dl2svvjv2h0pf" path="res://cip68_data/minting_policy.tres" id="1_wpjvd"]
 

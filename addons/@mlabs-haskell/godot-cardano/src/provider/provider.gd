@@ -379,7 +379,7 @@ func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:
 
 ## Returns the datum attached to the ref token for the given CIP68 config, or
 ## null if the ref token does not currently exist in the ledger.
-func get_cip68_datum(conf: MintCip68) -> Cip68Datum:
+func get_cip68_datum(conf: Cip68Config) -> Cip68Datum:
 	var asset_class := conf.make_ref_asset_class()
 	var utxos := await get_utxos_with_asset(asset_class)
 	if utxos.size() == 0:

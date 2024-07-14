@@ -1,7 +1,7 @@
 extends Node2D
 
 @export
-var mint_token_conf: MintCip68
+var mint_token_conf: Cip68Config
 
 var provider: Provider
 var wallet: OnlineWallet.OnlineSingleAddressWallet = null
@@ -163,10 +163,10 @@ func _on_mint_token_button_pressed() -> void:
 	
 	# We mint the CIP68 pair
 	var redeemer = VoidData.to_data()
-	tx.mint_cip68_pair(redeemer, mint_token_conf)
+	tx.cip68_config_pair(redeemer, mint_token_conf)
 
 	# Create MultiAsset with both tokens
-	tx.mint_cip68_pair(VoidData.to_data(), mint_token_conf)
+	tx.cip68_config_pair(VoidData.to_data(), mint_token_conf)
 	
 	# Send both tokens to myself and set its corresponding metadata
 	tx.pay_cip68_ref_token(
