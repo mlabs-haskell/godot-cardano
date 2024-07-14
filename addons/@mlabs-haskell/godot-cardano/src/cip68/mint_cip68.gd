@@ -144,8 +144,8 @@ func to_data() -> Cip68Datum:
 		])
 	return Cip68Datum.unsafe_from_constr(cip68_datum)
 
-var big_int_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/big_int.gd")
-var file_details_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/file_details.gd")
+var big_int_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/big_int.gd")
+var file_details_script : Script = preload("res://addons/@mlabs-haskell/godot-cardano/src/cip68/file_details.gd")
 
 # Convert any non-strict keys and values to their strict PlutusData counterpart
 # (if possible). Fail if invalid types are found by returning null.
