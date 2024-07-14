@@ -274,7 +274,7 @@ func pay_cip68_ref_token(address: Address, conf: MintCip68) -> TxBuilder:
 func pay_cip68_user_tokens(
 	address: Address,
 	conf: MintCip68,
-	quantity := conf.get_quantity
+	quantity := conf.get_quantity()
 ) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)

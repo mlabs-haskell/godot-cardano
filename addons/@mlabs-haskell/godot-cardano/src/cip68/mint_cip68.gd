@@ -55,7 +55,6 @@ var name: String
 var image: String
 @export_enum("image/webp", "image/jpeg", "image/gif", "image/png")
 ## The standard "mediaType" field.
-@export
 var media_type: String = "image/webp"
 ## The standard "description" field.
 @export
@@ -120,7 +119,7 @@ func get_user_token_name() -> AssetName:
 	return AssetName.from_bytes(user_token_name).value
 	
 ## Get the CIP68 reference token name	
-func get_ref_token_name() -> PackedByteArray:
+func get_ref_token_name() -> AssetName:
 	var ref_token_name := "000643b0".hex_decode()
 	ref_token_name.append_array(token_name)
 	return AssetName.from_bytes(ref_token_name).value
@@ -130,7 +129,7 @@ func get_quantity() -> BigInt:
 	
 ## The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data].
 ## The CIP25 metadata follows its own rules for serialization.
-func to_data(_strict: bool) -> Variant:
+func to_data() -> Variant:
 	# We add the standard fields on top of the non-standard ones, overwriting.
 	var cip25_metadata := non_standard_metadata
 	cip25_metadata["name"] = name

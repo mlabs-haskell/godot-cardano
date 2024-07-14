@@ -28,3 +28,4 @@ func _load_script(provider: Provider) -> PlutusScriptSource:
 			return script_source
 	else:
 		push_error("Failed to get script from out ref: %s" % [tx_hash_result.error])
+	return null

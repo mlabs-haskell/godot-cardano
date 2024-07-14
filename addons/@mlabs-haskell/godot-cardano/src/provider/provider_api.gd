@@ -153,6 +153,7 @@ signal got_utxos_at_address(result: UtxosAtAddressResult)
 ## Signal emitted by [method _get_utxos_with_asset].
 signal got_utxos_with_asset(result: UtxosWithAssetResult)
 ## Signal emitted by [method _get_utxo_by_out_ref].
+signal got_utxo_by_out_ref(result: UtxoByOutRefResult)
 signal _empty()
 
 ## The possible networks the [Provider] can run queries on or submit
@@ -182,6 +183,7 @@ func _get_protocol_parameters() -> ProtocolParameters:
 ##
 ## Should return the full set of [Utxo]s at a [param _address], optionally holding a
 ## specified [param _asset].
+func _get_utxos_at_address(_address: Address, _asset: AssetClass = null) -> Array[Utxo]:
 	await _empty
 	return []
 

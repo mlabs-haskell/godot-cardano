@@ -39,7 +39,7 @@ func get_address_bech32() -> String:
 	return _wallet.get_address_bech32()
 
 ## Sign the given [Transaction] and obtain a [Signature]
-func _sign_transaction(password: String, tx: Transaction) -> OnlineWallet.SignTxResult:
+func sign_transaction(password: String, tx: Transaction) -> OnlineWallet.SignTxResult:
 	return OnlineWallet.SignTxResult.new(
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
 	)

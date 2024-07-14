@@ -21,7 +21,7 @@ var ref_lock_source: PlutusScriptSource
 var shop_script_source: PlutusScriptSource
 
 var provider: Provider
-var wallet: Wallet.MnemonicWallet
+var wallet: OnlineWallet.OnlineSingleAddressWallet
 
 signal data_updated
 

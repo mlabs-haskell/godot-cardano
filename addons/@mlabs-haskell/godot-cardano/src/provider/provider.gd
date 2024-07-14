@@ -411,7 +411,7 @@ func invalidate_cache(key: String = "") -> void:
 		_utxo_cache.erase(key)
 
 func load_script(res: ScriptResource) -> PlutusScriptSource:
-	return res.load_script(self)
+	return await res.load_script(self)
 
 ## Builds, signs and submits a transaction using the provided functions.
 ## [param wallet] is the wallet to use for balancing the transaction
@@ -419,7 +419,7 @@ func load_script(res: ScriptResource) -> PlutusScriptSource:
 ## [param signer] should expect a [class TxComplete]
 ## Returns a transaction hash on success which can be awaited, or null on failure.
 func tx_with(
-	wallet: Wallet,
+	wallet: OnlineWallet,
 	builder: Callable,
 	signer: Callable
 ) -> TransactionHash:

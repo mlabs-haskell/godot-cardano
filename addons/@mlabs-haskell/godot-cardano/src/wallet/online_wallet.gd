@@ -134,7 +134,7 @@ class OnlineSingleAddressWallet extends OnlineWallet:
 		return _single_address_wallet.get_address()
 		
 	func _sign_transaction(password: String, transaction: Transaction) -> SignTxResult:
-		return _single_address_wallet._sign_transaction(password, transaction)
+		return _single_address_wallet.sign_transaction(password, transaction)
 	
 	## Add a new account to the wallet.
 	func add_account(account_index: int, password: String) -> SingleAddressWallet.AddAccountResult:

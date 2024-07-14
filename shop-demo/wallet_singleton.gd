@@ -1,7 +1,7 @@
 extends Node
 
 # TODO: save and import as resource
-var wallet: Wallet.MnemonicWallet = null
+var wallet: OnlineWallet.OnlineSingleAddressWallet = null
 
 var provider: Provider = null
 
@@ -35,7 +35,7 @@ func _ready() -> void:
 	add_child(provider_api)
 	provider = Provider.new(provider_api)
 	add_child(provider)
-	wallet = Wallet.MnemonicWallet.new(single_address_wallet, provider)
+	wallet = OnlineWallet.OnlineSingleAddressWallet.new(single_address_wallet, provider)
 	add_child(wallet)
 	wallet.got_updated_utxos.connect(self._on_wallet_updated_utxos)
 	provider.chain_address(wallet.get_address())
