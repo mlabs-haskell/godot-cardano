@@ -428,26 +428,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetName/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetName
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../BigInt/" class="md-nav__link">
         
   
@@ -588,11 +568,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../MintCip68Pair/" class="md-nav__link">
+      <a href="../MintCip68/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -628,11 +608,91 @@
   
   
     <li class="md-nav__item">
+      <a href="../OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusData/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
   </span>
   
 
@@ -920,6 +980,27 @@
           <li class="md-nav__item">
   <a href="#mint_cip68_pair" class="md-nav__link">
     mint_cip68_pair
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pay_cip68_ref_token" class="md-nav__link">
+    pay_cip68_ref_token
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pay_cip68_user_tokens" class="md-nav__link">
+    pay_cip68_user_tokens
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pay_cip68_user_tokens_with_datum" class="md-nav__link">
+    pay_cip68_user_tokens_with_datum
   </a>
   
 </li>
@@ -1257,26 +1338,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Wallet/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Wallet
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1397,6 +1458,27 @@
           <li class="md-nav__item">
   <a href="#mint_cip68_pair" class="md-nav__link">
     mint_cip68_pair
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pay_cip68_ref_token" class="md-nav__link">
+    pay_cip68_ref_token
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pay_cip68_user_tokens" class="md-nav__link">
+    pay_cip68_user_tokens
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pay_cip68_user_tokens_with_datum" class="md-nav__link">
+    pay_cip68_user_tokens_with_datum
   </a>
   
 </li>
@@ -1721,6 +1803,8 @@
 <h1 id="txbuilder">TxBuilder</h1>
 <p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
 <h2 id="description">Description</h2>
+<p>The <a href="TxBuilder">TxBuilder</a>, which is a balanced and evaluated transaction that can be subsequently signed and submitted.</p>
+<p>The <a href="TxBuilder">TxBuilder</a>, which is a balanced and evaluated transaction that can be subsequently signed and submitted.</p>
 <h2 id="constants-descriptions">Constants Descriptions</h2>
 <h3 id="txbuilderstatus">TxBuilderStatus</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="n">TxBuilderStatus</span><span class="p">{</span><span class="n">SUCCESS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">BAD_PROTOCOL_PARAMETERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">QUANTITY_EXCEEDS_MAXIMUM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">DESERIALIZE_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">BYRON_ADDRESS_UNSUPPORTED</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">COULD_NOT_GET_KEY_HASH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">UNKNOWN_REDEEMER_INDEX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="n">UNEXPECTED_COLLATERAL_AMOUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">OTHER_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="n">CREATE_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="n">INVALID_DATA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">NO_UTXOS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="n">NO_CHANGE_ADDRESS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="n">COMPLETE_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">13</span><span class="p">}</span>
@@ -1729,76 +1813,103 @@
 <h3 id="_init">_init</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">,</span><span class="w"> </span><span class="n">builder</span><span class="p">:</span><span class="w"> </span><span class="n">_TxBuilder</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>You should not create a <a href="TxBuilder">TxBuilder</a>).</p>
 <h3 id="set_slot_config">set_slot_config</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_slot_config</span><span class="p">(</span><span class="n">start_time</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">,</span><span class="w"> </span><span class="n">start_slot</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">,</span><span class="w"> </span><span class="n">slot_length</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Set the slot configuration. This is automatically done on initialization, do not use unless you know what you are doing.</p>
 <h3 id="set_cost_models">set_cost_models</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_cost_models</span><span class="p">(</span><span class="n">cost_models</span><span class="p">:</span><span class="w"> </span><span class="n">CostModels</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Set the cost models. This is automatically done on initialization, do not use unless you know what you are doing.</p>
 <h3 id="pay_to_address">pay_to_address</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_to_address</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">coin</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_to_address</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">coin</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Pay to a given [param address]. [param coin] specifies the quantity of lovelace to transfer, while the optional parameter [param assets] specifies any additional assets to transfer.[br]NOTE: If [param assets] contains ADA it will be added to the amount set by [param coin].</p>
 <h3 id="pay_to_address_with_datum">pay_to_address_with_datum</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_to_address_with_datum</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">coin</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">,</span><span class="w"> </span><span class="n">datum</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_to_address_with_datum</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">coin</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">,</span><span class="w"> </span><span class="n">datum</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Similar to [method pay_to_address], but it also takes a [param datum] argument that will be used to create an inline datum in the resulting UTxO. [param datum] should be convertable to PlutusData.</p>
 <h3 id="pay_to_address_with_datum_hash">pay_to_address_with_datum_hash</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_to_address_with_datum_hash</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">coin</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">,</span><span class="w"> </span><span class="n">datum</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_to_address_with_datum_hash</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">coin</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">,</span><span class="w"> </span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">,</span><span class="w"> </span><span class="n">datum</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Similar to [method pay_to_address], but it also takes a [param datum] argument that will be used to embed the datum hash in the transaction. [param datum] should be convertable to PlutusData.</p>
 <h3 id="mint_assets">mint_assets</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">mint_assets</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">tokens</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">MintToken</span><span class="p">],</span><span class="w"> </span><span class="n">redeemer</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">mint_assets</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">tokens</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">MintToken</span><span class="p">],</span><span class="w"> </span><span class="n">redeemer</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Mint tokens with the given [param minting_policy] and using the a list of specs defined in [param tokens]. A [param redeemer] is also required for the minting policy.</p>
 <h3 id="mint_cip68_pair">mint_cip68_pair</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="n">mint_cip68_pair</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">redeemer</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">,</span><span class="w"> </span><span class="n">conf</span><span class="p">:</span><span class="w"> </span><span class="n">MintCip68Pair</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="n">mint_cip68_pair</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">redeemer</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">,</span><span class="w"> </span><span class="n">conf</span><span class="p">:</span><span class="w"> </span><span class="n">MintCip68</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Mint a pair of CIP68 user and reference tokens using the given [param minting_policy], [param redeemer] and minting configuration in [param conf].</p>
+<h3 id="pay_cip68_ref_token">pay_cip68_ref_token</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_cip68_ref_token</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">conf</span><span class="p">:</span><span class="w"> </span><span class="n">MintCip68</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Pay the CIP68 reference token specified by [param minting_policy] and [param conf] to the given [param address].</p>
+<h3 id="pay_cip68_user_tokens">pay_cip68_user_tokens</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_cip68_user_tokens</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">conf</span><span class="p">:</span><span class="w"> </span><span class="n">MintCip68</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Pay the CIP68 user tokens specified by [param minting_policy] and [param conf] to the given [param address].</p>
+<h3 id="pay_cip68_user_tokens_with_datum">pay_cip68_user_tokens_with_datum</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">func</span><span class="w"> </span><span class="n">pay_cip68_user_tokens_with_datum</span><span class="p">(</span><span class="n">minting_policy</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">,</span><span class="w"> </span><span class="n">datum</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">,</span><span class="w"> </span><span class="n">conf</span><span class="p">:</span><span class="w"> </span><span class="n">MintCip68</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Pay the CIP68 user tokens specified by [param minting_policy] and [param conf] to the given [param address]. The output will contain a [param datum].</p>
 <h3 id="collect_from">collect_from</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">func</span><span class="w"> </span><span class="n">collect_from</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">func</span><span class="w"> </span><span class="n">collect_from</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Consume all the [param utxos] specified.</p>
 <h3 id="collect_from_script">collect_from_script</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">func</span><span class="w"> </span><span class="n">collect_from_script</span><span class="p">(</span><span class="n">plutus_script_source</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScriptSource</span><span class="p">,</span><span class="w"> </span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">],</span><span class="w"> </span><span class="n">redeemer</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">func</span><span class="w"> </span><span class="n">collect_from_script</span><span class="p">(</span><span class="n">plutus_script_source</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScriptSource</span><span class="p">,</span><span class="w"> </span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">],</span><span class="w"> </span><span class="n">redeemer</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Consume all the [param utxos] locked by the [param plutus_script_source] using the provided [param redeemer].</p>
 <h3 id="set_change_address">set_change_address</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_change_address</span><span class="p">(</span><span class="n">change_address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_change_address</span><span class="p">(</span><span class="n">change_address</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>When the transaction is balanced (usually when [method complete] is called), send any change to the provided [param change_address].</p>
 <h3 id="set_wallet">set_wallet</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_wallet</span><span class="p">(</span><span class="n">wallet</span><span class="p">:</span><span class="w"> </span><span class="n">Wallet</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_wallet</span><span class="p">(</span><span class="n">wallet</span><span class="p">:</span><span class="w"> </span><span class="n">OnlineWallet</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Use the provided [param wallet] for balancing. This automatically sets the change address to that wallet's address.</p>
 <h3 id="valid_after">valid_after</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">func</span><span class="w"> </span><span class="n">valid_after</span><span class="p">(</span><span class="n">time</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="k">func</span><span class="w"> </span><span class="n">valid_after</span><span class="p">(</span><span class="n">time</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Set the time in POSIX seconds after which the transaction is valid</p>
 <h3 id="valid_before">valid_before</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="k">func</span><span class="w"> </span><span class="n">valid_before</span><span class="p">(</span><span class="n">time</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="k">func</span><span class="w"> </span><span class="n">valid_before</span><span class="p">(</span><span class="n">time</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Set the time in POSIX seconds before which the transaction is valid</p>
 <h3 id="add_required_signer">add_required_signer</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_required_signer</span><span class="p">(</span><span class="n">pub_key_hash</span><span class="p">:</span><span class="w"> </span><span class="n">PubKeyHash</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_required_signer</span><span class="p">(</span><span class="n">pub_key_hash</span><span class="p">:</span><span class="w"> </span><span class="n">PubKeyHash</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Add a required signer constraint to the transaction.</p>
 <h3 id="add_reference_input">add_reference_input</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_reference_input</span><span class="p">(</span><span class="n">utxo</span><span class="p">:</span><span class="w"> </span><span class="n">Utxo</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_reference_input</span><span class="p">(</span><span class="n">utxo</span><span class="p">:</span><span class="w"> </span><span class="n">Utxo</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Add a [param utxo] as a reference input. This input will not be consumed but will be available in the script evaluation context.</p>
 <h3 id="balance">balance</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="k">func</span><span class="w"> </span><span class="n">balance</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BalanceResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="k">func</span><span class="w"> </span><span class="n">balance</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BalanceResult</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Only balance the transaction and return the result. The resulting transaction will not have been evaluated and will have inaccurate script execution units, which may cause the transaction to fail at submission and potentially consume the provided collateral.</p>
+<p>Only balance the transaction and return the result.[br]The resulting transaction will not have been evaluated and will have inaccurate script execution units, which may cause the transaction to fail at submission and potentially consume the provided collateral.[br][br]Do not use this function unless you know what you are doing.</p>
 <h3 id="complete">complete</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="k">func</span><span class="w"> </span><span class="n">complete</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CompleteResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="k">func</span><span class="w"> </span><span class="n">complete</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CompleteResult</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Attempts to balance and evaluate the transaction. The provided [param utxos] can be used for balancing the transaction.</p>
 <h3 id="create-static">create <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="k">func</span><span class="w"> </span><span class="n">create</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CreateResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="k">func</span><span class="w"> </span><span class="n">create</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CreateResult</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Create a TxBuilder object from a Provider. This action may fail.</p>
+<p>TODO: This probably shouldn't be exposed. Create a TxBuilder object from a Provider. You should use [method Provider.new_tx] instead of this method, since that one will make sure to initialize other necessary fields.</p>
 <h2 id="sub-classes">Sub-classes</h2>
 <h3 id="createresult">CreateResult</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>
 <h3 id="value">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">TxBuilder</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">TxBuilder</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <code>tag</code> or call <code>is_ok</code>.</p>
 <h3 id="error">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
@@ -1806,19 +1917,19 @@
 <p>WARNING: This function may fail! First match on <code>tag</code> or call <code>is_err</code>.</p>
 <h4 id="method-descriptions_1">Method Descriptions</h4>
 <h3 id="_init_1">_init</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CreateResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CreateResult</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="balanceresult">BalanceResult</h3>
 <h4 id="property-descriptions_1">Property Descriptions</h4>
 <h3 id="value_1">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Transaction</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Transaction</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <code>tag</code> or call <code>is_ok</code>.</p>
 <h3 id="error_1">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
@@ -1826,19 +1937,19 @@
 <p>WARNING: This function may fail! First match on <code>tag</code> or call <code>is_err</code>.</p>
 <h4 id="method-descriptions_2">Method Descriptions</h4>
 <h3 id="_init_2">_init</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BalanceResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BalanceResult</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="completeresult">CompleteResult</h3>
 <h4 id="property-descriptions_2">Property Descriptions</h4>
 <h3 id="value_2">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">TxComplete</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">TxComplete</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <code>tag</code> or call <code>is_ok</code>.</p>
 <h3 id="error_2">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
@@ -1846,12 +1957,12 @@
 <p>WARNING: This function may fail! First match on <code>tag</code> or call <code>is_err</code>.</p>
 <h4 id="method-descriptions_3">Method Descriptions</h4>
 <h3 id="_init_3">_init</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">,</span><span class="w"> </span><span class="n">wallet</span><span class="p">:</span><span class="w"> </span><span class="n">Wallet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CompleteResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span><span class="w"> </span><span class="n">Provider</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">,</span><span class="w"> </span><span class="n">wallet</span><span class="p">:</span><span class="w"> </span><span class="n">OnlineWallet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">CompleteResult</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="minttoken">MintToken</h3>
 <h4 id="method-descriptions_4">Method Descriptions</h4>
 <h3 id="_init_4">_init</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">token_name</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">MintToken</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">token_name</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">MintToken</span>
 </span></code></pre></div></td></tr></table></div>
 
 

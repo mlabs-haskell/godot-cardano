@@ -428,26 +428,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetName/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetName
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../BigInt/" class="md-nav__link">
         
   
@@ -588,11 +568,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../MintCip68Pair/" class="md-nav__link">
+      <a href="../MintCip68/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -628,11 +608,91 @@
   
   
     <li class="md-nav__item">
+      <a href="../OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusData/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
   </span>
   
 
@@ -1112,26 +1172,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Wallet/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Wallet
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1431,6 +1471,8 @@
 <h1 id="result">Result</h1>
 <p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
 <h2 id="description">Description</h2>
+<p>A virtual class that represents an arbitrary result from executing an operation. This class should never be used directly, it's only meant to be inherited from.  The <a href="Result">Result</a>. All classes that expose operations which may fail, will also expose a "Status" enum that can be used to distinguish the different failure modes.</p>
+<p>A virtual class that represents an arbitrary result from executing an operation. This class should never be used directly, it's only meant to be inherited from.  The <a href="Result">Result</a>. All classes that expose operations which may fail, will also expose a "Status" enum that can be used to distinguish the different failure modes.</p>
 <h2 id="method-descriptions">Method Descriptions</h2>
 <h3 id="_init">_init</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">res</span><span class="p">:</span><span class="w"> </span><span class="n">_Result</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span>
@@ -1450,6 +1492,7 @@
 <h3 id="sequence-static">sequence <small>(static)</small></h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">sequence</span><span class="p">(</span><span class="n">results</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Result</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ArrayResult</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Convert an [Array] of [Result]s into a [Result] containing either an [Array] with [b]all[/b] of the values or the first error found in the [Array].</p>
 <h2 id="sub-classes">Sub-classes</h2>
 <h3 id="ok">Ok</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>

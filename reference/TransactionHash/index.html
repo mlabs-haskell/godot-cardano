@@ -428,26 +428,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetName/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetName
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../BigInt/" class="md-nav__link">
         
   
@@ -588,11 +568,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../MintCip68Pair/" class="md-nav__link">
+      <a href="../MintCip68/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -628,11 +608,91 @@
   
   
     <li class="md-nav__item">
+      <a href="../OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusData/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
   </span>
   
 
@@ -990,26 +1050,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Wallet/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Wallet
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1187,6 +1227,8 @@
 <h1 id="transactionhash">TransactionHash</h1>
 <p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
 <h2 id="description">Description</h2>
+<p>The transaction hash is used in practice for uniquely identifying, which can be useful for many operations.</p>
+<p>The transaction hash is used in practice for uniquely identifying, which can be useful for many operations.</p>
 <h2 id="constants-descriptions">Constants Descriptions</h2>
 <h3 id="status">Status</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="n">Status</span><span class="p">{</span><span class="n">SUCCESS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">INVALID_HASH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
@@ -1198,9 +1240,11 @@
 <h3 id="to_hex">to_hex</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_hex</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Obtain a hex-encoding of the hash.</p>
 <h3 id="from_hex-static">from_hex <small>(static)</small></h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_hex</span><span class="p">(</span><span class="nb">hash</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromHexResult</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Tries to parse a <a href="TransactionHash">TransactionHash</a>.</p>
 <h2 id="sub-classes">Sub-classes</h2>
 <h3 id="fromhexresult">FromHexResult</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>

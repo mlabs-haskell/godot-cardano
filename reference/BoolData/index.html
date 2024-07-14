@@ -428,26 +428,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetName/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetName
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../BigInt/" class="md-nav__link">
         
   
@@ -669,11 +649,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../MintCip68Pair/" class="md-nav__link">
+      <a href="../MintCip68/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -709,11 +689,91 @@
   
   
     <li class="md-nav__item">
+      <a href="../OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusData/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
   </span>
   
 
@@ -923,26 +983,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Wallet/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Wallet
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1053,15 +1093,17 @@
 <h1 id="booldata">BoolData</h1>
 <p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
 <h2 id="description">Description</h2>
+<p>The PlutusData equivalent of <code>bool</code>.</p>
+<p>The PlutusData equivalent of <code>bool</code>.</p>
 <h2 id="method-descriptions">Method Descriptions</h2>
 <h3 id="_init">_init</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">bool</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BoolData</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="to_data">to_data</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_data</span><span class="p">(</span><span class="n">_strict</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">false</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Variant</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_data</span><span class="p">(</span><span class="n">_strict</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">false</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="from_data-static">from_data <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_data</span><span class="p">(</span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BoolData</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_data</span><span class="p">(</span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BoolData</span>
 </span></code></pre></div></td></tr></table></div>
 
 

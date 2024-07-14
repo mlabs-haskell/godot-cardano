@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/PolicyId/">
       
       
-        <link rel="prev" href="../PlutusData/">
+        <link rel="prev" href="../PlutusMap/">
       
       
         <link rel="next" href="../PubKeyHash/">
@@ -428,26 +428,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetName/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetName
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../BigInt/" class="md-nav__link">
         
   
@@ -588,11 +568,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../MintCip68Pair/" class="md-nav__link">
+      <a href="../MintCip68/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -628,11 +608,91 @@
   
   
     <li class="md-nav__item">
+      <a href="../OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusData/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
   </span>
   
 
@@ -745,6 +805,13 @@
           <li class="md-nav__item">
   <a href="#from_hex-static" class="md-nav__link">
     from_hex (static)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from_script-static" class="md-nav__link">
+    from_script (static)
   </a>
   
 </li>
@@ -990,26 +1057,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Wallet/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Wallet
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1095,6 +1142,13 @@
           <li class="md-nav__item">
   <a href="#from_hex-static" class="md-nav__link">
     from_hex (static)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from_script-static" class="md-nav__link">
+    from_script (static)
   </a>
   
 </li>
@@ -1195,24 +1249,31 @@
 <h3 id="_init">_init</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">policy_id</span><span class="p">:</span><span class="w"> </span><span class="n">_PolicyId</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PolicyId</span>
 </span></code></pre></div></td></tr></table></div>
+<p>WARNING: Do not use this constructor directly, use [method from_hex] or [method from_script] for safe building.</p>
 <h3 id="to_hex">to_hex</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_hex</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Get the hex encoding of the minting policy's hash</p>
 <h3 id="from_hex-static">from_hex <small>(static)</small></h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_hex</span><span class="p">(</span><span class="nb">hash</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromHexResult</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Try to parse a <a href="PolicyId">PolicyId</a> encoded as hex.</p>
+<h3 id="from_script-static">from_script <small>(static)</small></h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_script</span><span class="p">(</span><span class="n">script</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PolicyId</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Obtain a <a href="PolicyId">PolicyId</a>.</p>
 <h2 id="sub-classes">Sub-classes</h2>
 <h3 id="fromhexresult">FromHexResult</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>
 <h3 id="value">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">PolicyId</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">PolicyId</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
 <h3 id="error">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>

@@ -31,11 +31,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/AssetName/</loc>
-         <lastmod>1980-01-01</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/BigInt/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
@@ -71,7 +66,7 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/MintCip68Pair/</loc>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/MintCip68/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -81,7 +76,27 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/OnlineWallet/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusBytes/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusData/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusList/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusMap/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -132,11 +147,6 @@
     </url>
     <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/VoidData/</loc>
-         <lastmod>1980-01-01</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Wallet/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>

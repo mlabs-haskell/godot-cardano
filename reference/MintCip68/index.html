@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/MintCip68Pair/">
+        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/MintCip68/">
       
       
         <link rel="prev" href="../FileDetails/">
@@ -24,7 +24,7 @@
     
     
       
-        <title>MintCip68Pair - godot-cardano</title>
+        <title>MintCip68 - godot-cardano</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#mintcip68pair" class="md-skip">
+        <a href="#mintcip68" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              MintCip68Pair
+              MintCip68
             
           </span>
         </div>
@@ -428,26 +428,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetName/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetName
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../BigInt/" class="md-nav__link">
         
   
@@ -601,7 +581,7 @@
           
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -612,7 +592,7 @@
         
   
   <span class="md-ellipsis">
-    MintCip68Pair
+    MintCip68
   </span>
   
 
@@ -637,6 +617,26 @@
   <a href="#description" class="md-nav__link">
     Description
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#constants-descriptions" class="md-nav__link">
+    Constants Descriptions
+  </a>
+  
+    <nav class="md-nav" aria-label="Constants Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extraplutusdatatype" class="md-nav__link">
+    ExtraPlutusDataType
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -719,6 +719,83 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#extra_plutus_data_type" class="md-nav__link">
+    extra_plutus_data_type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_int" class="md-nav__link">
+    extra_plutus_data_int
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_bytes" class="md-nav__link">
+    extra_plutus_data_bytes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_as_hex" class="md-nav__link">
+    extra_plutus_data_as_hex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_as_utf8" class="md-nav__link">
+    extra_plutus_data_as_utf8
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_cbor" class="md-nav__link">
+    extra_plutus_data_cbor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_cbor_hex" class="md-nav__link">
+    extra_plutus_data_cbor_hex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_json" class="md-nav__link">
+    extra_plutus_data_json
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_json_path" class="md-nav__link">
+    extra_plutus_data_json_path
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fungible" class="md-nav__link">
+    fungible
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initial_quantity" class="md-nav__link">
+    initial_quantity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#big_int_script" class="md-nav__link">
     big_int_script
   </a>
@@ -760,8 +837,29 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get_quantity" class="md-nav__link">
+    get_quantity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#to_data" class="md-nav__link">
     to_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#make_user_asset_class" class="md-nav__link">
+    make_user_asset_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#make_ref_asset_class" class="md-nav__link">
+    make_ref_asset_class
   </a>
   
 </li>
@@ -806,11 +904,91 @@
   
   
     <li class="md-nav__item">
+      <a href="../OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusData/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
   </span>
   
 
@@ -1020,26 +1198,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Wallet/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Wallet
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1077,6 +1235,26 @@
   <a href="#description" class="md-nav__link">
     Description
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#constants-descriptions" class="md-nav__link">
+    Constants Descriptions
+  </a>
+  
+    <nav class="md-nav" aria-label="Constants Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extraplutusdatatype" class="md-nav__link">
+    ExtraPlutusDataType
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1159,6 +1337,83 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#extra_plutus_data_type" class="md-nav__link">
+    extra_plutus_data_type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_int" class="md-nav__link">
+    extra_plutus_data_int
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_bytes" class="md-nav__link">
+    extra_plutus_data_bytes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_as_hex" class="md-nav__link">
+    extra_plutus_data_as_hex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_as_utf8" class="md-nav__link">
+    extra_plutus_data_as_utf8
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_cbor" class="md-nav__link">
+    extra_plutus_data_cbor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_cbor_hex" class="md-nav__link">
+    extra_plutus_data_cbor_hex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_json" class="md-nav__link">
+    extra_plutus_data_json
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data_json_path" class="md-nav__link">
+    extra_plutus_data_json_path
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fungible" class="md-nav__link">
+    fungible
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initial_quantity" class="md-nav__link">
+    initial_quantity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#big_int_script" class="md-nav__link">
     big_int_script
   </a>
@@ -1200,8 +1455,29 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get_quantity" class="md-nav__link">
+    get_quantity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#to_data" class="md-nav__link">
     to_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#make_user_asset_class" class="md-nav__link">
+    make_user_asset_class
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#make_ref_asset_class" class="md-nav__link">
+    make_ref_asset_class
   </a>
   
 </li>
@@ -1226,7 +1502,7 @@
                   
 
   
-    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/reference/MintCip68Pair.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/reference/MintCip68.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -1235,7 +1511,7 @@
     
       
     
-    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/reference/MintCip68Pair.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/reference/MintCip68.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
@@ -1244,74 +1520,167 @@
 
 <!-- Auto-generated from JSON by GDScript docs maker. Do not edit this document directly. -->
 
-<h1 id="mintcip68pair">MintCip68Pair</h1>
+<h1 id="mintcip68">MintCip68</h1>
 <p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_resource.html">Resource</a></p>
 <h2 id="description">Description</h2>
+<p>Use this for any additional fields you want to provide that are not required by the CIP25 standard. Any field names overlapping with standard field names (like "name" and "image") will be ignored.  Keys of the dictionary should be [String]s, while values may be:[br][br]1. [String] (which will be converted [PackedByteArray])[br]2. [PackedByteArray][br]3. [int] (which will be converted to <a href="../BigInt/">BigInt</a>)[br]4. <a href="../BigInt/">BigInt</a>[br]5. [Array], [b]but only if its elements are valid values[/b].[br]6. [Dictionary], [b]but only if its keys and values are valid[/b].[br][br]Notably, you may not use neither [bool] nor [Constr]. If these conditions are too restrictive, take a look at [member MintCip68Pair.extra_plutus_data].</p>
+<p>Use this for any additional fields you want to provide that are not required by the CIP25 standard. Any field names overlapping with standard field names (like "name" and "image") will be ignored.  Keys of the dictionary should be [String]s, while values may be:[br][br]1. [String] (which will be converted [PackedByteArray])[br]2. [PackedByteArray][br]3. [int] (which will be converted to <a href="../BigInt/">BigInt</a>)[br]4. <a href="../BigInt/">BigInt</a>[br]5. [Array], [b]but only if its elements are valid values[/b].[br]6. [Dictionary], [b]but only if its keys and values are valid[/b].[br][br]Notably, you may not use neither [bool] nor [Constr]. If these conditions are too restrictive, take a look at [member MintCip68Pair.extra_plutus_data].</p>
+<h2 id="constants-descriptions">Constants Descriptions</h2>
+<h3 id="extraplutusdatatype">ExtraPlutusDataType</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="n">ExtraPlutusDataType</span><span class="p">{</span><span class="n">INT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">BYTES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">JSON_FILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">JSON_INLINE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">CBOR_HEX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
+</span></code></pre></div></td></tr></table></div>
 <h2 id="property-descriptions">Property Descriptions</h2>
 <h3 id="token_name">token_name</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">token_name</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">token_name</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Setter</strong>: <code>@token_name_setter</code></li>
 </ul>
 <h3 id="token_name_as_hex">token_name_as_hex</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">token_name_as_hex</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">token_name_as_hex</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Setter</strong>: <code>@token_name_as_hex_setter</code></li>
 <li><strong>Getter</strong>: <code>@token_name_as_hex_getter</code></li>
 </ul>
 <h3 id="token_name_as_utf8">token_name_as_utf8</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">token_name_as_utf8</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">token_name_as_utf8</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Setter</strong>: <code>@token_name_as_utf8_setter</code></li>
 <li><strong>Getter</strong>: <code>@token_name_as_utf8_getter</code></li>
 </ul>
 <h3 id="name">name</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="image">image</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="media_type">media_type</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">media_type</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;image/webp&quot;</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">media_type</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;image/webp&quot;</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="description_1">description</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">description</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">description</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="file_details">file_details</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">file_details</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">FileDetails</span><span class="p">]</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">file_details</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">FileDetails</span><span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="non_standard_metadata">non_standard_metadata</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">non_standard_metadata</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">non_standard_metadata</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Setter</strong>: <code>@non_standard_metadata_setter</code></li>
 </ul>
 <h3 id="extra_plutus_data">extra_plutus_data</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Setter</strong>: <code>@extra_plutus_data_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_getter</code></li>
+</ul>
+<p>This corresponds to the third field of the CIP-68 datum. Use this if you need to store data in any form that is not compliant with CIP-25. No restrictions apply other than the usual ones for encoding a datum.</p>
+<h3 id="extra_plutus_data_type">extra_plutus_data_type</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_type</span><span class="p">:</span><span class="w"> </span><span class="n">MintCip68</span><span class="o">.</span><span class="n">ExtraPlutusDataType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_type_setter</code></li>
+</ul>
+<p>The type that will be used for the extra Plutus Data stored in the CIP68 datum.[br][br]This corresponds to the third field of the CIP-68 datum. Use this if you need to store data in any form that is not compliant with CIP-25. No restrictions apply other than the usual ones for encoding a datum.</p>
+<h3 id="extra_plutus_data_int">extra_plutus_data_int</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_int</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_int_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_int_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_bytes">extra_plutus_data_bytes</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_bytes</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_bytes_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_bytes_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_as_hex">extra_plutus_data_as_hex</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_as_hex</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_as_hex_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_as_hex_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_as_utf8">extra_plutus_data_as_utf8</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_as_utf8</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_as_utf8_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_as_utf8_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_cbor">extra_plutus_data_cbor</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_cbor</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_cbor_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_cbor_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_cbor_hex">extra_plutus_data_cbor_hex</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_cbor_hex</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_cbor_hex_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_cbor_hex_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_json">extra_plutus_data_json</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_json</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@extra_plutus_data_json_setter</code></li>
+<li><strong>Getter</strong>: <code>@extra_plutus_data_json_getter</code></li>
+</ul>
+<h3 id="extra_plutus_data_json_path">extra_plutus_data_json_path</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">extra_plutus_data_json_path</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span></code></pre></div></td></tr></table></div>
+<h3 id="fungible">fungible</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">fungible</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">false</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@fungible_setter</code></li>
+</ul>
+<h3 id="initial_quantity">initial_quantity</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="err">@</span><span class="k">export</span><span class="w"> </span><span class="k">var</span><span class="w"> </span><span class="n">initial_quantity</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Setter</strong>: <code>@initial_quantity_setter</code></li>
+<li><strong>Getter</strong>: <code>@initial_quantity_getter</code></li>
 </ul>
 <h3 id="big_int_script">big_int_script</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">var</span><span class="w"> </span><span class="n">big_int_script</span><span class="p">:</span><span class="w"> </span><span class="n">Script</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;GDScript#-9223370966216679568&gt;&quot;</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="k">var</span><span class="w"> </span><span class="n">big_int_script</span><span class="p">:</span><span class="w"> </span><span class="n">Script</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;GDScript#-9223370965914689670&gt;&quot;</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="file_details_script">file_details_script</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">var</span><span class="w"> </span><span class="n">file_details_script</span><span class="p">:</span><span class="w"> </span><span class="n">Script</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;GDScript#-9223370965881135244&gt;&quot;</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="k">var</span><span class="w"> </span><span class="n">file_details_script</span><span class="p">:</span><span class="w"> </span><span class="n">Script</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;GDScript#-9223370953600213092&gt;&quot;</span>
 </span></code></pre></div></td></tr></table></div>
 <h2 id="method-descriptions">Method Descriptions</h2>
 <h3 id="get_user_token_name">get_user_token_name</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_user_token_name</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_user_token_name</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
 </span></code></pre></div></td></tr></table></div>
+<p>Get the CIP68 user token name</p>
 <h3 id="get_ref_token_name">get_ref_token_name</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_ref_token_name</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_ref_token_name</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Get the CIP68 reference token name</p>
+<h3 id="get_quantity">get_quantity</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_quantity</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BigInt</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="to_data">to_data</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_data</span><span class="p">(</span><span class="n">_strict</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">bool</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Variant</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_data</span><span class="p">(</span><span class="n">_strict</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">true</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Variant</span>
 </span></code></pre></div></td></tr></table></div>
 <p>The flag only applies for serializing the [member MintCip68Pair.extra_plutus_data]. The CIP25 metadata follows its own rules.</p>
+<h3 id="make_user_asset_class">make_user_asset_class</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="k">func</span><span class="w"> </span><span class="n">make_user_asset_class</span><span class="p">(</span><span class="n">script</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">AssetClass</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Return the <a href="AssetClass">AssetClass</a> of the user token.</p>
+<h3 id="make_ref_asset_class">make_ref_asset_class</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="k">func</span><span class="w"> </span><span class="n">make_ref_asset_class</span><span class="p">(</span><span class="n">script</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">AssetClass</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Return the <a href="AssetClass">AssetClass</a> of the reference token.</p>
 
 
 
