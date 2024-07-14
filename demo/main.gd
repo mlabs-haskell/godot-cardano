@@ -57,6 +57,8 @@ func _ready() -> void:
 	if seed_phrase_file != null:
 		phrase_input.text = seed_phrase_file.get_as_text(true)
 		_create_wallet_from_seedphrase(phrase_input.text)
+	
+	await mint_token_conf.init_script(provider)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
@@ -128,8 +130,6 @@ func _on_send_ada_button_pressed() -> void:
 		return
 		
 	var tx := create_tx_result.value
-	print(tx)
-	print(tx._wallet)
 	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
@@ -162,16 +162,14 @@ func _on_mint_token_button_pressed() -> void:
 	var tx : TxBuilder = create_tx_result.value
 	
 	# We mint the CIP68 pair
-	var policy_script = PlutusScript.create("46010000222499".hex_decode())
-	var redeemer = VoidData.new().to_data(true)
-	tx.mint_cip68_pair(policy_script, redeemer, mint_token_conf)
+	var redeemer = VoidData.to_data()
+	tx.mint_cip68_pair(redeemer, mint_token_conf)
 
 	# Create MultiAsset with both tokens
-	tx.mint_cip68_pair(policy_script, VoidData.new().to_data(), mint_token_conf)
+	tx.mint_cip68_pair(VoidData.to_data(), mint_token_conf)
 	
 	# Send both tokens to myself and set its corresponding metadata
 	tx.pay_cip68_ref_token(
-		policy_script,
 		address,
 		mint_token_conf
 	)

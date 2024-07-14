@@ -380,36 +380,7 @@ func invalidate_cache(key: String = "") -> void:
 		_utxo_cache.erase(key)
 
 func load_script(res: ScriptResource) -> PlutusScriptSource:
-	if res is ScriptFromBlueprint:
-		var contents := FileAccess.get_file_as_string(res.blueprint_path)
-		var contents_json: Dictionary = JSON.parse_string(contents)
-		for validator: Dictionary in contents_json['validators']:
-			if validator['title'] == res.validator_name:
-				var script = PlutusScript.create((validator['compiledCode'] as String).hex_decode())
-				var args: Array[PlutusData] = []
-				for arg: PlutusDataResource in res.script_args:
-					args.push_back(arg.data)
-				return PlutusScriptSource.from_script(PlutusData.apply_script_parameters(script, args))
-		push_error("Failed to load %s from %s" % [res.validator_name, res.blueprint_path])
-		return null
-	elif res is ScriptFromOutRef:
-		var tx_hash_result := TransactionHash.from_hex(res.tx_hash)
-		
-		if tx_hash_result.is_ok():
-			var utxo = await _provider_api._get_utxo_by_out_ref(
-				tx_hash_result.value,
-				res.output_index
-			)
-			if utxo == null:
-				push_error("Failed to get script from out ref: UTxO not found")
-			else:
-				var script_source = PlutusScriptSource.from_ref(utxo._utxo)
-				if script_source == null:
-					push_error("Failed to get script from out ref: UTxO has no script ref")
-				return script_source
-		else:
-			push_error("Failed to get script from out ref: %s" % [tx_hash_result.error])
-	return null
+	return res.load_script(self)
 
 ## Builds, signs and submits a transaction using the provided functions.
 ## [param wallet] is the wallet to use for balancing the transaction
