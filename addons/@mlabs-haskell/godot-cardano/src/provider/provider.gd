@@ -1,5 +1,14 @@
 extends Node
 class_name Provider
+## Provides basic network functionality to interact with the blockchain
+##
+## A [Provider] implements basic functions that query transactions
+## and other useful information from the blockchain. It also contains the
+## [method new_tx] and [method submit_transaction] methods, which are used in
+## [TxBuilder] to build and post transactions to the blockchain.
+##
+## This class should generally not be used directly, as most use cases that
+## require connectivity are implemented in [OnlineWallet] and [TxBuilder].
 
 class UtxoCacheEntry:
 	var _query_id: String
@@ -42,6 +51,8 @@ var cache_timeout: int = 30000
 
 var tx_status_timeout: int = 300
 
+## The [param provider_api] object defines the Cardano API that will be used to
+## resolve all requests made by the [Provider].
 func _init(provider_api: ProviderApi) -> void:
 	_provider_api = provider_api
 	if provider_api.got_network_genesis.connect(_on_got_network_genesis) == ERR_INVALID_PARAMETER:
@@ -223,6 +234,7 @@ func _handle_chaining_submit_transaction(tx: Transaction) -> void:
 				)
 				_update_chaining_entry(asset, out_ref, matched_outputs)
 
+## Used for creating a new [TxBuilder].
 func new_tx() -> TxBuilder.CreateResult:
 	var create_result := await TxBuilder.create(self)
 	if create_result.is_ok():
@@ -237,6 +249,7 @@ func new_tx() -> TxBuilder.CreateResult:
 			builder.set_cost_models(_cost_models)
 	return create_result
 	
+## Converts POSIX time to slots.
 func time_to_slot(time: int) -> int:
 	# FIXME: should return a `Result`?
 	if _network_genesis == null:
@@ -251,11 +264,13 @@ func time_to_slot(time: int) -> int:
 	
 	return -1
 
+## Get the latest protocol parameters
 func get_protocol_parameters() -> ProtocolParameters:
 	if _protocol_params == null:
 		await _provider_api.got_protocol_parameters
 	return _protocol_params
 
+## Submit a transaction to the blockchain.
 func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
 	var submit_result := await _provider_api._submit_transaction(tx)
 
@@ -268,6 +283,13 @@ func submit_transaction(tx: Transaction) -> ProviderApi.SubmitResult:
 	await_tx(tx.to_hash(), tx_status_timeout)
 	return submit_result
 
+## Poll the backend to confirm if a submitted TX has been added to the blockchain
+## or not. The [param timeout] defines for how many seconds this polling is done
+## before the function gives up and returns [code]false[/code].[br][br]
+##
+## NOTE: The default timeout is far too short to confirm if a TX has landed on
+## the blockchain or not, settling times can be much longer. However, it is
+## useful in testing conditions.
 func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 	var confirmed := await _await_response(
 		func () -> void: _provider_api._get_tx_status(tx_hash),
@@ -280,6 +302,12 @@ func await_tx(tx_hash: TransactionHash, timeout := 60) -> bool:
 	tx_status_confirmed.emit(ProviderApi.TransactionStatus.new(tx_hash, confirmed))
 	return confirmed
 
+## Poll the backend to confirm if the UTxOs from a given TX have appeared at
+## a specific address. If [param from_tx] is [code]null[/code], then it will poll
+## until any UTxOs are found in that address.
+##
+## Like in [method await_tx], the [param timeout] defines for how long the polling
+## will be performed until the function fails.
 func await_utxos_at(
 	address: Address,
 	from_tx: TransactionHash = null,
@@ -302,6 +330,9 @@ func await_utxos_at(
 		timeout
 	)
 
+## Construct an [Address] from a pair of payment and staking [Credential]s.
+## Staking [Credential]s are optional, but their use is [b]strongly[/b] encouraged,
+## since not including them might restrict users from staking their ADA.
 func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Address:
 	return Address.build(
 		_provider_api.network,
@@ -309,8 +340,7 @@ func make_address(payment_cred: Credential, stake_cred: Credential = null) -> Ad
 		stake_cred
 	)
 
-## Returns the full set of UTxOs at the given address, optionally carrying the given
-## asset class.
+## Get the [Utxo]s located the provided [param address].
 func get_utxos_at_address(address: Address, asset: AssetClass = null) -> Array[Utxo]:
 	var query_id = address.to_bech32()
 	return await _get_utxos(
@@ -318,7 +348,7 @@ func get_utxos_at_address(address: Address, asset: AssetClass = null) -> Array[U
 		func (): return await _provider_api._get_utxos_at_address(address, asset)
 	)
 
-## Returns the full set of UTxOs carrying the given asset class.
+## Get the [Utxo]s containing the provided [param asset].
 func get_utxos_with_asset(asset: AssetClass) -> Array[Utxo]:
 	var query_id = asset.to_unit()
 	return await _get_utxos(
@@ -336,7 +366,8 @@ func get_utxo_with_nft(asset: AssetClass) -> Utxo:
 	))[0]
 
 	
-## Returns the output associated with the given reference.
+## Get the [Utxo] uniquely identified by the given [param tx_hash] and
+## [param output_index].
 # FIXME: The Blockfrost provider does not offer a way to distinguish between
 # a spent and unspent output using this query.
 func get_utxo_by_out_ref(tx_hash: TransactionHash, output_index: int) -> Utxo:

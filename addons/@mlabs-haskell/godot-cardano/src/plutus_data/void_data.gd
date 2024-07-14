@@ -1,4 +1,5 @@
 class_name VoidData
+## An auxiliary class used for representing empty data in PlutusData
 extends RefCounted
 
 static func to_data() -> PlutusData:

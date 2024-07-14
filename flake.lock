@@ -1954,6 +1954,22 @@
         "type": "github"
       }
     },
+    "gdscript-docs-maker": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1711784776,
+        "narHash": "sha256-xYoizBkCXjyb5C5+ZgHVpfMmnGut7LEeHeqYS+jTK84=",
+        "owner": "GDQuest",
+        "repo": "gdscript-docs-maker",
+        "rev": "050d3e7ee0ebd76cc1d63051109deb7f302e57ca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "GDQuest",
+        "repo": "gdscript-docs-maker",
+        "type": "github"
+      }
+    },
     "ghc-8.6.5-iohk": {
       "flake": false,
       "locked": {
@@ -5269,6 +5285,7 @@
         "cardano-nix": "cardano-nix",
         "devshell": "devshell_4",
         "flake-parts": "flake-parts_2",
+        "gdscript-docs-maker": "gdscript-docs-maker",
         "gut": "gut",
         "hercules-ci-effects": "hercules-ci-effects_2",
         "kupo-nixos": "kupo-nixos",

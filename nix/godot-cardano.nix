@@ -58,11 +58,13 @@
           rm -rf ./addons/@mlabs-haskell/godot-cardano
           mkdir -p ./addons/@mlabs-haskell
           ln -s ${make_addon {}}/addons/@mlabs-haskell/godot-cardano ./addons/@mlabs-haskell/godot-cardano
+
+          # fix home directory
+          export HOME=$(pwd)/.home
         '';
         buildPhase = ''
           # link export templates
           mkdir -p .home .godot
-          export HOME=$(pwd)/.home
           TEMPLATES_PACKAGE="${make_godot-export-templates-bin {}}"
           TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.2.stable"
           mkdir -p $(dirname $TEMPLATE_DIR)

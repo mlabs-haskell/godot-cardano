@@ -1,7 +1,28 @@
 extends RefCounted
 class_name PlutusData
+## A class for constructing on-chain Plutus data
+##
+## The Plutus language, which may be used for minting policies and validators,
+## operates on a specific datatype called [PlutusData]. This class is used for
+## constructing valid instances of this datatype, which then may be used as
+## datums or redeemers in functions that require it.
+##
+## Most of the time, the different [PlutusData] constructs may be accurately
+## represented by native GDScript types, such as [bool], [Array] or [Dictionary].
+## But for other cases, like [BigInt] or [Constr], native GDScript types aren't
+## accurate enough or are simply inexistent.
+##
+## This class tries to abstract most of the complexity by allowing the use of
+## of nested native types and SDK types (like the aforementioned) to construct
+## any PlutusData desired. These can subsequentely be converted into valid
+## CBOR (the format used in transactions) with [method serialize]. In practice
+## most users should not need to interact with this class directly, as most
+## functions requiring [PlutusData] will take a [Variant] and do the conversion
+## themselves.
 
-## Recursively wraps native data types to PlutusData types
+# TODO: Add a specific tutorial on PlutusData conversions.
+
+## Recursively unwraps Objects to Plutus compatible data types
 static func wrap(v: Variant) -> PlutusData:
 	match typeof(v):
 		TYPE_ARRAY:
@@ -32,6 +53,7 @@ static func wrap(v: Variant) -> PlutusData:
 			return PlutusBytes.new(v)
 		_: return null
 
+## Deserialize from CBOR format.
 static func deserialize(bytes: PackedByteArray) -> PlutusData:
 	var result = Cbor.deserialize(bytes)
 	if result.is_ok():
@@ -94,6 +116,7 @@ static func apply_script_parameters(
 func to_json() -> Dictionary:
 	return _to_json()
 
+## Recursively wraps Plutus compatible data types to GDScript types.
 func _unwrap() -> Variant:
 	return null
 
@@ -106,5 +129,6 @@ func _to_string() -> String:
 func equals(other: PlutusData) -> bool:
 	return serialize().value == other.serialize().value
 
+## Serialize to CBOR format.
 func serialize() -> Cbor.SerializeResult:
 	return Cbor.serialize(_unwrap())
