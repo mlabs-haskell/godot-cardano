@@ -97,7 +97,9 @@ class TransactionStatus:
 	## Hash of the transaction
 	var _tx_hash: TransactionHash
 	## Whether the transaction could be confirmed or not by the [Provider]
-	## implementation
+	## implementation [i]at the moment the request was made[/i].[br][br]
+	## NOTE: This does not imply failure! Keep in mind settling times in Cardano
+	## can be quite long, so set the `timeout` parameter of [Provider.await_tx] appropriately.
 	var _confirmed: bool
 	
 	func _init(tx_hash: TransactionHash, confirmed: bool) -> void:
@@ -151,7 +153,6 @@ signal got_utxos_at_address(result: UtxosAtAddressResult)
 ## Signal emitted by [method _get_utxos_with_asset].
 signal got_utxos_with_asset(result: UtxosWithAssetResult)
 ## Signal emitted by [method _get_utxo_by_out_ref].
-signal got_utxo_by_out_ref(result: UtxoByOutRefResult)
 signal _empty()
 
 ## The possible networks the [Provider] can run queries on or submit
@@ -181,7 +182,6 @@ func _get_protocol_parameters() -> ProtocolParameters:
 ##
 ## Should return the full set of [Utxo]s at a [param _address], optionally holding a
 ## specified [param _asset].
-func _get_utxos_at_address(_address: Address, _asset: AssetClass = null) -> Array[Utxo]:
 	await _empty
 	return []
 
@@ -248,9 +248,10 @@ func _get_tx_status(_tx_hash: TransactionHash) -> bool:
 ## * Contain an inline datum[br][br]
 ## If [param datum_hash] is [code]""[/code] the result will have no datum. The
 ## other parameters are ignored.[br]
-## If [param datum_inline_str] is [code]""[/code], the result will have an
-## inline datum datum set to it.[br]
-## Otherwise, the result will just contain the provided [param datum_hash].
+## If [param datum_inline_str] is not [code]""[/code], the result will have an
+## inline datum set to it.[br]
+## Otherwise, the result will contain the provided [param datum_hash]
+## and, optionally, the [param datum_resolved_str] as the hashed data.
 func _build_datum_info(
 	datum_hash: String,
 	datum_inline_str: String,

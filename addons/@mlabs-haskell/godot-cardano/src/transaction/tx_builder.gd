@@ -13,9 +13,6 @@ extends RefCounted
 ## transaction that can be subsequently signed and submitted.
 class_name TxBuilder
 
-## You should not create a [TxBuilder] with [TxBuilder.new], instead
-## you should use [Cardano.new_tx].
-
 enum TxBuilderStatus {
 	SUCCESS = 0,
 	BAD_PROTOCOL_PARAMETERS = 1,
@@ -42,6 +39,8 @@ var _other_utxos: Array[Utxo]
 
 var _change_address: Address
 
+## You should not create a [TxBuilder] with [TxBuilder.new], instead
+## you should use [Provider.new_tx] (or [OnlineWallet.new_tx]).
 func _init(provider: Provider, builder: _TxBuilder) -> void:
 	_builder = builder
 	_provider = provider
@@ -113,8 +112,6 @@ class MintToken:
 	func _to_string() -> String:
 		return "%s" % { [_asset_name.to_hex()]: _quantity.to_str() }
 
-## Create a TxBuilder object from a Provider. This action may fail.
-		
 ## TODO: This probably shouldn't be exposed.
 ## Create a TxBuilder object from a Provider. You should use [method Provider.new_tx]
 ## instead of this method, since that one will make sure to initialize other
@@ -144,9 +141,12 @@ func set_cost_models(cost_models: CostModels) -> TxBuilder:
 	return self
 	
 ## Pay to a given [param address]. [param coin] specifies the quantity of
-## lovelace to transfer, while [param assets] specifies any additional native
-## assets to transfer. May optionally include a [param datum] and [param script_ref],
-## and a flag [param hash_datum] determining whether the provided datum should be inline.
+## lovelace to transfer, while the optional parameter [param assets] specifies
+## any additional assets to transfer.[br] May optionally include a [param datum]
+## and [param script_ref], and a flag [param hash_datum] determining whether
+## the provided datum should be inline.
+## NOTE: If [param assets] contains ADA it will be added to the amount set by
+## [param coin].
 func pay_to_address(
 	address: Address,
 	coin: BigInt,
@@ -258,7 +258,8 @@ func mint_cip68_user_tokens(
 	)
 	return self
 
-## Sends the CIP68 reference token for [param conf] to the specified [param address].
+## Pay the CIP68 reference token specified by [param minting_policy] and
+## [param conf] to the given [param address].
 func pay_cip68_ref_token(address: Address, conf: MintCip68) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
@@ -268,7 +269,8 @@ func pay_cip68_ref_token(address: Address, conf: MintCip68) -> TxBuilder:
 	pay_to_address(address, BigInt.zero(), assets, conf.to_data())
 	return self
 
-## Sends [param quantity] CIP68 user tokens for [param conf] to the specified [param address].
+## Pay the CIP68 user tokens specified by [param minting_policy] and
+## [param conf] to the given [param address].
 func pay_cip68_user_tokens(
 	address: Address,
 	conf: MintCip68,
@@ -281,9 +283,10 @@ func pay_cip68_user_tokens(
 	assets.set_asset_quantity(conf.make_user_asset_class(), quantity)
 	pay_to_address(address, BigInt.zero(), assets)
 	return self
-
-## The same as [method pay_cip68_user_tokens] but with an inline datum attached
-## to the output.
+	
+## Pay the CIP68 user tokens specified by [param minting_policy] and
+## [param conf] to the given [param address]. The output will contain a
+## [param datum].
 func pay_cip68_user_tokens_with_datum(
 	address: Address,
 	datum: PlutusData,
@@ -297,7 +300,7 @@ func pay_cip68_user_tokens_with_datum(
 	assets.set_asset_quantity(conf.make_user_asset_class(), quantity)
 	pay_to_address(address, BigInt.zero(), assets, datum)
 	return self
-	
+
 ## Consume all the [param utxos] specified.
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	var _utxos: Array[_Utxo] = []

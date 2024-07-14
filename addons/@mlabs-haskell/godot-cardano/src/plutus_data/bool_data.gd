@@ -1,9 +1,5 @@
 extends RefCounted
-## The boolean representation used in Plutus
-##
-## This is a utility class used in the serialization of [PlutusData]. Do not
-## use it directly.
-
+## The PlutusData equivalent of `bool`.
 class_name BoolData
 
 var _b: bool

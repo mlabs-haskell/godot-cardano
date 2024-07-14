@@ -30,9 +30,11 @@ class FromBytesResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 		
+## Try to parse an [AssetName] from a [String] containing its hex encoding.
 static func from_hex(hash: String) -> FromHexResult:
 	return FromHexResult.new(_AssetName._from_hex(hash))
 
+## Try to parse an [AssetName] from a [PackedByteArray].
 static func from_bytes(bytes: PackedByteArray) -> FromBytesResult:
 	return FromBytesResult.new(_AssetName._from_bytes(bytes))
 
