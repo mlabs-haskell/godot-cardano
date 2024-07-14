@@ -1,4 +1,5 @@
-extends RefCounted
+@tool
+extends Resource
 ## A class for constructing on-chain Plutus data
 ##
 ## The Plutus language, which may be used for minting policies and validators,

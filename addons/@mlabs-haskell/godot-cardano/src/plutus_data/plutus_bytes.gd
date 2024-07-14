@@ -1,9 +1,11 @@
+@tool
 class_name PlutusBytes
 extends PlutusData
 
+@export
 var _data: PackedByteArray
 
-func _init(data: PackedByteArray) -> void:
+func _init(data: PackedByteArray = PackedByteArray()) -> void:
 	_data = data
 	
 func _unwrap() -> Variant:

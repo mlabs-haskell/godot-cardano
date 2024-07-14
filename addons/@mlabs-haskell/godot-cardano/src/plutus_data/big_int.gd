@@ -1,3 +1,4 @@
+@tool
 extends PlutusData
 class_name BigInt
 ## Integers of arbitrary size
@@ -15,7 +16,18 @@ enum Status { SUCCESS = 0, COULD_NOT_PARSE_BIGINT = 1, COULD_NOT_DESERIALIZE_BIG
 
 var _b: _BigInt
 
-func _init(b: _BigInt) -> void:
+@export
+var value: String:
+	get:
+		return _b.to_str()
+	set(v):
+		var result = _BigInt._from_str(v)
+		if result.is_ok():
+			_b = result.unsafe_value()
+		else:
+			push_error("Could not parse BigInt: %s" % result.error)
+
+func _init(b: _BigInt = _BigInt.zero()) -> void:
 	_b = b
 
 ## Result of calling either [method from_str]. If the operation succeeds,

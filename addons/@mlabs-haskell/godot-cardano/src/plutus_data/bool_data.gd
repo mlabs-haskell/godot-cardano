@@ -2,6 +2,7 @@ extends RefCounted
 ## The PlutusData equivalent of `bool`.
 class_name BoolData
 
+@export
 var _b: bool
 
 func _init(b: bool) -> void:

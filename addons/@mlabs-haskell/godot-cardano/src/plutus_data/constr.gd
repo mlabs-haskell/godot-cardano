@@ -1,3 +1,4 @@
+@tool
 extends PlutusData
 ## Sum and Product type constructor for Plutus data
 ##
@@ -75,13 +76,15 @@ extends PlutusData
 # TODO: Move the explanations above to a separate tutorial.
 class_name Constr
 
+@export
 var _constructor: BigInt
+@export
 var _fields: Array[PlutusData]
 
 ## A [Constr] takes [param constructor] parameter, which is the index of the
 ## constructor being used. The parameters of that constructor are passed in
 ## [param fields].
-func _init(constructor: BigInt, fields: Array[PlutusData]):
+func _init(constructor: BigInt = null, fields: Array[PlutusData] = []):
 	_constructor = constructor
 	_fields = fields
 

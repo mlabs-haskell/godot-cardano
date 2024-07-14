@@ -1,11 +1,23 @@
+@tool
 class_name PlutusMap
 extends PlutusData
 
 var _data: Dictionary
 
-func _init(data: Dictionary) -> void:
+@export
+var _data_pairs: Array[PlutusPair]:
+	set(pairs): 
+		_data = {}
+		for pair in pairs:
+			if pair != null:
+				#pair = PlutusPair.new()
+				_data[pair._first] = pair._second
+		_data_pairs = pairs
+		print(_data)
+
+func _init(data: Dictionary = {}) -> void:
 	_data = data
-	
+
 func _unwrap() -> Variant:
 	var unwrapped: Dictionary = {}
 	for key: PlutusData in _data:
@@ -15,10 +27,10 @@ func _unwrap() -> Variant:
 			return null
 		unwrapped[unwrapped_key] = unwrapped_value
 	return unwrapped
-	
+
 func get_data() -> Dictionary:
 	return _data
-	
+
 func _to_json() -> Dictionary:
 	var map := []
 	for key in _data:

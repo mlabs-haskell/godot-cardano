@@ -1,9 +1,11 @@
+@tool
 class_name PlutusList
 extends PlutusData
 
+@export
 var _data: Array[PlutusData]
 
-func _init(data: Array[PlutusData]) -> void:
+func _init(data: Array[PlutusData] = []) -> void:
 	_data = data
 
 func _unwrap() -> Variant:
