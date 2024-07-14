@@ -1,9 +1,15 @@
 class_name TxComplete
+## A balanced and evaluated transaction
+##
+## This class represents a transaction that has been properly balanced and
+## evaluated. At this stage, the transaction is generally ready to be submitted
+## ([method submit]), with the notable exception of possibly missing signatures.
+## These can be added with [method sign].
 extends RefCounted
 
 var _transaction: Transaction = null
 var _provider: Provider
-var _wallet: Wallet
+var _wallet: OnlineWallet
 
 var _results: Array[Result]
 
@@ -17,12 +23,13 @@ class SubmitResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 
-func _init(provider: Provider, transaction: Transaction, wallet: Wallet = null) -> void:
+func _init(provider: Provider, transaction: Transaction, wallet: OnlineWallet = null) -> void:
 	_transaction = transaction
 	_provider = provider
 	_wallet = wallet
 
-func sign(password: String, wallet: Wallet = _wallet) -> TxComplete:		
+## Sign the transaction using the provided [param wallet] and [param password].
+func sign(password: String, wallet: OnlineWallet = _wallet) -> TxComplete:		
 	var sign_result := wallet._sign_transaction(password, _transaction)
 	_results.push_back(sign_result)
 	if sign_result.is_ok():
@@ -36,6 +43,7 @@ func sign(password: String, wallet: Wallet = _wallet) -> TxComplete:
 		)
 	return self
 
+## Submit the transaction to the blockchain.
 func submit() -> SubmitResult:
 	var error := _results.any(func (result: Result) -> bool: return result.is_err())
 	if not error:
@@ -56,6 +64,6 @@ func submit() -> SubmitResult:
 		)
 	)
 
-	
+## Convert thhe to its bytearray form.
 func bytes() -> PackedByteArray:
 	return _transaction.bytes()

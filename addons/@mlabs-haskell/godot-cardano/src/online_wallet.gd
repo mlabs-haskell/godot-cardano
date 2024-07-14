@@ -1,6 +1,10 @@
 extends Node
-
-class_name Wallet
+## A wallet class with online functionality, enabled by a Provider
+##
+## This class is used for providing wallet-related online functionality, such
+## as querying for the assets or UTxOs locked at the wallet. These features are
+## possible due to the required [Provider] in its constructor.
+class_name OnlineWallet
 
 signal got_updated_utxos(utxos: Array[Utxo])
 
@@ -12,7 +16,8 @@ func _get_utxos() -> Array[Utxo]:
 	
 func _get_change_address() -> Address:
 	return null
-	
+
+## Get the amount of Lovelace locked among all of the wallet's UTxOs
 func total_lovelace() -> BigInt:
 	var utxos := await self._get_utxos()
 	return utxos.reduce(
@@ -20,6 +25,8 @@ func total_lovelace() -> BigInt:
 		BigInt.zero()
 	)
 
+## Create a [TxBuilder] and set this to be the wallet used by it. Equivalent to
+## using [Provider.new_tx] and then [TxBuilder.set_wallet].
 func new_tx() -> TxBuilder.CreateResult:
 	var create_result := await _provider.new_tx()
 	
@@ -39,7 +46,8 @@ class SignTxResult extends Result:
 func _sign_transaction(password: String, _transaction: Transaction) -> SignTxResult:
 	return null
 
-class MnemonicWallet extends Wallet:
+## An implementation on top of [SingleAddressWallet].
+class OnlineSingleAddressWallet extends OnlineWallet:
 	var _single_address_wallet: SingleAddressWallet
 
 	@export
@@ -55,9 +63,11 @@ class MnemonicWallet extends Wallet:
 	var timer: Timer
 
 	## Cached utxos, these can and _will_ be outdated. To get the latest utxos,
-	## call [MnemonicWallet.get_utxos].
+	## call [OnlineWallet._get_utxos].
 	var utxos: Array[Utxo] = []
-		
+	
+	## Construct the wallet by providing a [SingleAddressWallet] (which serves
+	## as the underlying key) and a [Provider] (for the network functionality).
 	func _init(
 		single_address_wallet: SingleAddressWallet, 
 		provider: Provider,
@@ -79,7 +89,7 @@ class MnemonicWallet extends Wallet:
 		# Initialize UTxOs immediately
 		update_utxos()
 		
-	## Update the cached utxos. The same as [MnemonicWallet.get_utxos], but
+	## Update the cached utxos. The same as [OnlineWallet._get_utxos], but
 	## without returning the updated utxos.
 	func update_utxos() -> void:
 		print_debug("update_utxos called")
@@ -113,13 +123,15 @@ class MnemonicWallet extends Wallet:
 		
 	func _sign_transaction(password: String, transaction: Transaction) -> SignTxResult:
 		return _single_address_wallet._sign_transaction(password, transaction)
-
+	
+	## Add a new account to the wallet.
 	func add_account(account_index: int, password: String) -> SingleAddressWallet.AddAccountResult:
 		return _single_address_wallet.add_account(account_index, password)
-		
+	## Switch the active account in the wallet.
 	func switch_account(account: Account) -> int:
 		return _single_address_wallet.switch_account(account)
-
+	## Send a lovelace amount to a [param recipient] BECH32 address. This is
+	## provided for convenience, as it avoids using the [TxBuilder] interface.
 	func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
 		@warning_ignore("redundant_await")
 		var change_address := await _get_change_address()

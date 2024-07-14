@@ -1,4 +1,21 @@
 extends RefCounted
+## A class for constructing on-chain Plutus data
+##
+## The Plutus language, which may be used for minting policies and validators,
+## operates on a specific datatype called [PlutusData]. This class is used for
+## constructing valid instances of this datatype, which then may be used as
+## datums or redeemers in functions that require it.
+##
+## Most of the time, the different [PlutusData] constructs may be accurately
+## represented by native GDScript types, such as [bool], [Array] or [Dictionary].
+## But for other cases, like [BigInt] or [Constr], native GDScript types aren't
+## accurate enough or are simply inexistent.
+##
+## This class tries to abstract most of the complexity by allowing the use of
+## of nested native types and SDK types (like the aforementioned) to construct
+## any PlutusData desired. These can subsequentely be converted into valid
+## CBOR (the format used in transactions) with [method serialize].
+# TODO: Add a specific tutorial on PlutusData conversions.
 class_name PlutusData
 
 ## Recursively wraps native data types to PlutusData types
@@ -32,6 +49,7 @@ static func wrap(v: Variant) -> PlutusData:
 			return PlutusBytes.new(v)
 		_: return null
 
+## Deserialize from CBOR format.
 static func deserialize(bytes: PackedByteArray) -> Cbor.DeserializeResult:
 	return Cbor.deserialize(bytes)
 
@@ -81,6 +99,8 @@ static func from_json(json: Dictionary) -> PlutusData:
 			return result
 	return null
 
+## Apply the given [param params] to the passed [param script]. This only makes
+## sense in unapplied, parameterized scripts.
 static func apply_script_parameters(
 	script: PlutusScript,
 	params: Array[PlutusData]
@@ -99,5 +119,6 @@ func _to_json() -> Dictionary:
 func _to_string() -> String:
 	return "%s" % _unwrap()
 
+## Serialize into CBOR format.
 func serialize() -> Cbor.SerializeResult:
 	return Cbor.serialize(_unwrap())

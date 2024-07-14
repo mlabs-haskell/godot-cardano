@@ -1,8 +1,16 @@
 extends RefCounted
-
-## You should create a [SingleAddressWallet] with [SingleAddressWalletStore],
-## by calling [SingleAddressWalletStore.get_wallet]. Do not use
-## [SingleAddressWallet.new]
+## A class for offline wallet operations
+##
+## This class holds the [b]encrypted[/b] master private key of a user's wallet.
+## It can be used for offline wallet operations and queries, such as signing,
+## adding accounts and consulting addresses.
+##
+## You should create a [SingleAddressWallet] with [SingleAddressWalletLoader],
+## by calling any of its creation or import methods.
+##
+## Refer to [OnlineWallet] for a class that has network connectivity and can
+## do blockchain queries. In general, this class is the one you are interested
+## in for dApp development.
 
 class_name SingleAddressWallet
 
@@ -16,6 +24,8 @@ enum Status {
 var _wallet_loader: SingleAddressWalletLoader
 var _wallet : _SingleAddressWallet
 
+## WARNING: Do not use this constructor! Use any of the import/creation methods
+## exposed in [SingleAddressWalletLoader].
 func _init(wallet: _SingleAddressWallet, wallet_loader: SingleAddressWalletLoader) -> void:
 	self._wallet = wallet
 	self._wallet_loader = wallet_loader
@@ -29,8 +39,8 @@ func get_address_bech32() -> String:
 	return _wallet.get_address_bech32()
 
 ## Sign the given [Transaction] and obtain a [Signature]
-func _sign_transaction(password: String, tx: Transaction) -> Wallet.SignTxResult:
-	return Wallet.SignTxResult.new(
+func _sign_transaction(password: String, tx: Transaction) -> OnlineWallet.SignTxResult:
+	return OnlineWallet.SignTxResult.new(
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
 	)
 
@@ -39,6 +49,8 @@ func add_account(account_index: int, password: String) -> SingleAddressWallet.Ad
 	var res: _Result = _wallet_loader._add_account(account_index, password)
 	return AddAccountResult.new(res)
 	
+## Result of calling [method add_account]. If the operation succeeds,
+## [member value] will contain
 class AddAccountResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: Account:
