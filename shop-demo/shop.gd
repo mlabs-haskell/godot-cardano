@@ -175,24 +175,25 @@ func _on_select_inventory_item(selection: InventoryItem):
 	)
 	%SelectedItemSellButton.release_focus()
 
-func mint_tokens():
+func mint_tokens() -> bool:
 	busy = true
-	var new_tx_result := await wallet.new_tx()
-	if new_tx_result.is_err():
-		push_error("Could not create transaction: %s" % new_tx_result.error)
-		return
 	var shop_address := provider.make_address(
 		Credential.from_script_source(shop_script_source)
 	)
-	var tx_builder = new_tx_result.value
 
-	var new_mint = false
+	var new_tx_result := await wallet.new_tx()
+	if new_tx_result.is_err():
+		push_error("Could not create transaction: %s" % new_tx_result.error)
+		return false
+
+	var tx_builder := new_tx_result.value
+	var new_mint := false
 	for conf in cip68_data:
 		var asset_class := conf.make_ref_asset_class()
 		var utxo := await provider.get_utxo_with_nft(asset_class)
 		if utxo == null:
 			new_mint = true
-			tx_builder.cip68_config_pair(VoidData.to_data(), conf)
+			tx_builder.mint_cip68_pair(VoidData.to_data(), conf)
 			tx_builder.pay_cip68_ref_token(
 				provider.make_address(
 					Credential.from_script_source(ref_lock_source),
@@ -206,26 +207,25 @@ func mint_tokens():
 			)
 
 	if not new_mint:
-		return
+		return false
 
 	var complete_result := await tx_builder.complete()
-
 	if complete_result.is_err():
 		push_error("Failed to build transaction: %s" % complete_result.error)
-		return
+		return false
 
 	var tx := complete_result.value
 	tx.sign("1234")
 	var submit_result := await tx.submit()
-
 	if submit_result.is_err():
 		push_error("Failed to submit transaction: %s" % submit_result.error)
-		return
+		return false
 
 	provider.invalidate_cache()
 	update_timer.timeout.emit()
-	print("Minted")
+	print("Minted; tx hash: %s" % submit_result.value.to_hex())
 	busy = false
+	return true
 
 func burn_tokens():
 	busy = true
@@ -293,7 +293,7 @@ func buy_item(conf: Cip68Config, quantity: int) -> bool:
 	busy = true
 	deselect_item()
 	
-	var shop_utxos = await provider.get_utxos_at_address(
+	var shop_utxos := await provider.get_utxos_at_address(
 		provider.make_address(Credential.from_script_source(shop_script_source))
 	)
 	var ref_utxo := await provider.get_utxo_with_nft(
@@ -333,7 +333,9 @@ func buy_item(conf: Cip68Config, quantity: int) -> bool:
 				WalletSingleton.provider.make_address(
 					Credential.from_script_source(shop_script_source)
 				),
-				selected_utxo.coin().add(BigInt.from_int(conf.extra_plutus_data.data.to_int() * quantity)),
+				selected_utxo.coin().add(
+					BigInt.from_int(conf.extra_plutus_data.data.to_int() * quantity
+				)),
 				assets,
 				shop_datum
 			),
@@ -422,7 +424,9 @@ func load_user_or_res(path: String, type_hint := "") -> Resource:
 	)
 
 func load_script_and_create_ref(filename: String) -> PlutusScriptSource:
-	var source := await provider.load_script(load_user_or_res("cip68_data/%s" % filename) as ScriptResource)
+	var source := await provider.load_script(
+		load_user_or_res("cip68_data/%s" % filename) as ScriptResource
+	)
 	if not source.is_ref():
 		var tx_hash := await wallet.tx_with(
 			func(tx_builder: TxBuilder):

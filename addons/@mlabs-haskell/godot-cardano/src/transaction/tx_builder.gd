@@ -150,7 +150,7 @@ func set_cost_models(cost_models: CostModels) -> TxBuilder:
 func pay_to_address(
 	address: Address,
 	coin: BigInt,
-	assets: MultiAsset,
+	assets: MultiAsset = MultiAsset.empty(),
 	datum: PlutusData = null,
 	script_ref: PlutusScript = null,
 	hash_datum := false
@@ -226,7 +226,7 @@ func mint_assets(
 
 ## Mint a pair of CIP68 user and reference tokens using the given 
 ## [param redeemer] and minting configuration in [param conf].
-func cip68_config_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
+func mint_cip68_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
 	if conf.minting_policy_source == null:
 		await conf.init_script(_provider)
 
@@ -242,8 +242,8 @@ func cip68_config_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
 
 ## Mint user tokens for a given [param conf]. This should generally be used
 ## for fungible tokens after the initial mint has been performed by
-## [method cip68_config_pair].
-func cip68_config_user_tokens(
+## [method mint_cip68_pair].
+func mint_cip68_user_tokens(
 	redeemer: PlutusData,
 	conf: Cip68Config,
 	quantity := conf.get_quantity()

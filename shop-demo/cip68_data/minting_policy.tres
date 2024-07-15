@@ -7,4 +7,6 @@
 script = ExtResource("1_06xli")
 blueprint_path = "res://scripts.json"
 validator_name = "shop.tagged_mint"
+cbor_hex = ""
+plutus_version = 2
 script_args = Array[Resource("res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd")]([ExtResource("2_tnvty")])

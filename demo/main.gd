@@ -161,12 +161,8 @@ func _on_mint_token_button_pressed() -> void:
 		return
 	var tx : TxBuilder = create_tx_result.value
 	
-	# We mint the CIP68 pair
-	var redeemer = VoidData.to_data()
-	tx.cip68_config_pair(redeemer, mint_token_conf)
-
 	# Create MultiAsset with both tokens
-	tx.cip68_config_pair(VoidData.to_data(), mint_token_conf)
+	tx.mint_cip68_pair(VoidData.to_data(), mint_token_conf)
 	
 	# Send both tokens to myself and set its corresponding metadata
 	tx.pay_cip68_ref_token(

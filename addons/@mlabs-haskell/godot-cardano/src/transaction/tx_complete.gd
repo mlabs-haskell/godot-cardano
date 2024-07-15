@@ -29,7 +29,7 @@ func _init(provider: Provider, transaction: Transaction, wallet: OnlineWallet = 
 	_wallet = wallet
 
 ## Sign the transaction using the provided [param wallet] and [param password].
-func sign(password: String, wallet: OnlineWallet = _wallet) -> TxComplete:		
+func sign(password: String, wallet: OnlineWallet = _wallet) -> TxComplete:
 	var sign_result := wallet._sign_transaction(password, _transaction)
 	_results.push_back(sign_result)
 	if sign_result.is_ok():

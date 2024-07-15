@@ -101,7 +101,7 @@ var fungible: bool = false:
 		fungible = v
 		notify_property_list_changed()
 @export
-## Initial quantity minted via [method TxBuilder.cip68_config_pair]. In cases where
+## Initial quantity minted via [method TxBuilder.mint_cip68_pair]. In cases where
 ## the minting policy is one-shot, this will be the total supply for this token.
 var initial_quantity: int = 1:
 	get:

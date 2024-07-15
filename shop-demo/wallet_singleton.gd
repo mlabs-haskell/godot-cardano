@@ -52,7 +52,13 @@ func _on_wallet_updated_utxos(_utxos: Array[Utxo]):
 		user_funds = await wallet.total_lovelace()
 
 func create_new_wallet() -> SingleAddressWallet:
-	var new_wallet_result := SingleAddressWalletLoader.create("1234", 0, "My Account", "", network)
+	var new_wallet_result := SingleAddressWalletLoader.create(
+		"1234",
+		0,
+		"My Account",
+		"An account for my Cardano game",
+		network
+	)
 	
 	if new_wallet_result.is_err():
 		push_error("Failed to create wallet: %s" % new_wallet_result.error)
@@ -76,7 +82,7 @@ func load_wallet_from_seedphrase() -> SingleAddressWalletLoader.WalletImportResu
 		"",
 		"1234",
 		0,
-		"",
-		""
+		"My Account",
+		"An account for my Cardano game"
 	)
 	return import_result

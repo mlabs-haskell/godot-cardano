@@ -144,34 +144,41 @@ class OnlineSingleAddressWallet extends OnlineWallet:
 		return _single_address_wallet.switch_account(account)
 	## Send a lovelace amount to a [param recipient] BECH32 address. This is
 	## provided for convenience, as it avoids using the [TxBuilder] interface.
-	func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> void:
-		@warning_ignore("redundant_await")
-		var change_address := await _get_change_address()
-		@warning_ignore("redundant_await")
-		var utxos := await _get_utxos()
+	func send_lovelace_to(password: String, recipient: String, amount: BigInt) -> TransactionHash:
 		var total_lovelace := await total_lovelace()
 		
 		if amount.gt(total_lovelace):
 			print("Error: not enough lovelace in wallet")
-			return
+			return null
 		
-		var address_result = Address.from_bech32(recipient)
+		var address_result := Address.from_bech32(recipient)
 		
 		if address_result.is_err():
 			push_error("Failed to decode address bech32: %s" % address_result.error)
-			return
+			return null
 			
 		var create_result := await new_tx()
 		
 		if create_result.is_err():
-			push_error("Could not create new transaction")
-			return
+			push_error("Could not create new transaction: %s" % create_result.error)
+			return null
 		
-		var builder := create_result.value
-		builder.pay_to_address(address_result.value, amount, MultiAsset.empty())
-		var transaction := await builder.complete()
-		transaction.sign(password)
-		transaction.submit()
+		var tx_builder := create_result.value
+		tx_builder.pay_to_address(address_result.value, amount)
+		
+		var complete_result := await tx_builder.complete()
+		if complete_result.is_err():
+			push_error("Failed to build transaction: %s" % complete_result.error)
+			return null
+
+		var tx := complete_result.value
+		tx.sign(password)
+		var submit_result := await tx.submit()
+
+		if submit_result.is_err():
+			push_error("Failed to submit transaction: %s" % submit_result.error)
+		
+		return submit_result.value
 
 	## See [method Provider.tx_with]
 	func tx_with(builder: Callable, signer: Callable) -> TransactionHash:
