@@ -10,8 +10,8 @@ var _godot_login_info: PaimaMiddleware.LoginInfo
 # Buttons
 var _login_button
 var _join_button
-var _step_right_button
 var _player_pos_button
+var _player_move_box = HBoxContainer.new()
 
 func _init(
 		cip_30_wallet: Cip30WalletApi, 
@@ -51,12 +51,7 @@ func add_paima_game_buttons(paima_endpoints):
 	_join_button.disabled = true
 	add_child(_join_button)
 	
-	# Step right
-	_step_right_button = Button.new()
-	_step_right_button.text = "Step right"
-	_step_right_button.pressed.connect(test_step_right)
-	_step_right_button.disabled = true
-	add_child(_step_right_button)
+	_add_movement_buttons()
 	
 	# Button to refresh and show player posiotion
 	_player_pos_button = Button.new()
@@ -75,10 +70,60 @@ func add_paima_game_buttons(paima_endpoints):
 	show_status_button.text = "Show Paima status"
 	show_status_button.pressed.connect(_game_middleware.show_status)
 	add_child(show_status_button)
+	
 
-func test_step_right():
-	# TODO: unsafe, but enough for tests - need to check world boundaries
-	_game_middleware.submit_moves(_game_middleware.get_x() + 1, 0)
+
+func _add_movement_buttons():
+	
+	# Step right
+	var _step_right_button = Button.new()
+	_step_right_button.text = "Step RIGHT"
+	_step_right_button.pressed.connect(_move_to.bind(1, 0))
+	_player_move_box.add_child(_step_right_button)
+	
+	# Step left
+	var _step_left_button = Button.new()
+	_step_left_button.text = "Step LEFT"
+	_step_left_button.pressed.connect(_move_to.bind((-1), 0))
+	
+	# Step up
+	var _step_up_button = Button.new()
+	_step_up_button.text = "Step UP"
+	_step_up_button.pressed.connect(_move_to.bind(0, 1))
+	
+	# Step up
+	var _step_down_button = Button.new()
+	_step_down_button.text = "Step DOWN"
+	_step_down_button.pressed.connect(_move_to.bind(0, (-1)))
+	
+	_player_move_box.add_child(_step_right_button)
+	_player_move_box.add_child(_step_left_button)
+	_player_move_box.add_child(_step_up_button)
+	_player_move_box.add_child(_step_down_button)
+	
+	add_child(_player_move_box)
+	_disable_movement()
+	#_player_move_box.hidden = true TODO
+
+func _move_to(x, y):
+	var new_x = _game_middleware.get_x() + x
+	var new_y = _game_middleware.get_y() + y
+	#prints("xy_args", xy_args)
+	prints("new_x", new_x)
+	prints("new_y", new_y)
+	
+	if (new_x < 0 || new_y < 0):
+		print("Can't move out of the Open World map bounds")
+		return
+	_game_middleware.submit_moves(new_x, new_y)
+
+func _disable_movement():
+	for move_button in _player_move_box.get_children():
+		move_button.disabled = true
+		
+func _enable_movement():
+	for move_button in _player_move_box.get_children():
+		move_button.disabled = false
 
 func add_test_sign_button():
 	var sep = Label.new()
@@ -136,10 +181,12 @@ func _process(delta):
 		if _game_middleware.has_player_stats():
 			_player_pos_button.disabled = false
 			_join_button.disabled = true
-			_step_right_button.disabled = false
+			_enable_movement()
 			_player_pos_button.text = str(
 				"Player position: x=", 
 				_game_middleware.get_x(),
 				", y=",
 				_game_middleware.get_y(),
 				)
+		else:
+			_disable_movement()

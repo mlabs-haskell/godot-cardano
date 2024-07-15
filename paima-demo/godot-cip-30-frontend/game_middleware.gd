@@ -12,6 +12,9 @@ func _init(paima_middleware: PaimaMiddleware) -> void:
 	_middleware = paima_middleware
 	assert(_middleware)
 	_endpoints = _middleware.get_enpoints()
+	# Will handle the case when there is already game state exists
+	# and disable `Join World` button
+	_middleware.paima_logged_in.connect(update_player_stats) # TODO naming - `on_...`
 
 ## Login
 ### The func
@@ -36,7 +39,7 @@ func update_player_stats():
 	if _middleware.wallet_is_set():
 		_endpoints.getUserStats(_middleware.get_wallet_address()).then(_on_stats_received_js)
 	else:
-		print("GD:Paima: wallet login was usuccessfull, check wallet by `show wallet` buttion")
+		print("GD:Paima: wallet login was not successfull, check wallet by `show wallet` buttion")
 
 ### Callback
 var _on_stats_received_js = JavaScriptBridge.create_callback(_on_stats_received)

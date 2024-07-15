@@ -44,10 +44,12 @@ func get_wallet() -> JavaScriptObject:
 
 func get_wallet_address():
 	return _paima_wallet.result.walletAddress
-	
+
+signal paima_logged_in()
+
 ## Login
 ### The func
-func login(login_info: LoginInfo) -> void:
+func login(login_info: LoginInfo, on_login_cb = null) -> void:
 	var js_login_info = _to_js_login_info(login_info)
 	console.log("GD:Paima: login_info: ", js_login_info)
 	_endpoints.userWalletLogin(js_login_info).then(_on_login_js)
@@ -59,6 +61,7 @@ func _on_login(args) -> void:
 	if wallet && wallet.success:
 		_paima_wallet = wallet
 		print("GD:Paima: paima_wallet set")
+		paima_logged_in.emit()
 	else:
 		prints("GD:Paima: Paima login error: wallet not set!")
 		console.log("Paima wallet login result:", wallet)
