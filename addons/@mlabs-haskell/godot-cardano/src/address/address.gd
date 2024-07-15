@@ -51,7 +51,7 @@ func to_bech32() -> String:
 func _to_string() -> String:
 	return to_bech32()
 	
-## TODO: Maybe we should use Provider.Network here.
+# TODO: Maybe we should use Provider.Network here.
 ## Construct an [Address] by providing the [param network_id] and payment and
 ## staking credentials. The latter are optional, [b]but strongly encouraged[/b].
 static func build(
