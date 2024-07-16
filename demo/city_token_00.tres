@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/cip68/file_details.gd" id="1_phy2b"]
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd" id="1_tfftv"]
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/cip68/cip68_config.gd" id="2_imx8k"]
-[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/script_resource/script_from_cbor_hex.gd" id="3_f8b73"]
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/script_resource/script_from_cbor_hex.gd" id="3_2pek5"]
 
 [sub_resource type="Resource" id="Resource_khed8"]
 script = ExtResource("1_tfftv")
@@ -26,14 +26,15 @@ media_type = "image/webp"
 src = "ipfs://QmQ2AX43ic6CfPz2Mq7Z1t45RrTCTwixZR3qVWhprvJEQ6"
 additional_properties = {}
 
-[sub_resource type="Resource" id="Resource_7yqha"]
-script = ExtResource("3_f8b73")
+[sub_resource type="Resource" id="Resource_uy6o3"]
+script = ExtResource("3_2pek5")
 cbor_hex = "46010000222499"
 plutus_version = 2
+script_args = Array[ExtResource("1_tfftv")]([])
 
 [resource]
 script = ExtResource("2_imx8k")
-minting_policy = SubResource("Resource_7yqha")
+minting_policy = SubResource("Resource_uy6o3")
 token_name = PackedByteArray(67, 105, 116, 121, 84, 111, 107, 101, 110, 48, 48)
 token_name_as_hex = "43697479546f6b656e3030"
 token_name_as_utf8 = "CityToken00"
