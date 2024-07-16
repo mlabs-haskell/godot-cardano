@@ -33,7 +33,7 @@ var _network: ProviderApi.Network
 var thread: Thread
 
 ## Only construct a [SingleAddressWalletLoader] if you plan to use a non-static
-## method for obtaininng a [SingleAddressWallet].
+## method for obtaining a [SingleAddressWallet].
 func _init(
 	network: ProviderApi.Network,
 	wallet_loader: _SingleAddressWalletLoader = null,
