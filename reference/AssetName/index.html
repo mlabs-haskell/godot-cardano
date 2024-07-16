@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/Address/">
+        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/AssetName/">
       
       
-        <link rel="prev" href="../AccountResource/">
+        <link rel="prev" href="../AssetClass/">
       
       
-        <link rel="next" href="../AssetClass/">
+        <link rel="next" href="../BigInt/">
       
       
       <link rel="icon" href="../../assets/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Address - godot-cardano</title>
+        <title>AssetName - godot-cardano</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#address" class="md-skip">
+        <a href="#assetname" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Address
+              AssetName
             
           </span>
         </div>
@@ -386,6 +386,26 @@
                 
   
   
+  
+    <li class="md-nav__item">
+      <a href="../AssetClass/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AssetClass
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -401,7 +421,7 @@
           
   
   <span class="md-ellipsis">
-    Address
+    AssetName
   </span>
   
 
@@ -412,7 +432,7 @@
         
   
   <span class="md-ellipsis">
-    Address
+    AssetName
   </span>
   
 
@@ -476,22 +496,29 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#to_bech32" class="md-nav__link">
-    to_bech32
+  <a href="#to_bytes" class="md-nav__link">
+    to_bytes
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#from_bech32-static" class="md-nav__link">
-    from_bech32 (static)
+  <a href="#to_hex" class="md-nav__link">
+    to_hex
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#build-static" class="md-nav__link">
-    build (static)
+  <a href="#from_hex-static" class="md-nav__link">
+    from_hex (static)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from_bytes-static" class="md-nav__link">
+    from_bytes (static)
   </a>
   
 </li>
@@ -510,11 +537,11 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#tobech32result" class="md-nav__link">
-    ToBech32Result
+  <a href="#fromhexresult" class="md-nav__link">
+    FromHexResult
   </a>
   
-    <nav class="md-nav" aria-label="ToBech32Result">
+    <nav class="md-nav" aria-label="FromHexResult">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -544,11 +571,11 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#frombech32result" class="md-nav__link">
-    FromBech32Result
+  <a href="#frombytesresult" class="md-nav__link">
+    FromBytesResult
   </a>
   
-    <nav class="md-nav" aria-label="FromBech32Result">
+    <nav class="md-nav" aria-label="FromBytesResult">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -586,26 +613,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../AssetClass/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    AssetClass
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -662,6 +669,46 @@
   
   <span class="md-ellipsis">
     Cbor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Cip68Config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cip68Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Cip68Datum/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cip68Datum
   </span>
   
 
@@ -757,26 +804,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../MintCip68/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    MintCip68
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../MultiAsset/" class="md-nav__link">
         
   
@@ -857,6 +884,26 @@
   
   
     <li class="md-nav__item">
+      <a href="../PlutusDataResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusDataResource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusList/" class="md-nav__link">
         
   
@@ -882,6 +929,26 @@
   
   <span class="md-ellipsis">
     PlutusMap
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusPair/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusPair
   </span>
   
 
@@ -942,6 +1009,106 @@
   
   <span class="md-ellipsis">
     Result
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptFromBlueprint/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromBlueprint
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptFromCborHex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromCborHex
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptFromOutRef/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromOutRef
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptHash/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptHash
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptResource
   </span>
   
 
@@ -1167,22 +1334,29 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#to_bech32" class="md-nav__link">
-    to_bech32
+  <a href="#to_bytes" class="md-nav__link">
+    to_bytes
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#from_bech32-static" class="md-nav__link">
-    from_bech32 (static)
+  <a href="#to_hex" class="md-nav__link">
+    to_hex
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#build-static" class="md-nav__link">
-    build (static)
+  <a href="#from_hex-static" class="md-nav__link">
+    from_hex (static)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from_bytes-static" class="md-nav__link">
+    from_bytes (static)
   </a>
   
 </li>
@@ -1201,11 +1375,11 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#tobech32result" class="md-nav__link">
-    ToBech32Result
+  <a href="#fromhexresult" class="md-nav__link">
+    FromHexResult
   </a>
   
-    <nav class="md-nav" aria-label="ToBech32Result">
+    <nav class="md-nav" aria-label="FromHexResult">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1235,11 +1409,11 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#frombech32result" class="md-nav__link">
-    FromBech32Result
+  <a href="#frombytesresult" class="md-nav__link">
+    FromBytesResult
   </a>
   
-    <nav class="md-nav" aria-label="FromBech32Result">
+    <nav class="md-nav" aria-label="FromBytesResult">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1288,7 +1462,7 @@
                   
 
   
-    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/reference/Address.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/reference/AssetName.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -1297,7 +1471,7 @@
     
       
     
-    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/reference/Address.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/reference/AssetName.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
@@ -1306,59 +1480,62 @@
 
 <!-- Auto-generated from JSON by GDScript docs maker. Do not edit this document directly. -->
 
-<h1 id="address">Address</h1>
+<h1 id="assetname">AssetName</h1>
 <p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
 <h2 id="description">Description</h2>
-<p>This class represents a Cardano address consisting of a payment <a href="Credential">Credential</a>.</p>
-<p>This class represents a Cardano address consisting of a payment <a href="Credential">Credential</a>.</p>
+<p>An <a href="AssetName">AssetName</a> (or currency symbol).</p>
+<p>An <a href="AssetName">AssetName</a> (or currency symbol).</p>
 <h2 id="constants-descriptions">Constants Descriptions</h2>
 <h3 id="status">Status</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="n">Status</span><span class="p">{</span><span class="n">SUCCESS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">BECH32_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="n">Status</span><span class="p">{</span><span class="n">SUCCESS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">COULD_NOT_DECODE_HEX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
 </span></code></pre></div></td></tr></table></div>
 <h2 id="method-descriptions">Method Descriptions</h2>
 <h3 id="_init">_init</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">address</span><span class="p">:</span><span class="w"> </span><span class="n">_Address</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Address</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">asset_name</span><span class="p">:</span><span class="w"> </span><span class="n">_AssetName</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">AssetName</span>
 </span></code></pre></div></td></tr></table></div>
-<h3 id="to_bech32">to_bech32</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_bech32</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<h3 id="to_bytes">to_bytes</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_bytes</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Convert to a BECH32 [String]. This operation may fail and return an empty [String].</p>
-<h3 id="from_bech32-static">from_bech32 <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_bech32</span><span class="p">(</span><span class="n">bech32</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromBech32Result</span>
+<h3 id="to_hex">to_hex</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_hex</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Try to parse a BECH32 [String] into an <a href="./">Address</a>.</p>
-<h3 id="build-static">build <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">build</span><span class="p">(</span><span class="n">network_id</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">,</span><span class="w"> </span><span class="n">payment_cred</span><span class="p">:</span><span class="w"> </span><span class="n">Credential</span><span class="p">,</span><span class="w"> </span><span class="n">stake_cred</span><span class="p">:</span><span class="w"> </span><span class="n">Credential</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Address</span>
+<p>Get the hex encoding of the <a href="AssetName">AssetName</a>.</p>
+<h3 id="from_hex-static">from_hex <small>(static)</small></h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_hex</span><span class="p">(</span><span class="nb">hash</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromHexResult</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Construct an <a href="./">Address</a>(Address).</p>
+<p>Try to parse an [class AssetName] from [param hash] containing its hex encoding.</p>
+<h3 id="from_bytes-static">from_bytes <small>(static)</small></h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_bytes</span><span class="p">(</span><span class="n">bytes</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromBytesResult</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Try to parse an <a href="AssetName">AssetName</a>.</p>
 <h2 id="sub-classes">Sub-classes</h2>
-<h3 id="tobech32result">ToBech32Result</h3>
+<h3 id="fromhexresult">FromHexResult</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>
 <h3 id="value">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">AssetName</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
 <h3 id="error">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#_is_err">Result._is_err</a>.</p>
-<h3 id="frombech32result">FromBech32Result</h3>
+<h3 id="frombytesresult">FromBytesResult</h3>
 <h4 id="property-descriptions_1">Property Descriptions</h4>
 <h3 id="value_1">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Address</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">AssetName</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
 <h3 id="error_1">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>

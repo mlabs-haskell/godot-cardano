@@ -16,7 +16,7 @@
         <link rel="prev" href="../PlutusBytes/">
       
       
-        <link rel="next" href="../PlutusList/">
+        <link rel="next" href="../PlutusDataResource/">
       
       
       <link rel="icon" href="../../assets/favicon.png">
@@ -388,11 +388,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../Address/" class="md-nav__link">
+      <a href="../AssetClass/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Address
+    AssetClass
   </span>
   
 
@@ -408,11 +408,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../AssetClass/" class="md-nav__link">
+      <a href="../AssetName/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    AssetClass
+    AssetName
   </span>
   
 
@@ -473,6 +473,46 @@
   
   <span class="md-ellipsis">
     Cbor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Cip68Config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cip68Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Cip68Datum/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cip68Datum
   </span>
   
 
@@ -553,26 +593,6 @@
   
   <span class="md-ellipsis">
     FileDetails
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../MintCip68/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    MintCip68
   </span>
   
 
@@ -716,6 +736,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#equals" class="md-nav__link">
+    equals
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#serialize" class="md-nav__link">
     serialize
   </a>
@@ -770,6 +797,26 @@
   
   
     <li class="md-nav__item">
+      <a href="../PlutusDataResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusDataResource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../PlutusList/" class="md-nav__link">
         
   
@@ -795,6 +842,26 @@
   
   <span class="md-ellipsis">
     PlutusMap
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PlutusPair/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusPair
   </span>
   
 
@@ -855,6 +922,106 @@
   
   <span class="md-ellipsis">
     Result
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptFromBlueprint/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromBlueprint
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptFromCborHex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromCborHex
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptFromOutRef/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromOutRef
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptHash/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptHash
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ScriptResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptResource
   </span>
   
 
@@ -1060,6 +1227,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#equals" class="md-nav__link">
+    equals
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#serialize" class="md-nav__link">
     serialize
   </a>
@@ -1133,32 +1307,35 @@
 <!-- Auto-generated from JSON by GDScript docs maker. Do not edit this document directly. -->
 
 <h1 id="plutusdata">PlutusData</h1>
-<p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
+<p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_resource.html">Resource</a></p>
 <h2 id="description">Description</h2>
-<p>The Plutus language, which may be used for minting policies and validators, operates on a specific datatype called <a href="PlutusData">PlutusData</a>.</p>
-<p>The Plutus language, which may be used for minting policies and validators, operates on a specific datatype called <a href="PlutusData">PlutusData</a>.</p>
+<p>The Plutus language, which may be used for minting policies and validators, operates on a specific datatype called <a href="PlutusData">PlutusData</a> and do the conversion themselves.</p>
+<p>The Plutus language, which may be used for minting policies and validators, operates on a specific datatype called <a href="PlutusData">PlutusData</a> and do the conversion themselves.</p>
 <h2 id="method-descriptions">Method Descriptions</h2>
 <h3 id="to_json">to_json</h3>
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_json</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
 </span></code></pre></div></td></tr></table></div>
+<h3 id="equals">equals</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">equals</span><span class="p">(</span><span class="n">other</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">bool</span>
+</span></code></pre></div></td></tr></table></div>
 <h3 id="serialize">serialize</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">serialize</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SerializeResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">serialize</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SerializeResult</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Serialize into CBOR format.</p>
 <h3 id="wrap-static">wrap <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">wrap</span><span class="p">(</span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">wrap</span><span class="p">(</span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Recursively wraps native data types to PlutusData types</p>
+<p>Recursively unwraps Objects to Plutus compatible data types</p>
 <h3 id="deserialize-static">deserialize <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">deserialize</span><span class="p">(</span><span class="n">bytes</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">DeserializeResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">deserialize</span><span class="p">(</span><span class="n">bytes</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">PackedByteArray</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Deserialize from CBOR format.</p>
 <h3 id="from_json-static">from_json <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_json</span><span class="p">(</span><span class="n">json</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_json</span><span class="p">(</span><span class="n">json</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Converts parsed JSON to PlutusData</p>
 <h3 id="apply_script_parameters-static">apply_script_parameters <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">apply_script_parameters</span><span class="p">(</span><span class="n">script</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">PlutusData</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusScript</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">apply_script_parameters</span><span class="p">(</span><span class="n">script</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusScript</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">PlutusData</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusScript</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Apply the given [param params] to the passed [param script]. This only makes sense in unapplied, parameterized scripts.</p>
 

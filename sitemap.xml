@@ -21,12 +21,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Address/</loc>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/AssetClass/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/AssetClass/</loc>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/AssetName/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -42,6 +42,16 @@
     </url>
     <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Cbor/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Cip68Config/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Cip68Datum/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -66,11 +76,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/MintCip68/</loc>
-         <lastmod>1980-01-01</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/MultiAsset/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
@@ -91,12 +96,22 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusDataResource/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusList/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusMap/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/PlutusPair/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -112,6 +127,31 @@
     </url>
     <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Result/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/ScriptFromBlueprint/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/ScriptFromCborHex/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/ScriptFromOutRef/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/ScriptHash/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/reference/ScriptResource/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>

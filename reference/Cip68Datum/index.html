@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/SingleAddressWallet/">
+        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/reference/Cip68Datum/">
       
       
-        <link rel="prev" href="../ScriptResource/">
+        <link rel="prev" href="../Cip68Config/">
       
       
-        <link rel="next" href="../SingleAddressWalletResource/">
+        <link rel="next" href="../Constr/">
       
       
       <link rel="icon" href="../../assets/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>SingleAddressWallet - godot-cardano</title>
+        <title>Cip68Datum - godot-cardano</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#singleaddresswallet" class="md-skip">
+        <a href="#cip68datum" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SingleAddressWallet
+              Cip68Datum
             
           </span>
         </div>
@@ -506,9 +506,29 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../Cip68Datum/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Cip68Datum
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -517,6 +537,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#method-descriptions" class="md-nav__link">
+    Method Descriptions
+  </a>
+  
+    <nav class="md-nav" aria-label="Method Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_metadata" class="md-nav__link">
+    get_metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image_url" class="md-nav__link">
+    image_url
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#media_type" class="md-nav__link">
+    media_type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description_1" class="md-nav__link">
+    description
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    files
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extra_plutus_data" class="md-nav__link">
+    extra_plutus_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy_to_conf" class="md-nav__link">
+    copy_to_conf
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unsafe_from_constr-static" class="md-nav__link">
+    unsafe_from_constr (static)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -926,29 +1049,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    SingleAddressWallet
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../SingleAddressWallet/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -957,169 +1060,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    Description
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#constants-descriptions" class="md-nav__link">
-    Constants Descriptions
-  </a>
-  
-    <nav class="md-nav" aria-label="Constants Descriptions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    Status
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#method-descriptions" class="md-nav__link">
-    Method Descriptions
-  </a>
-  
-    <nav class="md-nav" aria-label="Method Descriptions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#_init" class="md-nav__link">
-    _init
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get_address" class="md-nav__link">
-    get_address
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get_address_bech32" class="md-nav__link">
-    get_address_bech32
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sign_transaction" class="md-nav__link">
-    sign_transaction
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#add_account" class="md-nav__link">
-    add_account
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#switch_account" class="md-nav__link">
-    switch_account
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#accounts" class="md-nav__link">
-    accounts
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#export" class="md-nav__link">
-    export
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sub-classes" class="md-nav__link">
-    Sub-classes
-  </a>
-  
-    <nav class="md-nav" aria-label="Sub-classes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#addaccountresult" class="md-nav__link">
-    AddAccountResult
-  </a>
-  
-    <nav class="md-nav" aria-label="AddAccountResult">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#property-descriptions" class="md-nav__link">
-    Property Descriptions
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#value" class="md-nav__link">
-    value
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#error" class="md-nav__link">
-    error
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1286,26 +1226,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#constants-descriptions" class="md-nav__link">
-    Constants Descriptions
-  </a>
-  
-    <nav class="md-nav" aria-label="Constants Descriptions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    Status
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#method-descriptions" class="md-nav__link">
     Method Descriptions
   </a>
@@ -1314,104 +1234,64 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#_init" class="md-nav__link">
-    _init
+  <a href="#get_metadata" class="md-nav__link">
+    get_metadata
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#get_address" class="md-nav__link">
-    get_address
+  <a href="#name" class="md-nav__link">
+    name
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#get_address_bech32" class="md-nav__link">
-    get_address_bech32
+  <a href="#image_url" class="md-nav__link">
+    image_url
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#sign_transaction" class="md-nav__link">
-    sign_transaction
+  <a href="#media_type" class="md-nav__link">
+    media_type
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#add_account" class="md-nav__link">
-    add_account
+  <a href="#description_1" class="md-nav__link">
+    description
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#switch_account" class="md-nav__link">
-    switch_account
+  <a href="#files" class="md-nav__link">
+    files
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#accounts" class="md-nav__link">
-    accounts
+  <a href="#extra_plutus_data" class="md-nav__link">
+    extra_plutus_data
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#export" class="md-nav__link">
-    export
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sub-classes" class="md-nav__link">
-    Sub-classes
-  </a>
-  
-    <nav class="md-nav" aria-label="Sub-classes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#addaccountresult" class="md-nav__link">
-    AddAccountResult
-  </a>
-  
-    <nav class="md-nav" aria-label="AddAccountResult">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#property-descriptions" class="md-nav__link">
-    Property Descriptions
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#value" class="md-nav__link">
-    value
+  <a href="#copy_to_conf" class="md-nav__link">
+    copy_to_conf
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#error" class="md-nav__link">
-    error
+  <a href="#unsafe_from_constr-static" class="md-nav__link">
+    unsafe_from_constr (static)
   </a>
   
 </li>
@@ -1436,7 +1316,7 @@
                   
 
   
-    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/reference/SingleAddressWallet.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/reference/Cip68Datum.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -1445,7 +1325,7 @@
     
       
     
-    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/reference/SingleAddressWallet.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/reference/Cip68Datum.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
@@ -1454,65 +1334,37 @@
 
 <!-- Auto-generated from JSON by GDScript docs maker. Do not edit this document directly. -->
 
-<h1 id="singleaddresswallet">SingleAddressWallet</h1>
-<p><strong>Extends:</strong> <a href="https://docs.godotengine.org/en/4.2/classes/class_refcounted.html">RefCounted</a></p>
+<h1 id="cip68datum">Cip68Datum</h1>
+<p><strong>Extends:</strong> <a href="../Constr">Constr</a> &lt; <a href="../PlutusData">PlutusData</a> &lt; <a href="https://docs.godotengine.org/en/4.2/classes/class_resource.html">Resource</a></p>
 <h2 id="description">Description</h2>
-<p>This class holds the [b]encrypted[/b] master private key of a user's wallet. It can be used for offline wallet operations and queries, such as signing, adding accounts and consulting addresses.  You should create a <a href="./">SingleAddressWallet</a> with [SingleAddressWalletLoader], by calling any of its creation or import methods.  Refer to [OnlineWallet] for a class that has network connectivity and can do blockchain queries. In general, this class is the one you are interested in for dApp development.</p>
-<p>This class holds the [b]encrypted[/b] master private key of a user's wallet. It can be used for offline wallet operations and queries, such as signing, adding accounts and consulting addresses.  You should create a <a href="./">SingleAddressWallet</a> with [SingleAddressWalletLoader], by calling any of its creation or import methods.  Refer to [OnlineWallet] for a class that has network connectivity and can do blockchain queries. In general, this class is the one you are interested in for dApp development.</p>
-<h2 id="constants-descriptions">Constants Descriptions</h2>
-<h3 id="status">Status</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">enum</span><span class="w"> </span><span class="n">Status</span><span class="p">{</span><span class="n">SUCCESS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">DECRYPTION_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">BAD_DECRYPTED_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">BECH32_ERROR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">NON_EXISTENT_ACCOUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
-</span></code></pre></div></td></tr></table></div>
 <h2 id="method-descriptions">Method Descriptions</h2>
-<h3 id="_init">_init</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">_init</span><span class="p">(</span><span class="n">wallet</span><span class="p">:</span><span class="w"> </span><span class="n">_SingleAddressWallet</span><span class="p">,</span><span class="w"> </span><span class="n">wallet_loader</span><span class="p">:</span><span class="w"> </span><span class="n">SingleAddressWalletLoader</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SingleAddressWallet</span>
+<h3 id="get_metadata">get_metadata</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_metadata</span><span class="p">(</span><span class="n">key</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="p">:</span><span class="w"> </span><span class="n">PlutusData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb nb-Type">null</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
-<p>WARNING: Do not use this constructor! Use any of the import/creation methods exposed in [SingleAddressWalletLoader].</p>
-<h3 id="get_address">get_address</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_address</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Address</span>
+<h3 id="name">name</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">func</span><span class="w"> </span><span class="n">name</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Get the account's <a href="Address.md">Address</a></p>
-<h3 id="get_address_bech32">get_address_bech32</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_address_bech32</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<h3 id="image_url">image_url</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">image_url</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Get the account's address as a BECH32-encoded [String].</p>
-<h3 id="sign_transaction">sign_transaction</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">sign_transaction</span><span class="p">(</span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">,</span><span class="w"> </span><span class="n">tx</span><span class="p">:</span><span class="w"> </span><span class="n">Transaction</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SignTxResult</span>
+<h3 id="media_type">media_type</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">media_type</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Sign the given <a href="Transaction">Transaction</a></p>
-<h3 id="add_account">add_account</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_account</span><span class="p">(</span><span class="n">account_index</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">AddAccountResult</span>
+<h3 id="description_1">description</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">description</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Adds an account to this wallet with the given index</p>
-<h3 id="switch_account">switch_account</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">switch_account</span><span class="p">(</span><span class="n">account</span><span class="p">:</span><span class="w"> </span><span class="n">Account</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">int</span>
+<h3 id="files">files</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">files</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">FileDetails</span><span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Switch to the account with the given <code>account_index</code>. It may fail if no such account exists. It returns the account index when it succeeds.</p>
-<h3 id="accounts">accounts</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">accounts</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Account</span><span class="p">]</span>
+<h3 id="extra_plutus_data">extra_plutus_data</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">extra_plutus_data</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">PlutusData</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Return a list of accounts currently available in the wallet</p>
-<h3 id="export">export</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="k">export</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SingleAddressWalletResource</span>
+<h3 id="copy_to_conf">copy_to_conf</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">copy_to_conf</span><span class="p">(</span><span class="n">conf</span><span class="p">:</span><span class="w"> </span><span class="n">Cip68Config</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">void</span>
 </span></code></pre></div></td></tr></table></div>
-<p>Export wallet to a resource.</p>
-<h2 id="sub-classes">Sub-classes</h2>
-<h3 id="addaccountresult">AddAccountResult</h3>
-<h4 id="property-descriptions">Property Descriptions</h4>
-<h3 id="value">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Account</span>
+<h3 id="unsafe_from_constr-static">unsafe_from_constr <small>(static)</small></h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="n">unsafe_from_constr</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="w"> </span><span class="n">Constr</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Cip68Datum</span>
 </span></code></pre></div></td></tr></table></div>
-<ul>
-<li><strong>Getter</strong>: <code>@value_getter</code></li>
-</ul>
-<p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
-<h3 id="error">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
-</span></code></pre></div></td></tr></table></div>
-<ul>
-<li><strong>Getter</strong>: <code>@error_getter</code></li>
-</ul>
-<p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#_is_err">Result._is_err</a>.</p>
 
 
 
