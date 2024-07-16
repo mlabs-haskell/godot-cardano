@@ -1,8 +1,8 @@
 [gd_scene load_steps=10 format=3 uid="uid://h3yk18tq7pyn"]
 
-[ext_resource type="Texture2D" uid="uid://cetanqekjmkyy" path="res://bag.png" id="1_d460o"]
+[ext_resource type="Texture2D" uid="uid://cetanqekjmkyy" path="res://ui/bag.png" id="1_d460o"]
 [ext_resource type="Script" path="res://shop.gd" id="1_n7hu2"]
-[ext_resource type="Script" path="res://confirm_button.gd" id="2_mcnlb"]
+[ext_resource type="Script" path="res://ui/confirm_button.gd" id="2_mcnlb"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2h07v"]
 content_margin_left = 20.0

@@ -5,7 +5,7 @@ extends PanelContainer
 @export
 var item_name: String
 @export
-var price: BigIntNode
+var price: BigInt
 @export
 var conf: Cip68Config
 @export

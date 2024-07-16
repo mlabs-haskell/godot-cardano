@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cetanqekjmkyy"
-path="res://.godot/imported/bag.png-18c5ced20986e651592145237a4b4bc3.ctex"
+path="res://.godot/imported/bag.png-ba4d97bc911470d373e32278ee4ced4b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://bag.png"
-dest_files=["res://.godot/imported/bag.png-18c5ced20986e651592145237a4b4bc3.ctex"]
+source_file="res://ui/bag.png"
+dest_files=["res://.godot/imported/bag.png-ba4d97bc911470d373e32278ee4ced4b.ctex"]
 
 [params]
 

@@ -1,8 +1,8 @@
 extends Control
 
-var ShopItemRes = preload("res://shop_item.tscn")
-var InventoryItemRes = preload("res://inventory_item.tscn")
-var UserMessageRes = preload("res://user_message.tscn")
+var ShopItemRes = preload("res://item/shop_item.tscn")
+var InventoryItemRes = preload("res://item/inventory_item.tscn")
+var UserMessageRes = preload("res://ui/user_message.tscn")
 
 var shop_items: Array[ShopItem] = []
 var inventory_items: Array[InventoryItem] = []
@@ -67,8 +67,6 @@ func _on_wallet_ready():
 	ref_lock_source = await load_script_and_create_ref("ref_lock.tres")
 	shop_script_source = await load_script_and_create_ref("shop_script.tres")
 	
-	await wallet.got_updated_utxos
-
 	var shop_address := provider.make_address(
 		Credential.from_script_source(shop_script_source)
 	)
@@ -126,16 +124,11 @@ func _process(delta: float):
 		%SelectedItemSellButton.disabled = true
 	else:
 		%SelectedItemDescription.text = selected_item.stats_string()
-		%SelectedItemPrice.text = "%s t₳" % selected_item.price.b.format_price()
+		%SelectedItemPrice.text = "%s t₳" % selected_item.price.format_price()
 		%SelectedItemSellButton.disabled = busy
 	
 	for shop_item in %ItemContainer.get_children():
 		shop_item.busy = busy
-
-func deselect_item():
-	if selected_item != null:
-		selected_item.add_theme_stylebox_override("panel", unselected_stylebox)
-		selected_item = null
 
 func _on_inventory_button_pressed() -> void:
 	display_inventory = not display_inventory
@@ -149,19 +142,19 @@ func _on_main_screen_gui_input(event: InputEvent) -> void:
 
 func _on_selected_item_sell_button_confirmed() -> void:
 	var new_message = UserMessageRes.instantiate()
-	new_message.set_message("+%s t₳" % selected_item.price.b.format_price())
+	new_message.set_message("+%s t₳" % selected_item.price.format_price())
 	new_message.set_color(Color.GREEN)
 	if await buy_item(selected_item.conf, -1):
 		add_child(new_message)
 
 func _on_buy_shop_item(item: ShopItem):
 	var new_message := UserMessageRes.instantiate()
-	if WalletSingleton.user_funds.lt(item.price.b):
+	if WalletSingleton.user_funds.lt(item.price):
 		new_message.set_message("Insufficient funds")
 		new_message.set_color(Color.RED)
 		add_child(new_message)
 	else:
-		new_message.set_message("-%s t₳" % item.price.b.format_price())
+		new_message.set_message("-%s t₳" % item.price.format_price())
 		new_message.set_color(Color.GOLD)
 		if await buy_item(item.conf, 1):
 			add_child(new_message)
@@ -175,6 +168,11 @@ func _on_select_inventory_item(selection: InventoryItem):
 	)
 	%SelectedItemSellButton.release_focus()
 
+func deselect_item():
+	if selected_item != null:
+		selected_item.add_theme_stylebox_override("panel", unselected_stylebox)
+		selected_item = null
+		
 func mint_tokens() -> bool:
 	busy = true
 	var shop_address := provider.make_address(
@@ -381,16 +379,6 @@ func update_data() -> void:
 	wallet.update_utxos()
 	data_updated.emit()
 
-func load_script_from_blueprint(path: String, validator_name: String) -> PlutusScript:
-	var contents := FileAccess.get_file_as_string(path)
-	var contents_json: Dictionary = JSON.parse_string(contents)
-	for validator: Dictionary in contents_json['validators']:
-		if validator['title'] == validator_name:
-			return PlutusScript.create((validator['compiledCode'] as String).hex_decode())
-
-	push_error("Failed to load %s from %s" % [validator_name, path])
-	return null
-
 func cip68_to_item(conf: Cip68Config, local_data := false) -> Item:
 	var data: Cip68Datum = Cip68Datum.unsafe_from_constr(conf.to_data())
 	if not local_data:
@@ -400,7 +388,7 @@ func cip68_to_item(conf: Cip68Config, local_data := false) -> Item:
 
 	var item := ShopItemRes.instantiate() as ShopItem
 	item.item_name = data.name()
-	item.price.b = data.extra_plutus_data()
+	item.price = data.extra_plutus_data()
 	item.conf = conf
 	item.stock = -1
 	var red: BigInt = data.get_metadata("Red")

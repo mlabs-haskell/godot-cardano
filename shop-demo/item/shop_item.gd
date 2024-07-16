@@ -16,7 +16,7 @@ func _process(_delta: float):
 		%StickerLabel.text = "Sold out"
 
 	%Name.text = item_name
-	%Price.text = "%s tADA" % price.b.format_price()
+	%Price.text = "%s tADA" % price.format_price()
 	%Icon.custom_minimum_size = %Sprite.texture.get_size()
 
 	%Sticker.position = Vector2(get_rect().size.x - 20, 20)
