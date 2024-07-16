@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="Cip68Config" load_steps=5 format=3 uid="uid://bgd1o5q07md87"]
+
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd" id="1_6u7f1"]
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/cip68/cip68_config.gd" id="1_lqwh5"]
+[ext_resource type="Resource" uid="uid://dl2svvjv2h0pf" path="res://cip68_data/minting_policy.tres" id="1_tdyhv"]
+
+[sub_resource type="Resource" id="Resource_x4vqm"]
+script = ExtResource("1_6u7f1")
+data_type = 0
+data_int = 200000000
+data_bytes = PackedByteArray()
+data_as_hex = ""
+data_as_utf8 = ""
+data_cbor_hex = "1a0bebc200"
+data_json = "{
+  \"int\": \"200000000\"
+}"
+data_json_path = ""
+
+[resource]
+script = ExtResource("1_lqwh5")
+minting_policy = ExtResource("1_tdyhv")
+token_name = PackedByteArray(73, 116, 101, 109, 49)
+token_name_as_hex = "4974656d31"
+token_name_as_utf8 = "Item1"
+name = "Item1"
+image = "http://example.com/image.jpg"
+media_type = "image/jpeg"
+description = ""
+file_details = Array[Resource("res://addons/@mlabs-haskell/godot-cardano/src/cip68/file_details.gd")]([])
+non_standard_metadata = {
+"Blue": 0,
+"Green": 0,
+"Red": 255,
+"image": "http://example.com/image.jpg",
+"mediaType": "image/jpeg",
+"name": "Item1"
+}
+extra_plutus_data = SubResource("Resource_x4vqm")
+fungible = true
+initial_quantity = 10

@@ -18,7 +18,7 @@ enum Status {
 class DeserializeResult extends Result:
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
 	var value: Variant:
-		get: return PlutusData.wrap(_res.unsafe_value())
+		get: return _res.unsafe_value()
 	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
 	var error: String:
 		get: return _res.unsafe_error()

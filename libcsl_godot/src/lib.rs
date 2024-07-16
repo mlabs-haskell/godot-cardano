@@ -98,10 +98,18 @@ struct GTxBuilder {
     max_ex_units: (u64, u64),
     slot_config: (u64, u64, u32),
     cost_models: Costmdls,
-    fee: Option<u64>,
-    minted_assets:
-        BTreeMap<CSL::crypto::ScriptHash, (CSL::plutus::PlutusScript, Dictionary, PackedByteArray)>,
+    minted_assets: BTreeMap<
+        CSL::crypto::ScriptHash,
+        (
+            CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
+            Dictionary,
+            PackedByteArray,
+        ),
+    >,
+    input_script_sources:
+        BTreeMap<CSL::TransactionInput, CSL::tx_builder::tx_inputs_builder::PlutusScriptSource>,
     data: BTreeSet<PlutusData>,
+    previous_build: Option<CSL::Transaction>,
 }
 
 #[derive(Debug)]
@@ -226,13 +234,14 @@ impl GTxBuilder {
             inputs_builder: TxInputsBuilder::new(),
             mint_builder: MintBuilder::new(),
             uses_plutus_scripts: false,
-            fee: None,
             max_ex_units: (params.max_cpu_units, params.max_mem_units),
             slot_config: (0, 0, 0),
             cost_models: TxBuilderConstants::plutus_default_cost_models(),
 
             minted_assets: BTreeMap::new(),
+            input_script_sources: BTreeMap::new(),
             data: BTreeSet::new(),
+            previous_build: None,
         })
     }
 
@@ -297,8 +306,11 @@ impl GTxBuilder {
             _ => PlutusWitness::new_with_ref_without_datum(&script_source.bind().source, &redeemer),
         };
 
+        self.input_script_sources.insert(
+            utxo.to_transaction_input(),
+            script_source.bind().source.clone(),
+        );
         self.uses_plutus_scripts = true;
-
         self.inputs_builder
             .add_plutus_script_input(&witness, &input, &value);
 
@@ -312,13 +324,19 @@ impl GTxBuilder {
         redeemer: PackedByteArray,
     ) -> Result<(), TxBuilderError> {
         let mut address: Option<Address> = None;
+        let get_payment_cred_bytes = |address: &Address| -> Option<Vec<u8>> {
+            address
+                .payment_credential()
+                .map(|c| c.bind().credential.to_bytes())
+        };
+
         for gutxo in gutxos.iter_shared() {
             let utxo = gutxo.bind();
             let addr = utxo.get_address();
             match &address {
                 Some(addr_) => {
-                    if addr.bind().address.to_bytes() != addr_.address.to_bytes() {
-                        godot_warn!("collect_from_script: Utxo was not added because its address did not match previous inputs: {:?}", utxo);
+                    if get_payment_cred_bytes(&addr.bind()) != get_payment_cred_bytes(addr_) {
+                        godot_warn!("collect_from_script: Utxo was not added because its payment credential did not match previous inputs: {:?}", utxo);
                     } else {
                         self.add_plutus_script_input(
                             script_source.clone(),
@@ -348,30 +366,27 @@ impl GTxBuilder {
         Self::to_gresult(self.collect_from_script(script_source, gutxos, redeemer))
     }
 
-    #[func]
     fn pay_to_address(
         &mut self,
         address: Gd<Address>,
         coin: Gd<BigInt>,
         assets: Gd<MultiAsset>,
-    ) -> Gd<GResult> {
-        self._pay_to_address_with_datum(address, coin, assets, Datum::none())
-    }
-
-    fn pay_to_address_with_datum(
-        &mut self,
-        address: Gd<Address>,
-        coin: Gd<BigInt>,
-        assets: Gd<MultiAsset>,
         datum: Gd<Datum>,
+        script_ref: Option<Gd<PlutusScript>>,
     ) -> Result<(), TxBuilderError> {
-        let output_builder = match &datum.bind().deref().datum {
+        let mut output_builder = match &datum.bind().deref().datum {
             // TODO: do this privately inside `Datum`?
             DatumValue::NoDatum => TransactionOutputBuilder::new(),
             DatumValue::Inline(bytes) => TransactionOutputBuilder::new()
                 .with_plutus_data(&PlutusData::from_bytes(bytes.to_vec())?),
             DatumValue::Hash(bytes) => TransactionOutputBuilder::new()
                 .with_data_hash(&CSL::crypto::DataHash::from_bytes(bytes.to_vec())?),
+        };
+
+        output_builder = match script_ref {
+            Some(script) => output_builder
+                .with_script_ref(&CSL::ScriptRef::new_plutus_script(&script.bind().script)),
+            None => output_builder,
         };
 
         let amount_builder = output_builder
@@ -404,14 +419,21 @@ impl GTxBuilder {
     }
 
     #[func]
-    fn _pay_to_address_with_datum(
+    fn _pay_to_address(
         &mut self,
         address: Gd<Address>,
         coin: Gd<BigInt>,
         assets: Gd<MultiAsset>,
-        datum: Gd<Datum>,
+        datum: Option<Gd<Datum>>,
+        script_ref: Option<Gd<PlutusScript>>,
     ) -> Gd<GResult> {
-        Self::to_gresult(self.pay_to_address_with_datum(address, coin, assets, datum))
+        Self::to_gresult(self.pay_to_address(
+            address,
+            coin,
+            assets,
+            datum.unwrap_or(Datum::none()),
+            script_ref,
+        ))
     }
 
     #[func]
@@ -433,14 +455,13 @@ impl GTxBuilder {
 
     fn add_mint_asset(
         &mut self,
-        script: &PlutusScript,
+        script_source: &CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
         tokens: &Dictionary,
         redeemer: &CSL::plutus::Redeemer,
     ) -> Result<(), TxBuilderError> {
-        use cardano_serialization_lib::tx_builder::tx_inputs_builder::PlutusScriptSource;
         for (asset_name, amount) in tokens.iter_shared().typed::<PackedByteArray, Gd<BigInt>>() {
             self.mint_builder.add_asset(
-                &MintWitness::new_plutus_script(&PlutusScriptSource::new(&script.script), redeemer),
+                &MintWitness::new_plutus_script(script_source, redeemer),
                 &AssetName::new(asset_name.to_vec())?,
                 &Int::from_str(&amount.bind().b.to_str())?,
             )
@@ -450,13 +471,13 @@ impl GTxBuilder {
 
     fn mint_assets(
         &mut self,
-        gscript: Gd<PlutusScript>,
+        gscript: Gd<PlutusScriptSource>,
         tokens: &Dictionary,
         redeemer_bytes: PackedByteArray,
     ) -> Result<(), TxBuilderError> {
         let bound = gscript.bind();
         let script = bound.deref();
-        let script_hash = &script.script.hash();
+        let script_hash = &script.hash;
 
         let mut non_zero = false;
         // TODO: replace redeemer? error on mismatch?
@@ -481,7 +502,7 @@ impl GTxBuilder {
                 self.minted_assets.insert(
                     script_hash.clone(),
                     (
-                        script.script.clone(),
+                        script.source.clone(),
                         tokens.clone(),
                         redeemer_bytes.clone(),
                     ),
@@ -499,18 +520,18 @@ impl GTxBuilder {
     #[func]
     fn _mint_assets(
         &mut self,
-        script: Gd<PlutusScript>,
+        script_source: Gd<PlutusScriptSource>,
         tokens: Dictionary,
         redeemer: PackedByteArray,
     ) -> Gd<GResult> {
-        Self::to_gresult(self.mint_assets(script, &tokens, redeemer))
+        Self::to_gresult(self.mint_assets(script_source, &tokens, redeemer))
     }
 
     // adds redeemers for non-input scripts as needed
     fn add_dummy_redeemers(&mut self) -> Result<(), TxBuilderError> {
         self.mint_builder = MintBuilder::new();
         let minted_assets = self.minted_assets.clone();
-        for (index, (_script_hash, (script, assets, redeemer_bytes))) in
+        for (index, (_script_hash, (script_source, assets, redeemer_bytes))) in
             minted_assets.iter().enumerate()
         {
             let redeemer = CSL::plutus::Redeemer::new(
@@ -519,13 +540,7 @@ impl GTxBuilder {
                 &PlutusData::from_bytes(redeemer_bytes.to_vec())?,
                 &ExUnits::new(&BigNum::zero(), &BigNum::zero()),
             );
-            self.add_mint_asset(
-                &PlutusScript {
-                    script: script.clone(),
-                },
-                &assets,
-                &redeemer,
-            )?;
+            self.add_mint_asset(&script_source.clone(), &assets, &redeemer)?;
             self.uses_plutus_scripts = true;
         }
         Ok(())
@@ -557,14 +572,13 @@ impl GTxBuilder {
         tx_builder.set_inputs(&self.inputs_builder.clone());
 
         tx_builder.set_mint_builder(&self.mint_builder.clone());
+
+        let fee = match self.previous_build.as_ref().map(|tx| tx.body().fee()) {
+            Some(fee) => fee.into(),
+            // overestimate fee for preliminary passes and change calculation
+            None => 2_000_000u64,
+        };
         if self.uses_plutus_scripts {
-            let fee = match self.fee {
-                Some(set_fee) => set_fee,
-                None => match self.tx_builder.min_fee() {
-                    Ok(fee) => fee.into(),
-                    Err(_) => 0,
-                },
-            };
             let min_collateral = fee * (self.protocol_parameters.collateral_percentage + 99) / 100;
             let collateral_amount = BigNum::from(min_collateral);
             let mut collateral_inputs_builder = TxInputsBuilder::new();
@@ -599,29 +613,25 @@ impl GTxBuilder {
                 &BigNum::from(min_collateral),
                 &change_address.bind().address,
             )?;
+        }
+
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::RandomImproveMultiAsset)?;
+
+        if self.uses_plutus_scripts {
             tx_builder.calc_script_data_hash(&self.cost_models)?;
         }
 
-        match self.fee {
-            Some(_fee) => {
-                tx_builder
-                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
-                tx_builder.add_change_if_needed(&change_address.bind().address)?;
-            }
-            None => {
-                tx_builder.set_fee(&BigNum::from(5_000_000u64));
-                tx_builder
-                    .add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
-            }
-        }
-        self.fee = Some(tx_builder.get_fee_if_set().unwrap().into());
+        tx_builder.add_change_if_needed(&change_address.bind().address)?;
+
         let tx = tx_builder.build_tx()?;
 
         let mut witnesses = tx.witness_set();
         let vkey_witnesses = Vkeywitnesses::new();
         witnesses.set_vkeys(&vkey_witnesses);
+        let transaction = CSL::Transaction::new(&tx.body(), &witnesses, None);
+        self.previous_build = Some(transaction.clone());
         Ok(Transaction {
-            transaction: CSL::Transaction::new(&tx.body(), &witnesses, None),
+            transaction,
             max_ex_units: self.max_ex_units,
             slot_config: self.slot_config,
             cost_models: self.cost_models.clone(),
@@ -643,7 +653,6 @@ impl GTxBuilder {
         change_address: Gd<Address>,
         eval_result: Gd<EvaluationResult>,
     ) -> Result<Transaction, TxBuilderError> {
-        let inputs = self.inputs_builder.inputs();
         let input_witnesses = self.inputs_builder.get_plutus_input_scripts();
         let mut replaced_inputs = InputsWithScriptWitness::new();
         let mut script_input_index = 0;
@@ -653,21 +662,15 @@ impl GTxBuilder {
             match bound.tag().kind() {
                 CSL::plutus::RedeemerTagKind::Mint => {
                     let index: u64 = bound.index().into();
-                    let (_script_hash, (script, assets, _redeemer_bytes)) = minted_assets
+                    let (_script_hash, (script_source, assets, _redeemer_bytes)) = minted_assets
                         .iter()
                         .nth(index.try_into().unwrap())
                         .ok_or(TxBuilderError::UnknownRedeemerIndex(index))?;
-                    self.add_mint_asset(
-                        &PlutusScript {
-                            script: script.clone(),
-                        },
-                        &assets,
-                        &bound,
-                    )?;
+                    self.add_mint_asset(&script_source.clone(), &assets, &bound)?;
                 }
                 CSL::plutus::RedeemerTagKind::Spend => {
                     let index: u64 = bound.index().into();
-                    let input = inputs.get(
+                    let input = self.previous_build.clone().unwrap().body().inputs().get(
                         index
                             .try_into()
                             .map_err(|_| TxBuilderError::UnknownRedeemerIndex(index))?,
@@ -676,21 +679,26 @@ impl GTxBuilder {
                         .as_ref()
                         .ok_or(TxBuilderError::MissingWitnesses)?
                         .get(script_input_index);
-                    let script = witness
-                        .script()
+                    let script_source = self
+                        .input_script_sources
+                        .get(&input)
                         .ok_or(TxBuilderError::MissingScriptForInput(index))?;
                     script_input_index += 1;
                     match witness.datum() {
                         Some(datum) => {
                             replaced_inputs.add(&InputWithScriptWitness::new_with_plutus_witness(
                                 &input,
-                                &PlutusWitness::new(&script, &datum, &bound),
+                                &PlutusWitness::new_with_ref(
+                                    &script_source,
+                                    &CSL::tx_builder::tx_inputs_builder::DatumSource::new(&datum),
+                                    &bound,
+                                ),
                             ));
                         }
                         None => {
                             replaced_inputs.add(&InputWithScriptWitness::new_with_plutus_witness(
                                 &input,
-                                &PlutusWitness::new_without_datum(&script, &bound),
+                                &PlutusWitness::new_with_ref_without_datum(&script_source, &bound),
                             ));
                         }
                     }
@@ -701,7 +709,6 @@ impl GTxBuilder {
         }
         self.inputs_builder
             .add_required_script_input_witnesses(&replaced_inputs);
-        self.fee = Some(eval_result.bind().fee);
         self.balance_and_assemble(gutxos, change_address)
     }
 
