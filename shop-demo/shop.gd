@@ -77,7 +77,7 @@ func _on_wallet_ready():
 	busy = true
 	await mint_tokens()
 	busy = false
-	data_updated.emit()
+	update_timer.timeout.emit()
 
 func _on_data_updated():
 	var i := 0
