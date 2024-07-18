@@ -1,4 +1,4 @@
-# Outline for Shop tutorial
+# Shop tutorial
 
 ## Introduction
 
