@@ -26,7 +26,7 @@ The demo provides very simple UI: unlike original frontend for "open-world" game
 
 To start "moving" you will need to load the `godot-cardano` wallet from seed-phrase, login with `Paima` and join the world.
 
-Although, this demo is tied to `godot-cardano` wallet, Paima addon can be used completely independently with any other Godot project. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). And example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core.
+Although, this demo is tied to `godot-cardano` wallet, Paima addon can be used completely independently with any other Godot project. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). And example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core. It can be used to run Godot open-world demo with any wallet supported by Pima via proper `PaimaMiddleware.LoginInfo` provided for login.
 
 It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
 

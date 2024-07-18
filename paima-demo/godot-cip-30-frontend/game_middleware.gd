@@ -75,8 +75,8 @@ func wallet_is_set():
 func has_player_stats():
 	return _player_stats && _player_stats.stats
 
-func get_x(): # TODO: null handling
+func get_x():
 	return _player_stats.stats.x
 	
-func get_y(): # TODO: null handling
+func get_y():
 	return _player_stats.stats.y
