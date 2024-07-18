@@ -20,7 +20,7 @@
     
     
       
-        <title>Outline for Shop tutorial - godot-cardano</title>
+        <title>Shop tutorial - godot-cardano</title>
       
     
     
@@ -77,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#outline-for-shop-tutorial" class="md-skip">
+        <a href="#shop-tutorial" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Outline for Shop tutorial
+              Shop tutorial
             
           </span>
         </div>
@@ -1284,7 +1284,7 @@
   
 
 
-<h1 id="outline-for-shop-tutorial">Outline for Shop tutorial</h1>
+<h1 id="shop-tutorial">Shop tutorial</h1>
 <h2 id="introduction">Introduction</h2>
 <h3 id="overview">Overview</h3>
 <p><strong>godot-cardano</strong> is a Software Development Kt (SDK) for developing Cardano applications within the Godot engine. The framework is aimed at game developers looking to build decentralized games making use of the Cardano ledger, Cardano native tokens (CNTs), and the Plutus smart contract language. The SDK is distributed as an add-on including a binary library built with <a href="https://github.com/Emurgo/cardano-serialization-lib#cardano-serialization-lib">Cardano Serialization Lib</a> and <a href="https://github.com/aiken-lang/aiken">Aiken</a>, and a collection of GDScript classes, which can be downloaded together from the <a href="https://github.com/mlabs-haskell/godot-cardano/releases">releases page</a> of the GitHub repository.</p>
@@ -1309,7 +1309,7 @@
 <h3 id="the-two-types-of-wallet">The two types of wallet</h3>
 <p>The SDK provides wallets in the form of <code>SingleAddressWallet</code> and <code>OnlineWallet</code>. Conceptually, a <code>SingleAddressWallet</code> is one example of a wallet that may be used to store keys, generate addresses, and sign transactions. An <code>OnlineWallet</code> is an augmented form of such a wallet that enables querying the ledger using the <code>Provider</code> class. Currently <code>SingleAddressWallet</code> is the only form of underlying wallet provided and its use is comparable to most Cardano light wallets.</p>
 <h3 id="how-wallets-are-handled-in-the-demo">How wallets are handled in the demo</h3>
-<p>In the demo, the wallet is loaded via a singleton class. This is chosen as a simple a example of how to initialize the user's wallet and allow it to persist between multiple scenes and is assumed to be the most general approach for a blockchain game. It also allows better management of queries by enabling caching, where loading a new wallet per scene may mean additional queries. Other approaches may still be preferred depending on the particular needs of a game.</p>
+<p>In the demo, the wallet is loaded via a singleton class. This is chosen as a simple a example of how to initialize the user's wallet and allow it to persist between multiple scenes and is assumed to be the most general for a blockchain game. It also allows better management of queries by enabling caching, where loading a new wallet per scene may mean additional queries. Other approaches may still be preferred depending on the particular needs of a game.</p>
 <p>For the purposes of the demo, the user's password is simply hardcoded in-place as a string literal. This choice allows for a smoother demonstration, but is naturally not recommended for real-world use. It is recommended that your game require the user to select a sufficiently complex password to encrypt their private key on wallet creation, and to intermittently prompt the user for their password during the game. Depending on your game, it may also be acceptable to prompt the user for their password every time they sign a transaction.</p>
 <h3 id="wallet-creation">Wallet creation</h3>
 <p>Upon the first run of the demo, a wallet is generated using the function shown:</p>
@@ -1576,7 +1576,7 @@
 <p>Here we are:</p>
 <ul>
 <li>Adding a minting constraint: <code>mint_cip68_pair</code> makes sure that the generated TX mints a valid pair of CIP68 tokens (in this case, one reference token and multiple fungible user tokens).</li>
-<li>Adding two paying constraints: <code>pay_cip68_ref_token</code> sets the destination address of the reference token to the ref lock script. <code>pay_cip68_user_tokens_with_datum</code> sets the destination address of the user tokens to the shop script, while also specifying the datum the output should have (the owner’s PubKeyHash). Notice that the first constraint conveniently sets the datum of the reference token: this is necessary for any CIP68 reference token, so it is handled automatically.</li>
+<li>Adding two paying constraints: <code>pay_cip68_ref_token</code> sets the destination address of the reference token to the shop script. <code>pay_cip68_user_tokens_with_datum</code> does the same, while also specifying the datum the output should have (the owner’s PubKeyHash). Notice that the first constraint conveniently sets the datum of the reference token: this is necessary for any CIP68 reference token, so it is handled automatically.</li>
 </ul>
 <p>This function should also be a good example of all the points at which errors may be reported via <code>Result</code>s in the process of building, signing, and submitting a transaction.</p>
 <p>Some other examples of constraints available via the <code>TxBuilder</code> include:</p>
@@ -1648,7 +1648,7 @@
 </span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7"></a>            <span class="n">func</span><span class="p">(</span><span class="n">tx_builder</span><span class="p">:</span> <span class="n">TxBuilder</span><span class="p">):</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8"></a>                <span class="n">tx_builder</span><span class="o">.</span><span class="n">pay_to_address</span><span class="p">(</span>
 </span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9"></a>                    <span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10"></a>                        <span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">ref_lock_source</span><span class="p">)</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10"></a>                        <span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
 </span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11"></a>                    <span class="p">),</span>
 </span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12"></a>                    <span class="n">BigInt</span><span class="o">.</span><span class="n">zero</span><span class="p">(),</span>
 </span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13"></a>                    <span class="n">MultiAsset</span><span class="o">.</span><span class="n">empty</span><span class="p">(),</span>
@@ -1666,7 +1666,7 @@
 </span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25"></a>            <span class="n">source</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">load_script</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
 </span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26"></a>    <span class="k">return</span> <span class="n">source</span>
 </span></code></pre></div></td></tr></table></div>
-<p>In addition, you can provide a <code>ScriptResource</code> as the "Minting Policy" field of a <code>Cip68Config</code> resource and (after calling <code>Cip68Config.init_script</code>) allow the <code>TxBuilder</code> to handle the script requirements with the CIP68 helper methods provided. This usage can be seen in the demo under <code>res://cip68_data/</code>. The helper functions include:</p>
+<p>In addition, you can provide a <code>ScriptResource</code> as the "Minting Policy" field of a <code>Cip68Config</code> resource and (after calling <code>Cip68Config.init_script</code>) allow the <code>TxBuilder</code> to handle the script requirements with the CIP68 helper methods provided:</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
@@ -1703,6 +1703,7 @@
 </span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17"></a>    <span class="n">quantity</span> <span class="o">:=</span> <span class="n">conf</span><span class="o">.</span><span class="n">get_quantity</span><span class="p">()</span>
 </span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
 </span></code></pre></div></td></tr></table></div>
+<p>This usage can also be seen in the demo under <code>res://cip68_data/</code>.</p>
 <p>The scripts provided in the demo each take a tag argument used to generate unique addresses and policy IDs. You can generate a unique shop of which your wallet is the owner by changing the tag to a number that has not yet been used. This tag can be found in the demo as <code>res://cip68_data/scripts_tag.tres</code></p>
 <h3 id="script-evaluation">Script evaluation</h3>
 <p>In general, <code>TxBuilder.complete</code> is the correct way to finalize a transaction by balancing and evaluating it, but in cases of script validation failure you may want to instead use <code>TxBuilder.balance</code> to obtain a balanced transaction <em>before</em> evaluation. This can be examined for diagnostic purposes but should not be treated as a completed transaction to be signed or submitted, as doing so could potentially mean losing the provided collateral.</p>
