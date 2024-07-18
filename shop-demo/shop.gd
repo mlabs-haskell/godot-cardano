@@ -420,7 +420,7 @@ func load_script_and_create_ref(filename: String) -> PlutusScriptSource:
 			func(tx_builder: TxBuilder):
 				tx_builder.pay_to_address(
 					provider.make_address(
-						Credential.from_script_source(source)
+						Credential.from_script_source(ref_lock_source)
 					),
 					BigInt.zero(),
 					MultiAsset.empty(),
