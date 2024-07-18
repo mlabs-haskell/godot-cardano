@@ -26,7 +26,7 @@ func _init(
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	if _window && _window.paima_endpoints:
-		print("init Paima")
+		print("Initializing Paima addon")
 		add_paima_buttons(_window.paima_endpoints)
 	if _cip_30_wallet:
 		add_test_sign_button()
@@ -110,10 +110,6 @@ func _add_movement_buttons():
 func _move_to(x, y):
 	var new_x = _game_middleware.get_x() + x
 	var new_y = _game_middleware.get_y() + y
-	#prints("xy_args", xy_args)
-	prints("new_x", new_x)
-	prints("new_y", new_y)
-	
 	if (new_x < 0 || new_y < 0):
 		print("Can't move out of the Open World map bounds")
 		return

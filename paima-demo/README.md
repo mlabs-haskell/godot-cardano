@@ -1,7 +1,6 @@
 # Godot-cardano and Paima's "Open World" prototype
 
 - [Godot-cardano and Paima's "Open World" prototype](#godot-cardano-and-paimas-open-world-prototype)
-  - [TODOs](#todos)
   - [Prerequisites](#prerequisites)
   - [Setting up the demo](#setting-up-the-demo)
     - [Add `addons`](#add-addons)
@@ -13,21 +12,23 @@
     - [Starting frontend](#starting-frontend)
   - [Notes](#notes)
     - [Note on getting access to Paima endpoints](#note-on-getting-access-to-paima-endpoints)
+    - [Note on adjusting `RoundExecutor` query](#note-on-adjusting-roundexecutor-query)
     - [Note on CIP-30 callbacks](#note-on-cip-30-callbacks)
   - [CIP-30 API](#cip-30-api)
     - [Note #1](#note-1)
     - [Note #2](#note-2)
     - [Note #3: Sign data test output](#note-3-sign-data-test-output)
+  - [Possible improvements](#possible-improvements)
 
 This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by `cardano-godot`.
 
-## TODOs
+The demo provides very simple UI: unlike original frontend for "open-world" game, it does not show the "world map" made from tiles, where player can click desired tile to move there. Instead, it shows current player position as `{x,y}` and 4 buttons to move left, right, up or down. All blockchain interactions are exactly the same as they would be in the original "open-world" demo.
 
-- Figure out multithreading+WASM issue to not to block main loop when initializing wallet and signing
-- Figure out what is required to rename `csl_godot.wasm` to match other extensions names. Currently if WASM filename does not match `name` in `config.toml`, WASM will fail to load with `file not found`. Maybe changing name in custom HTML shell `GODOT_CONFIG.gdextensionLibs` is sufficient
-- CIP-30 compliant errors
-- Possible improvement: reduce the [spread of CIP-30 API initialization across multiple source files](#note-1)
-- Is there any other way to get access to Paima middleware endpoints besides adding them to the global state in `window`? (see [Note on getting access to Paima endpoints](#note-on-getting-access-to-paima-endpoints))
+To start "moving" you will need to load the `godot-cardano` wallet from seed-phrase, login with `Paima` and join the world.
+
+Although, this demo is tied to `godot-cardano` wallet, Paima addon can be used completely independently with any other Godot project. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). And example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core.
+
+It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
 
 ## Prerequisites
 
@@ -84,10 +85,11 @@ If `.so` is added, project can be run from Godot editor, but only one button to 
 1. Copy or link to root Paima engine as `paima-engine`
 2. `make init` (goes through initialization process according to the [open-world-readme](./open-world/README.md); tested in Linux,some extra flags are required for macOS, see the readme; if there is some "red" messages about vulnerabilities it should be ok
 3. `make replace-env-file`. ⚠️ This command changes `.env.localhost`, generated from `./open-world/.env.example`, to properly edited version - `.env.localhost.godot`. It adds proper `BATCHER_URI`, changes `BATCHER_DB_HOST` (see generated [open-world/.env.example](./open-world/.env.example) for comparison). It is important to make this replace before the next step, or the middleware that will be built next, will miss some important settings.
-4. `make paima-middleware`
-5. `make init-batcher` - requests `sudo` to make batcher script (`./batcher/start.sh`) executable. ⚠️ `./batcher/.env.localhost` also changed according to `.env.localhost.godot`
-6. `make webserver-dir`
-7. `make distribute-middleware`
+4. [Optional] Adjust `RoundExecutor` query. See [Note on adjusting RoundExecutor query](#note-on-adjusting-roundexecutor-query)fail. Fortunately, for demo purposes
+5. `make paima-middleware`
+6. `make init-batcher` - requests `sudo` to make batcher script (`./batcher/start.sh`) executable. ⚠️ `./batcher/.env.localhost` also changed according to `.env.localhost.godot`
+7. `make webserver-dir`
+8. `make distribute-middleware`
 
 ### Export Godot demo project
 
@@ -133,6 +135,38 @@ window.paima_endpoints =  endpoints;
 
 Couple attempts to do the same via `JavaScriptBridge` (like evaluating JS in [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd)) were not successful so far.
 
+### Note on adjusting `RoundExecutor` query
+
+`open-world` template that was used for the demo does not use `RoundExecutor` from the Paima Engine when generated. For reproducibility we opt to work with freshly generated template to setup the demo, so there will be no functional query to the `RoundExecutor` out of the box. However it still would be great to see interactions with `RoundExecutor` as it is important part of th Paima Engine and it is not hard to accomplish.
+
+The only issue is that despite having proper query in the middleware to get the `RoundExecutor`, real executor is not created during `open-world` demo run and not persisted to the database. So if we attempt to query it via middleware endpoint, the query will fail. Luckily, this query can be mocked pretty easily. We will need to adjust just couple lines in `queries.ts` file. If you followed setup steps it should be located under [{repo_root}/open-world/middleware/src/endpoints/queries.ts](./open-world/middleware/src/endpoints/queries.ts)
+
+Search for `async function getRoundExecutor`. There you should see query to the backend:
+
+```js
+    const query = backendQueryRoundExecutor(lobbyId, roundNumber);
+    res = await fetch(query);
+```
+
+We need to replace that with mock. Here is an example with the real query commented out:
+
+```js
+    // const query = backendQueryRoundExecutor(lobbyId, roundNumber);
+    // res = await fetch(query);
+    res = {
+      status: 200,
+      json: async () => ({block_data: {seed : roundNumber}})
+    } as Response;
+```
+
+With this, when setup is finished and you run the demo, after wallet is loaded you can click `Query and test Round Executor` button. You should see message like this
+
+```text
+43 'seed used for the round executor at the middleware'
+```
+
+and then log with results of calls to `RoundExecutor` JS API provided by [GDScript addon/wrapper](../addons/@mlabs-haskell/paima-middleware/paima_round_executor.gd).
+  
 ### Note on CIP-30 callbacks
 
 It is not quite clear at the moment how to "properly" get returned value from GDScript callbacks wrapped with `JavaScriptBridge` (see [godotengine forum](https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)). The one way, is to set returned value to some object either available globally or passed as an argument to GDScript callback (see also [here](https://godotengine.org/article/godot-web-progress-report-9/)). After some experiments current solution is implemented as follows:
@@ -194,3 +228,11 @@ Test sig address bech32:  addr1q8k3w2h6t42t5zt8rf9dl66sd4k6fmas4ta75dqdc7vgh483f
 Test sig COSE key:  a4010103272006215820f37625a801a522d7ef31ae93d34bfe77e64102fbf7f48dbb0f00b2f94bccc064
 Test sig COSE sig1:  845846a201276761646472657373583901ed172afa5d54ba09671a4adfeb506d6da4efb0aafbea340dc7988bd4f14d9c745eafc9ff4f3f51a518d7f245d02ef7b7902c299a5cdd2c1aa166686173686564f44a676f646f742d7465737458404c42599cfe5d9da0dc38b0e5c8b54220dc7109410b3c6943874c36f6522009b4b33fbe7b97adfa5f4dccd550ff8fa5441bb9b07f17af3d87fae1fadbdb714408
 ```
+
+## Possible improvements
+
+- Figure out what is required to rename `csl_godot.wasm` to match other extensions names. Currently if WASM filename does not match `name` in `config.toml`, WASM will fail to load with `file not found`. Maybe changing name in custom HTML shell `GODOT_CONFIG.gdextensionLibs` is sufficient
+- CIP-30 compliant errors
+- Reduce the [spread of CIP-30 API initialization across multiple source files](#note-1)
+- Improve the way to get access to Paima middleware endpoints. Currently they are added to the global state in `window` (see [Note on getting access to Paima endpoints](#note-on-getting-access-to-paima-endpoints))
+  

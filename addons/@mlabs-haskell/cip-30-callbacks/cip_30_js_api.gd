@@ -9,7 +9,7 @@ func init_cip_30_api():
 				window.cardano = new Object();
 			}
 			window.cardano.godot = cip30Godot;
-			console.log('DBG JS: done setting CIP-30 Godot wallet to `window.cardano.godot`');
+			console.log('GD:JS eval: done setting CIP-30 Godot wallet to `window.cardano.godot`');
 		}
 
 	const cip30Godot = {

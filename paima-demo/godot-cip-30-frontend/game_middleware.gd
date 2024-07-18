@@ -1,5 +1,9 @@
 extends RefCounted
 
+## Middleware specific to "Open World" game, built with `PaimaMiddleware` addon class.
+## Unlike `PaimaMiddleware`, there is no `await` API for calls that wraps JS Promises here.
+## Instead only callbacks created with JavaScriptBridge are used to mutate internal state.
+## Internal state is then used in the `_process(...)` of the parent node to adjust UI.
 class_name GameMiddleware
 
 var console = JavaScriptBridge.get_interface("console")
@@ -7,19 +11,21 @@ var _player_stats: JavaScriptObject
 var _middleware: PaimaMiddleware
 var _endpoints: JavaScriptObject
 
-#TODO: figure out endpoints type 
 func _init(paima_middleware: PaimaMiddleware) -> void:
 	_middleware = paima_middleware
 	assert(_middleware)
-	_endpoints = _middleware.get_enpoints()
-	# Will handle the case when there is already game state exists
-	# and disable `Join World` button
-	_middleware.paima_logged_in.connect(update_player_stats) # TODO naming - `on_...`
+	_endpoints = _middleware.get_endpoints()
 
 ## Login
 ### The func
 func login(login_info: PaimaMiddleware.LoginInfo):
-	_middleware.login(login_info)
+	var login_successful = await _middleware.login(login_info)
+	if login_successful:
+		console.log("GD:Paima: Game login successful. Checking player stats")
+		# To handle the case when there is already game state exists for the wallet
+		update_player_stats()
+	else:
+		console.warn("GD:Paima: Game login failed!")
 
 ## Join world
 ### The func
