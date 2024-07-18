@@ -77,6 +77,27 @@ func _to_js_login_info(login_info: LoginInfo) -> JavaScriptObject:
 	info.preferBatchedMode = login_info._prefer_batcher
 	info.preference = pref
 	return info
-	
+
+## Query round executor
+### The func
+func query_round_executor(lobby_id: String, round_number: int) -> RoundExecutor:
+	_endpoints.getRoundExecutor(lobby_id, round_number).then(_on_executor_query_response_js)
+	var re = await on_executor_response
+	var executor
+	if re.success:
+		executor = RoundExecutor.new(re.result)
+	else:
+		console.error("GD:Paima: Failed to query RoundExecutor")
+		executor = null
+	return executor
+
+### JS callback
+var _on_executor_query_response_js = JavaScriptBridge.create_callback(on_executor_query_response)
+func on_executor_query_response(args) -> void:
+	on_executor_response.emit(args[0])
+
+### Signal for awaiting
+signal on_executor_response(re_result: JavaScriptObject)
+
 func _new_js_obj() -> JavaScriptObject:
 	return JavaScriptBridge.create_object("Object")

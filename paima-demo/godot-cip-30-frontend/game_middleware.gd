@@ -39,7 +39,7 @@ func update_player_stats():
 	if _middleware.wallet_is_set():
 		_endpoints.getUserStats(_middleware.get_wallet_address()).then(_on_stats_received_js)
 	else:
-		print("GD:Paima: wallet login was not successfull, check wallet by `show wallet` buttion")
+		print("GD:Paima: wallet login was not successful, check wallet by `show wallet` button")
 
 ### Callback
 var _on_stats_received_js = JavaScriptBridge.create_callback(_on_stats_received)
