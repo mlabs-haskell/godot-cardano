@@ -48,7 +48,7 @@ The SDK provides wallets in the form of `SingleAddressWallet` and `OnlineWallet`
 
 ### How wallets are handled in the demo
 
-In the demo, the wallet is loaded via a singleton class. This is chosen as a simple a example of how to initialize the user's wallet and allow it to persist between multiple scenes and is assumed to be the most general for a blockchain game. It also allows better management of queries by enabling caching, where loading a new wallet per scene may mean additional queries. Other approaches may still be preferred depending on the particular needs of a game.
+In the demo, the wallet is loaded via a singleton class. This is chosen as a simple a example of how to initialize the user's wallet and allow it to persist between multiple scenes and is assumed to be the most general approach for a blockchain game. It also allows better management of queries by enabling caching, where loading a new wallet per scene may mean additional queries. Other approaches may still be preferred depending on the particular needs of a game.
 
 For the purposes of the demo, the user's password is simply hardcoded in-place as a string literal. This choice allows for a smoother demonstration, but is naturally not recommended for real-world use. It is recommended that your game require the user to select a sufficiently complex password to encrypt their private key on wallet creation, and to intermittently prompt the user for their password during the game. Depending on your game, it may also be acceptable to prompt the user for their password every time they sign a transaction.
 
@@ -224,7 +224,6 @@ This approach is not without its disadvantages, though: to keep the number of co
 We can see an example of adding constraints in `mint_tokens`. All constraints are implemented as methods of the `TxBuilder` class:
 
 ```python
-
 func mint_tokens() -> bool:
 	busy = true
 	var shop_address := provider.make_address(
@@ -280,7 +279,7 @@ func mint_tokens() -> bool:
 Here we are:
 
 - Adding a minting constraint: `mint_cip68_pair` makes sure that the generated TX mints a valid pair of CIP68 tokens (in this case, one reference token and multiple fungible user tokens).
-- Adding two paying constraints: `pay_cip68_ref_token` sets the destination address of the reference token to the shop script. `pay_cip68_user_tokens_with_datum` does the same, while also specifying the datum the output should have (the owner’s PubKeyHash). Notice that the first constraint conveniently sets the datum of the reference token: this is necessary for any CIP68 reference token, so it is handled automatically.
+- Adding two paying constraints: `pay_cip68_ref_token` sets the destination address of the reference token to the ref lock script. `pay_cip68_user_tokens_with_datum` sets the destination address of the user tokens to the shop script, while also specifying the datum the output should have (the owner’s PubKeyHash). Notice that the first constraint conveniently sets the datum of the reference token: this is necessary for any CIP68 reference token, so it is handled automatically.
 
 This function should also be a good example of all the points at which errors may be reported via `Result`s in the process of building, signing, and submitting a transaction.
 
@@ -331,7 +330,7 @@ func load_script_and_create_ref(filename: String) -> PlutusScriptSource:
 			func(tx_builder: TxBuilder):
 				tx_builder.pay_to_address(
 					provider.make_address(
-						Credential.from_script_source(source)
+						Credential.from_script_source(ref_lock_source)
 					),
 					BigInt.zero(),
 					MultiAsset.empty(),
@@ -350,7 +349,7 @@ func load_script_and_create_ref(filename: String) -> PlutusScriptSource:
 	return source
 ```
 
-In addition, you can provide a `ScriptResource` as the "Minting Policy" field of a `Cip68Config` resource and (after calling `Cip68Config.init_script`) allow the `TxBuilder` to handle the script requirements with the CIP68 helper methods provided:
+In addition, you can provide a `ScriptResource` as the "Minting Policy" field of a `Cip68Config` resource and (after calling `Cip68Config.init_script`) allow the `TxBuilder` to handle the script requirements with the CIP68 helper methods provided. This usage can be seen in the demo under `res://cip68_data/`. The helper functions include:
 
 ```python
 func mint_cip68_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
@@ -372,8 +371,6 @@ func pay_cip68_user_tokens_with_datum(
 	quantity := conf.get_quantity()
 ) -> TxBuilder:
 ```
-
-This usage can also be seen in the demo under `res://cip68_data/`.
 
 The scripts provided in the demo each take a tag argument used to generate unique addresses and policy IDs. You can generate a unique shop of which your wallet is the owner by changing the tag to a number that has not yet been used. This tag can be found in the demo as `res://cip68_data/scripts_tag.tres`
 
