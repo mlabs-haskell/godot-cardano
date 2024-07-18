@@ -6,6 +6,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://github.com/mlabs-haskell/godot-cardano/Shop%20Tutorial/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://github.com/mlabs-haskell/godot-cardano/reference/Abstract/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>

@@ -1,0 +1,1822 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Godot Cardano Addon">
+      
+      
+      
+        <link rel="canonical" href="https://github.com/mlabs-haskell/godot-cardano/Shop%20Tutorial/">
+      
+      
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1">
+    
+    
+      
+        <title>Outline for Shop tutorial - godot-cardano</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.046329b4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.85d0ee34.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="light-blue" data-md-color-accent="deep-orange">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#outline-for-shop-tutorial" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://mlabs-haskell.github.io/godot-cardano/" title="godot-cardano" class="md-header__button md-logo" aria-label="godot-cardano" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            godot-cardano
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Outline for Shop tutorial
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="light-blue" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_3" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69m-9.15 3.96h2.3L12 9l-1.15 3.65Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="light-blue" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-2.69L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_3">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 2c-1.82 0-3.53.5-5 1.35C8 5.08 10 8.3 10 12s-2 6.92-5 8.65C6.47 21.5 8.18 22 10 22a10 10 0 0 0 10-10A10 10 0 0 0 10 2Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/mlabs-haskell/godot-cardano" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://mlabs-haskell.github.io/godot-cardano/" title="godot-cardano" class="md-nav__button md-logo" aria-label="godot-cardano" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    godot-cardano
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/mlabs-haskell/godot-cardano" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    README
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    GDScript Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            GDScript Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Abstract/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Abstract
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Account/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Account
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/AccountResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AccountResource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/AssetClass/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AssetClass
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/AssetName/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AssetName
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/BigInt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    BigInt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/BoolData/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    BoolData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Cbor/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cbor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Cip68Config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cip68Config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Cip68Datum/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cip68Datum
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Constr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Constr
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/CostModels/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CostModels
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Credential/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Credential
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/FileDetails/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FileDetails
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/MultiAsset/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MultiAsset
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/OnlineWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OnlineWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PlutusBytes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusBytes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PlutusData/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PlutusDataResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusDataResource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PlutusList/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusList
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PlutusMap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusMap
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PlutusPair/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PlutusPair
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PolicyId/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PolicyId
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/PubKeyHash/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PubKeyHash
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Result/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Result
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ScriptFromBlueprint/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromBlueprint
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ScriptFromCborHex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromCborHex
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ScriptFromOutRef/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptFromOutRef
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ScriptHash/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptHash
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ScriptResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ScriptResource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/SingleAddressWallet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SingleAddressWallet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/SingleAddressWalletResource/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SingleAddressWalletResource
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Transaction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Transaction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/TransactionHash/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TransactionHash
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/TxBuilder/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TxBuilder
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/Utxo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utxo
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/VoidData/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    VoidData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+    <nav class="md-nav" aria-label="Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-shop-demo" class="md-nav__link">
+    The shop demo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transactions-in-the-demo" class="md-nav__link">
+    Transactions in the demo
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wallets" class="md-nav__link">
+    Wallets
+  </a>
+  
+    <nav class="md-nav" aria-label="Wallets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-two-types-of-wallet" class="md-nav__link">
+    The two types of wallet
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-wallets-are-handled-in-the-demo" class="md-nav__link">
+    How wallets are handled in the demo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wallet-creation" class="md-nav__link">
+    Wallet creation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wallet-saving-and-loading" class="md-nav__link">
+    Wallet saving and loading
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#providers" class="md-nav__link">
+    Providers
+  </a>
+  
+    <nav class="md-nav" aria-label="Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introduction_1" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    Initialization
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-queries-are-used-in-the-shop-demo" class="md-nav__link">
+    How queries are used in the shop demo
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transactions" class="md-nav__link">
+    Transactions
+  </a>
+  
+    <nav class="md-nav" aria-label="Transactions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview-of-transaction-building-signing-and-submitting" class="md-nav__link">
+    Overview of transaction building, signing and submitting
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-with_tx-to-reduce-the-boilerplate" class="md-nav__link">
+    Using with_tx to reduce the boilerplate
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-transactions" class="md-nav__link">
+    Building transactions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script-spendingminting-transactions" class="md-nav__link">
+    Script Spending/Minting Transactions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script-evaluation" class="md-nav__link">
+    Script evaluation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-the-buysell-transactions-in-the-demo" class="md-nav__link">
+    Building the buy/sell transactions in the demo
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/mlabs-haskell/godot-cardano/edit/main/docs/Shop Tutorial.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/mlabs-haskell/godot-cardano/raw/main/docs/Shop Tutorial.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
+    </a>
+  
+
+
+<h1 id="outline-for-shop-tutorial">Outline for Shop tutorial</h1>
+<h2 id="introduction">Introduction</h2>
+<h3 id="overview">Overview</h3>
+<p><strong>godot-cardano</strong> is a Software Development Kt (SDK) for developing Cardano applications within the Godot engine. The framework is aimed at game developers looking to build decentralized games making use of the Cardano ledger, Cardano native tokens (CNTs), and the Plutus smart contract language. The SDK is distributed as an add-on including a binary library built with <a href="https://github.com/Emurgo/cardano-serialization-lib#cardano-serialization-lib">Cardano Serialization Lib</a> and <a href="https://github.com/aiken-lang/aiken">Aiken</a>, and a collection of GDScript classes, which can be downloaded together from the <a href="https://github.com/mlabs-haskell/godot-cardano/releases">releases page</a> of the GitHub repository.</p>
+<p>The SDK provides a framework similar to <a href="https://github.com/spacebudz/lucid">Lucid</a> with which developers can create Cardano wallets for users, query the ledger state, send and receive ADA and CNTs, and employ Plutus scripts for locking and minting assets.</p>
+<p>godot-cardano puts particular emphasis on developing decentralized games by enabling developers to build and evaluate transactions entirely within the Godot engine and the provided library, as well as by providing an interface for configuring, minting and spending CNTs based on the <a href="https://developers.cardano.org/docs/governance/cardano-improvement-proposals/cip-0068/">CIP68 metadata standard</a>.</p>
+<p>This document aims to introduce developers to the features of the framework mentioned above by working through an example, the code for which is provided in full in the GitHub repository as the <code>shop-demo</code> project. The example itself is too long to be presented in its entirety, so the document is split into four sections: the first three dealing with the main concepts and classes, and the last dealing with how to initialize the main components.</p>
+<p>This document assumes some familiarity with Cardano and the “eUTXOma” ledger it uses (Extended, Multi-Asset UTxO model). For this reason, it is not a good introduction to the Cardano blockchain and its scripting capabilities and concepts (validators, minting policies, redeemers, datums, etc). It also assumes some basic knowledge of the Godot engine, so it might be a good idea to at least know the basic building blocks of the engine (Scenes, Nodes, Signals, the game loop).</p>
+<h3 id="the-shop-demo">The shop demo</h3>
+<p>The demo provides a simple interface that allows the user to trade CNTs for ADA with a Plutus smart contract using their wallet. The tokens in the demo use the CIP68 standard to encode example properties (in this case, three metadata values encoding their RGB color, and their price as Plutus data) which can be used as an example for any properties that might be needed for the purposes of a game. The demo and the scripts provided have been manually tested on Cardano's Preview testnet, but are not recommended for use on Mainnet.</p>
+<p>The shop contract provided will validate the exchange of tokens for ADA based on the price encoded in the datum and may be used as an example of how to allow for permissionless exchanges of CIP68 tokens, which may represent (for example) items or characters in your game.</p>
+<p>The interface presents a shop displaying the items available for sale, along with the user's current assets in the bottom right corner. The inventory button next to the user's funds allows to user to view and sell the current items in their wallet.</p>
+<p><img alt="shop-demo-1.png" src="shop-demo-1.png" /></p>
+<p><img alt="shop-demo-2.png" src="shop-demo-2.png" /></p>
+<p>Before running the shop demo, you will need to procure an API token from <a href="https://blockfrost.io/">Blockfrost</a> and save it in <code>shop-demo/preview_token.txt</code>. By default the demo will be configured to use the Preview network. On the first run of the demo, the application will generate a new wallet and print the address to the Godot console. You will need to fund this address with tADA from the <a href="https://docs.cardano.org/cardano-testnets/tools/faucet/">testnet faucet</a>.</p>
+<h3 id="transactions-in-the-demo">Transactions in the demo</h3>
+<p>The two primary transactions used in the demo are the <em>minting</em> and <em>buying</em> transactions.</p>
+<p>The <em>minting</em> transaction involves a Plutus minting policy and various CIP68 configurations which will be used to mint the CNTs in the ledger and send them to the shop. Note that the minting policy provided offers <strong>no protection</strong> against, for example, duplicate minting of non-fungible tokens or arbitrary burning. As such, the only requirements for this transaction are the tADA needed for the transaction fee and the minimum tADA needed to populate the reference and shop UTxOs.</p>
+<p>The <em>buying/selling</em> transaction requires a shop input, which may be queried from the ledger using the script's payment credential, and the reference inputs for any tokens you wish to trade, which require querying for the correct reference tokens. The shop script also requires exactly one shop output which ensures that the difference in CNTs versus the input is reflected inversely in the difference in ADA based on the price specified by the datum attached to the reference token.</p>
+<p>The <code>TxBuilder</code> will use the loaded wallet to get the user's UTxOs for balancing the transaction and select inputs that will allow it to complete the transaction.</p>
+<p>All scripts used in the demo are provided in the GitHub repository under <code>scripts</code>.</p>
+<h2 id="wallets">Wallets</h2>
+<h3 id="the-two-types-of-wallet">The two types of wallet</h3>
+<p>The SDK provides wallets in the form of <code>SingleAddressWallet</code> and <code>OnlineWallet</code>. Conceptually, a <code>SingleAddressWallet</code> is one example of a wallet that may be used to store keys, generate addresses, and sign transactions. An <code>OnlineWallet</code> is an augmented form of such a wallet that enables querying the ledger using the <code>Provider</code> class. Currently <code>SingleAddressWallet</code> is the only form of underlying wallet provided and its use is comparable to most Cardano light wallets.</p>
+<h3 id="how-wallets-are-handled-in-the-demo">How wallets are handled in the demo</h3>
+<p>In the demo, the wallet is loaded via a singleton class. This is chosen as a simple a example of how to initialize the user's wallet and allow it to persist between multiple scenes and is assumed to be the most general approach for a blockchain game. It also allows better management of queries by enabling caching, where loading a new wallet per scene may mean additional queries. Other approaches may still be preferred depending on the particular needs of a game.</p>
+<p>For the purposes of the demo, the user's password is simply hardcoded in-place as a string literal. This choice allows for a smoother demonstration, but is naturally not recommended for real-world use. It is recommended that your game require the user to select a sufficiently complex password to encrypt their private key on wallet creation, and to intermittently prompt the user for their password during the game. Depending on your game, it may also be acceptable to prompt the user for their password every time they sign a transaction.</p>
+<h3 id="wallet-creation">Wallet creation</h3>
+<p>Upon the first run of the demo, a wallet is generated using the function shown:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span>
+<span class="normal"><a href="#__codelineno-0-15">15</a></span>
+<span class="normal"><a href="#__codelineno-0-16">16</a></span>
+<span class="normal"><a href="#__codelineno-0-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">func</span> <span class="n">create_new_wallet</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SingleAddressWallet</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a>    <span class="n">var</span> <span class="n">new_wallet_result</span> <span class="o">:=</span> <span class="n">SingleAddressWalletLoader</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a>        <span class="s2">&quot;1234&quot;</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a>        <span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a>        <span class="s2">&quot;My Account&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>        <span class="s2">&quot;An account for my Cardano game&quot;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>        <span class="n">network</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>    <span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a>    <span class="k">if</span> <span class="n">new_wallet_result</span><span class="o">.</span><span class="n">is_err</span><span class="p">():</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a>        <span class="n">push_error</span><span class="p">(</span><span class="s2">&quot;Failed to create wallet: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">new_wallet_result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a>        <span class="k">return</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a>    <span class="n">var</span> <span class="n">new_wallet</span> <span class="o">:=</span> <span class="n">new_wallet_result</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">wallet</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a>    <span class="n">ResourceSaver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">new_wallet</span><span class="o">.</span><span class="n">export</span><span class="p">(),</span> <span class="n">wallet_path</span><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a>    <span class="k">return</span> <span class="n">new_wallet</span>
+</span></code></pre></div></td></tr></table></div>
+<p>The parameters provided are, in order: the <em>spending password</em>, the <em>account index</em>, the <em>account name</em>, the <em>account description</em> and the <em>network</em>.</p>
+<ul>
+<li>The <em>spending password</em> is used to encrypt the account's private key on disk. Here we have chosen a trivial password, but it's recommended that you require the user to provide a password of a minimum 8 characters selected from a varied character set.</li>
+<li>The <em>account index</em> is the default account to select after creating the wallet. This is the same account index you will see in light wallets such as Eternl. In most cases you will simply want to select account 0, and new accounts may be added to the user's wallet later on.</li>
+<li>The <em>account name</em> and <em>account description</em> are provided for convenience to allow the developer to attach extra information to the user's wallet and accounts.</li>
+<li>The <em>network</em> is the selected Cardano network in the <code>WalletSingleton</code> and will be chosen as the Preview network by default.</li>
+</ul>
+<p>In this snippet we can also see our first example of the  <code>Result</code> type, which is used to present various errors from the packaged library. More information on this type can be found in the appendices.</p>
+<p>After generating a new wallet, you may want to present the user with the generated recovery phrase (<code>new_wallet_result.value.seedphrase</code>) to be written down. This phrase will be the only way to restore a wallet in the case of data loss or a forgotten password, and it allows full access to the assets in the user's wallet. As such this should be treated as <strong>highly-sensitive information</strong> and should be discarded shortly after generating the wallet, not written to disk or otherwise stored digitally. You may also want to give the user the opportunity to verify that they have correctly backed up their recovery phrase before continuing.</p>
+<p>It is recommended that users only restore wallets generated by and used with godot-cardano, and only in cases where it is strictly necessary to do so. For everyday use, the recovery phrase should be safely stored in handwritten form only. The password-encrypted wallet may be backed up from the Godot user data directory.</p>
+<h3 id="wallet-saving-and-loading">Wallet saving and loading</h3>
+<p>The wallet saved in the previous section may be loaded as follows:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span>
+<span class="normal"><a href="#__codelineno-1-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="n">func</span> <span class="n">load_wallet</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SingleAddressWalletLoader</span><span class="o">.</span><span class="n">WalletImportResult</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a>    <span class="n">var</span> <span class="n">wallet_resource</span><span class="p">:</span> <span class="n">SingleAddressWalletResource</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">wallet_path</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a>    <span class="n">var</span> <span class="n">loader</span> <span class="o">=</span> <span class="n">SingleAddressWalletLoader</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">loader</span><span class="o">.</span><span class="n">import_from_resource</span><span class="p">(</span><span class="n">wallet_resource</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Additionally, you may recover a lost wallet from the recovery phrase mentioned in the previous section using a function similar to the following:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span>
+<span class="normal"><a href="#__codelineno-2-12">12</a></span>
+<span class="normal"><a href="#__codelineno-2-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">func</span> <span class="n">load_wallet_from_seedphrase</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a>    <span class="n">seed_phrase</span><span class="p">:</span> <span class="n">String</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SingleAddressWalletLoader</span><span class="o">.</span><span class="n">WalletImportResult</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="n">var</span> <span class="n">loader</span> <span class="o">:=</span> <span class="n">SingleAddressWalletLoader</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">ProviderApi</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">PREVIEW</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="n">var</span> <span class="n">import_result</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">loader</span><span class="o">.</span><span class="n">import_from_seedphrase</span><span class="p">(</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a>        <span class="n">seed_phrase</span><span class="p">,</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a>        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a>        <span class="s2">&quot;1234&quot;</span><span class="p">,</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a>        <span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a>        <span class="s2">&quot;My Account&quot;</span><span class="p">,</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a>        <span class="s2">&quot;An account for my Cardano game&quot;</span><span class="p">,</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a>    <span class="p">)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a>    <span class="k">return</span> <span class="n">import_result</span>
+</span></code></pre></div></td></tr></table></div>
+<p>These arguments are the same as the those for <code>SingleAddressWalletLoader.create</code>, with the exclusion of the network argument (which is provided to the loader instead) and an additional argument in the second position. This new argument is the <em>BIP39 passphrase</em> and is considered an advanced feature. It's recommended to leave this as the empty string unless you know what you are doing.</p>
+<h2 id="providers">Providers</h2>
+<h3 id="introduction_1">Introduction</h3>
+<p>The <code>*Provider*</code> is the node used to query the current Cardano ledger state. It may be used to query data such as UTxOs at a given address or the parameters for current epoch. The <code>Provider</code> is how <code>OnlineWallet</code> communicates with the network, and is required for <code>TxBuilder</code> to be effective.</p>
+<p>The <code>Provider</code> depends on a backend called the <code>ProviderApi</code> to query network information. Currently, the only <code>ProviderApi</code> implemented is the <code>BlockfrostProviderApi</code>, but the developer may extend this class to use whatever backend is better suited to their application (e.g. Koios, Maestro, Kupo/Ogmios, <a href="https://github.com/spacebudz/lucid/blob/main/src/provider/emulator.ts">Emulator</a>).</p>
+<h3 id="initialization">Initialization</h3>
+<p>A <code>Provider</code> can be initialized as follows:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">6</a></span>
+<span class="normal"><a href="#__codelineno-3-7">7</a></span>
+<span class="normal"><a href="#__codelineno-3-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a>    <span class="n">var</span> <span class="n">blockfrost_api_key</span> <span class="o">=</span> <span class="n">FileAccess</span><span class="o">.</span><span class="n">get_file_as_string</span><span class="p">(</span><span class="s2">&quot;res://preview_token.txt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip_edges</span><span class="p">()</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a>    <span class="n">var</span> <span class="n">provider_api</span> <span class="o">:=</span> <span class="n">BlockfrostProviderApi</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a>        <span class="n">network</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a>        <span class="n">blockfrost_api_key</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>    <span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>    <span class="n">add_child</span><span class="p">(</span><span class="n">provider_api</span><span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a>    <span class="n">provider</span> <span class="o">=</span> <span class="n">Provider</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">provider_api</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a>    <span class="n">add_child</span><span class="p">(</span><span class="n">provider</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Note that both the <code>ProviderApi</code> and <code>Provider</code> are added by the developer to the scene tree here. This will be required in order to perform HTTP requests, make use of <code>Timer</code>s, etc.</p>
+<p>In the demo we also enable caching and chaining in the <code>Provider</code>:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a>    <span class="n">provider</span><span class="o">.</span><span class="n">chain_address</span><span class="p">(</span><span class="n">wallet</span><span class="o">.</span><span class="n">get_address</span><span class="p">())</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a>    <span class="n">provider</span><span class="o">.</span><span class="n">use_chaining</span> <span class="o">=</span> <span class="n">true</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a>    <span class="n">provider</span><span class="o">.</span><span class="n">use_caching</span> <span class="o">=</span> <span class="n">true</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Here we tell the <code>Provider</code> that we want to substitute known <em>spent transaction outputs</em> with produced <em>unspent transaction outputs</em> for the user's wallet, and that chaining and caching should both be used. Chaining is considered <strong>experimental</strong> and currently is only implemented for local transactions, but in the appropriate conditions this can greatly improve the user experience of your game.</p>
+<h3 id="how-queries-are-used-in-the-shop-demo">How queries are used in the shop demo</h3>
+<p>The demo uses the <code>Provider</code> to query for UTxOs at the reference lock address and the shop address:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span>
+<span class="normal"><a href="#__codelineno-5-5">5</a></span>
+<span class="normal"><a href="#__codelineno-5-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a>    <span class="n">var</span> <span class="n">shop_utxos</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_utxos_at_address</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a>        <span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span><span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">shop_script_source</span><span class="p">))</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a>    <span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a>    <span class="n">var</span> <span class="n">ref_utxo</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_utxo_with_nft</span><span class="p">(</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a>        <span class="n">conf</span><span class="o">.</span><span class="n">make_ref_asset_class</span><span class="p">()</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>In this example we also see the <code>Provider</code> being used to generate an address from the shop script's <em>payment credential</em>, and the reference asset class being generated from a <code>Cip68Config</code>. <code>Provider.make_address</code> may also be provided with an additional credential used for staking any ADA sent to the generated address. Most queries performed by the developer will likely resemble one of these two, while other queries may be performed implicitly via other components of the framework.</p>
+<h2 id="transactions">Transactions</h2>
+<h3 id="overview-of-transaction-building-signing-and-submitting">Overview of transaction building, signing and submitting</h3>
+<p>Transactions are typically handled by the developer in three main steps:</p>
+<ol>
+<li>Creating the <code>TxBuilder</code> via the <code>OnlineWallet</code></li>
+<li>Building the transaction by adding constraints with <code>TxBuilder</code></li>
+<li>Signing and submitting the transaction with <code>TxComplete</code></li>
+</ol>
+<p>In the first step, <code>Wallet.new_tx</code> is used to generate a new <code>TxBuilder</code>. This will immediately return a success status in the form of a <code>TxBuilder.CreateResult</code>. It's also possible to create a transaction through <code>Provider.new_tx</code>, and this may be useful in cases where you want the transaction to be generated for a wallet that is not local.</p>
+<p>In the second step, constraints are added to the <code>TxBuilder</code> through various methods, and these will be used to build the final transaction with <code>TxBuilder.complete</code>:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="n">func</span> <span class="n">complete</span><span class="p">(</span><span class="n">utxos</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">Utxo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="n">CompleteResult</span><span class="p">:</span>
+</span></code></pre></div></td></tr></table></div>
+<p>This is where the transaction is balanced and evaluated. In the case where the <code>TxBuilder</code> was created without a wallet, you will need to provide <code>utxos</code> for balancing. These can be created manually with <code>Utxo.create</code> if needed.</p>
+<p>In the third step, signatures are added to the transaction through <code>TxComplete.sign</code>:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="n">func</span> <span class="n">sign</span><span class="p">(</span><span class="n">password</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">wallet</span><span class="p">:</span> <span class="n">OnlineWallet</span> <span class="o">=</span> <span class="n">_wallet</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxComplete</span><span class="p">:</span>
+</span></code></pre></div></td></tr></table></div>
+<p>For this last step, you may instead use <code>TxComplete.bytes</code> to obtain a transaction as a <code>PackedByteArray</code>, which can then be signed and submitted elsewhere.</p>
+<p>In the second and third steps, errors are collected and reported on finalization: Upon calling <code>TxBuilder.complete</code> or <code>TxComplete.submit</code>, any encountered errors will be logged to the Godot console and the <code>Result</code> will indicate an error.</p>
+<h3 id="using-with_tx-to-reduce-the-boilerplate">Using <code>with_tx</code> to reduce the boilerplate</h3>
+<p>Since this sequence of steps is normally repeated for any given transaction, you may use instead <code>OnlineWallet.with_tx</code> (or <code>Provider.with_tx</code>) to automate most of it. These functions take two callbacks:</p>
+<ol>
+<li>A function that receives a <code>TxBuilder</code> and adds any desired constraints to the transaction</li>
+<li>A function that receives <code>TxComplete</code> and adds any required signatures.</li>
+</ol>
+<p>Using <code>with_tx</code> can be convenient because it removes boilerplate and the need to introduce variables into the local scope. The main setback is that it does not provide as much flexibility for handling errors and submitting transactions: on success it will submit the transaction automatically. On failure, the errors will be logged to the Godot console and the function will return <code>null</code>.</p>
+<h3 id="building-transactions">Building transactions</h3>
+<p>Now that we explained the general process that must be followed for all transactions, we will explain in more detail the first step: transaction building.</p>
+<p>Like most Cardano frameworks, godot-cardano uses a <strong>constraints</strong> system that allows a user to succinctly define transactions without specifying the whole transaction object. This system is mostly inherited from the underlying Cardano Serialization Library (CSL) that the framework uses, but it also takes inspiration from the Lucid framework.</p>
+<p>Transactions are very complex objects in Cardano, with many fields that are <strong>interrelated</strong>. If we tried to set values for these fields manually, we would quickly find that it easy to create malformed transactions that fail verification upon submission.</p>
+<p>For this reason, it is only common sense to define them by setting constraints the TX must follow, and letting the framework build a transaction that satisfy them (or fail if it is not possible!).</p>
+<p>This approach is not without its disadvantages, though: to keep the number of constraints in a manageable level, some <strong>implicit</strong> defaults must be set. These should be learnt in order to understand the final transaction obtained (e.g: any change is by default sent back to the wallet generating the transaction, minted assets are by default placed in the address of the minting wallet, etc). However, you will find that the defaults are quite reasonable and should not lead to surprises.</p>
+<p>We can see an example of adding constraints in <code>mint_tokens</code>. All constraints are implemented as methods of the <code>TxBuilder</code> class:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-8-10">10</a></span>
+<span class="normal"><a href="#__codelineno-8-11">11</a></span>
+<span class="normal"><a href="#__codelineno-8-12">12</a></span>
+<span class="normal"><a href="#__codelineno-8-13">13</a></span>
+<span class="normal"><a href="#__codelineno-8-14">14</a></span>
+<span class="normal"><a href="#__codelineno-8-15">15</a></span>
+<span class="normal"><a href="#__codelineno-8-16">16</a></span>
+<span class="normal"><a href="#__codelineno-8-17">17</a></span>
+<span class="normal"><a href="#__codelineno-8-18">18</a></span>
+<span class="normal"><a href="#__codelineno-8-19">19</a></span>
+<span class="normal"><a href="#__codelineno-8-20">20</a></span>
+<span class="normal"><a href="#__codelineno-8-21">21</a></span>
+<span class="normal"><a href="#__codelineno-8-22">22</a></span>
+<span class="normal"><a href="#__codelineno-8-23">23</a></span>
+<span class="normal"><a href="#__codelineno-8-24">24</a></span>
+<span class="normal"><a href="#__codelineno-8-25">25</a></span>
+<span class="normal"><a href="#__codelineno-8-26">26</a></span>
+<span class="normal"><a href="#__codelineno-8-27">27</a></span>
+<span class="normal"><a href="#__codelineno-8-28">28</a></span>
+<span class="normal"><a href="#__codelineno-8-29">29</a></span>
+<span class="normal"><a href="#__codelineno-8-30">30</a></span>
+<span class="normal"><a href="#__codelineno-8-31">31</a></span>
+<span class="normal"><a href="#__codelineno-8-32">32</a></span>
+<span class="normal"><a href="#__codelineno-8-33">33</a></span>
+<span class="normal"><a href="#__codelineno-8-34">34</a></span>
+<span class="normal"><a href="#__codelineno-8-35">35</a></span>
+<span class="normal"><a href="#__codelineno-8-36">36</a></span>
+<span class="normal"><a href="#__codelineno-8-37">37</a></span>
+<span class="normal"><a href="#__codelineno-8-38">38</a></span>
+<span class="normal"><a href="#__codelineno-8-39">39</a></span>
+<span class="normal"><a href="#__codelineno-8-40">40</a></span>
+<span class="normal"><a href="#__codelineno-8-41">41</a></span>
+<span class="normal"><a href="#__codelineno-8-42">42</a></span>
+<span class="normal"><a href="#__codelineno-8-43">43</a></span>
+<span class="normal"><a href="#__codelineno-8-44">44</a></span>
+<span class="normal"><a href="#__codelineno-8-45">45</a></span>
+<span class="normal"><a href="#__codelineno-8-46">46</a></span>
+<span class="normal"><a href="#__codelineno-8-47">47</a></span>
+<span class="normal"><a href="#__codelineno-8-48">48</a></span>
+<span class="normal"><a href="#__codelineno-8-49">49</a></span>
+<span class="normal"><a href="#__codelineno-8-50">50</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="n">func</span> <span class="n">mint_tokens</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a>    <span class="n">busy</span> <span class="o">=</span> <span class="n">true</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a>    <span class="n">var</span> <span class="n">shop_address</span> <span class="o">:=</span> <span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a>        <span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">shop_script_source</span><span class="p">)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a>    <span class="p">)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a>    <span class="n">var</span> <span class="n">new_tx_result</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">new_tx</span><span class="p">()</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7"></a>    <span class="k">if</span> <span class="n">new_tx_result</span><span class="o">.</span><span class="n">is_err</span><span class="p">():</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8"></a>        <span class="n">push_error</span><span class="p">(</span><span class="s2">&quot;Could not create transaction: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">new_tx_result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9"></a>        <span class="k">return</span> <span class="n">false</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10"></a>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11"></a>    <span class="n">var</span> <span class="n">tx_builder</span> <span class="o">:=</span> <span class="n">new_tx_result</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12"></a>    <span class="n">var</span> <span class="n">new_mint</span> <span class="o">:=</span> <span class="n">false</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13"></a>    <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">cip68_data</span><span class="p">:</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14"></a>        <span class="n">var</span> <span class="n">asset_class</span> <span class="o">:=</span> <span class="n">conf</span><span class="o">.</span><span class="n">make_ref_asset_class</span><span class="p">()</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15"></a>        <span class="n">var</span> <span class="n">utxo</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_utxo_with_nft</span><span class="p">(</span><span class="n">asset_class</span><span class="p">)</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16"></a>        <span class="k">if</span> <span class="n">utxo</span> <span class="o">==</span> <span class="n">null</span><span class="p">:</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17"></a>            <span class="n">new_mint</span> <span class="o">=</span> <span class="n">true</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18"></a>            <span class="n">tx_builder</span><span class="o">.</span><span class="n">mint_cip68_pair</span><span class="p">(</span><span class="n">VoidData</span><span class="o">.</span><span class="n">to_data</span><span class="p">(),</span> <span class="n">conf</span><span class="p">)</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19"></a>            <span class="n">tx_builder</span><span class="o">.</span><span class="n">pay_cip68_ref_token</span><span class="p">(</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20"></a>                <span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21"></a>                    <span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">ref_lock_source</span><span class="p">),</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22"></a>                <span class="p">),</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23"></a>                <span class="n">conf</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24"></a>            <span class="p">)</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25"></a>            <span class="n">tx_builder</span><span class="o">.</span><span class="n">pay_cip68_user_tokens_with_datum</span><span class="p">(</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26"></a>                <span class="n">shop_address</span><span class="p">,</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27"></a>                <span class="n">PlutusBytes</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">owner_pub_key_hash</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()),</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28"></a>                <span class="n">conf</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29"></a>            <span class="p">)</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30"></a>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">new_mint</span><span class="p">:</span>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32"></a>        <span class="k">return</span> <span class="n">false</span>
+</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33"></a>
+</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34"></a>    <span class="n">var</span> <span class="n">complete_result</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">tx_builder</span><span class="o">.</span><span class="n">complete</span><span class="p">()</span>
+</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35"></a>    <span class="k">if</span> <span class="n">complete_result</span><span class="o">.</span><span class="n">is_err</span><span class="p">():</span>
+</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36"></a>        <span class="n">push_error</span><span class="p">(</span><span class="s2">&quot;Failed to build transaction: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">complete_result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37"></a>        <span class="k">return</span> <span class="n">false</span>
+</span><span id="__span-8-38"><a id="__codelineno-8-38" name="__codelineno-8-38"></a>
+</span><span id="__span-8-39"><a id="__codelineno-8-39" name="__codelineno-8-39"></a>    <span class="n">var</span> <span class="n">tx</span> <span class="o">:=</span> <span class="n">complete_result</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-8-40"><a id="__codelineno-8-40" name="__codelineno-8-40"></a>    <span class="n">tx</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="s2">&quot;1234&quot;</span><span class="p">)</span>
+</span><span id="__span-8-41"><a id="__codelineno-8-41" name="__codelineno-8-41"></a>    <span class="n">var</span> <span class="n">submit_result</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
+</span><span id="__span-8-42"><a id="__codelineno-8-42" name="__codelineno-8-42"></a>    <span class="k">if</span> <span class="n">submit_result</span><span class="o">.</span><span class="n">is_err</span><span class="p">():</span>
+</span><span id="__span-8-43"><a id="__codelineno-8-43" name="__codelineno-8-43"></a>        <span class="n">push_error</span><span class="p">(</span><span class="s2">&quot;Failed to submit transaction: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">submit_result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+</span><span id="__span-8-44"><a id="__codelineno-8-44" name="__codelineno-8-44"></a>        <span class="k">return</span> <span class="n">false</span>
+</span><span id="__span-8-45"><a id="__codelineno-8-45" name="__codelineno-8-45"></a>
+</span><span id="__span-8-46"><a id="__codelineno-8-46" name="__codelineno-8-46"></a>    <span class="n">provider</span><span class="o">.</span><span class="n">invalidate_cache</span><span class="p">()</span>
+</span><span id="__span-8-47"><a id="__codelineno-8-47" name="__codelineno-8-47"></a>    <span class="n">update_timer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span>
+</span><span id="__span-8-48"><a id="__codelineno-8-48" name="__codelineno-8-48"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Minted; tx hash: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">submit_result</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">to_hex</span><span class="p">())</span>
+</span><span id="__span-8-49"><a id="__codelineno-8-49" name="__codelineno-8-49"></a>    <span class="n">busy</span> <span class="o">=</span> <span class="n">false</span>
+</span><span id="__span-8-50"><a id="__codelineno-8-50" name="__codelineno-8-50"></a>    <span class="k">return</span> <span class="n">true</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Here we are:</p>
+<ul>
+<li>Adding a minting constraint: <code>mint_cip68_pair</code> makes sure that the generated TX mints a valid pair of CIP68 tokens (in this case, one reference token and multiple fungible user tokens).</li>
+<li>Adding two paying constraints: <code>pay_cip68_ref_token</code> sets the destination address of the reference token to the ref lock script. <code>pay_cip68_user_tokens_with_datum</code> sets the destination address of the user tokens to the shop script, while also specifying the datum the output should have (the owner’s PubKeyHash). Notice that the first constraint conveniently sets the datum of the reference token: this is necessary for any CIP68 reference token, so it is handled automatically.</li>
+</ul>
+<p>This function should also be a good example of all the points at which errors may be reported via <code>Result</code>s in the process of building, signing, and submitting a transaction.</p>
+<p>Some other examples of constraints available via the <code>TxBuilder</code> include:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span>
+<span class="normal"><a href="#__codelineno-9-2">2</a></span>
+<span class="normal"><a href="#__codelineno-9-3">3</a></span>
+<span class="normal"><a href="#__codelineno-9-4">4</a></span>
+<span class="normal"><a href="#__codelineno-9-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="n">func</span> <span class="n">set_change_address</span><span class="p">(</span><span class="n">change_address</span><span class="p">:</span> <span class="n">Address</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="n">func</span> <span class="n">valid_after</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="n">func</span> <span class="n">valid_before</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="n">func</span> <span class="n">add_required_signer</span><span class="p">(</span><span class="n">pub_key_hash</span><span class="p">:</span> <span class="n">PubKeyHash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="n">func</span> <span class="n">add_reference_input</span><span class="p">(</span><span class="n">utxo</span><span class="p">:</span> <span class="n">Utxo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span></code></pre></div></td></tr></table></div>
+<p>You can always consult the documentation for these methods to learn more about how they affect the transaction being built.</p>
+<h3 id="script-spendingminting-transactions">Script Spending/Minting Transactions</h3>
+<p>Plutus scripts may be loaded in various ways. We provide the <code>ScriptResource</code> and its child classes for convenience. These include</p>
+<ul>
+<li><code>ScriptFromBlueprint</code>, which loads a script from a CIP57 blueprint file given a filename and a validator name.</li>
+<li><code>ScriptFromOutRef</code>, which loads a script by querying the provided transaction output reference and reading the script attached to the UTxO. This can greatly reduce transaction sizes, but requires you to deploy the script to the ledger and keep a handle of the output reference.</li>
+<li><code>ScriptFromCborHex</code>, which simply loads a script directly from hex-encoded CBOR.</li>
+</ul>
+<p>The <code>ScriptResource.load_script</code> method can be used to obtain a <code>PlutusScriptSource</code>, which can then be used to generate addresses and asset classes used for querying, as well as being given to various <code>TxBuilder</code> constraints to later be used in evaluation. Examples of generating query arguments are as follows:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a>    <span class="n">var</span> <span class="n">ref_lock_utxos</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_utxos_at_address</span><span class="p">(</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a>        <span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span><span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">ref_lock_source</span><span class="p">))</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span>
+<span class="normal"><a href="#__codelineno-11-3">3</a></span>
+<span class="normal"><a href="#__codelineno-11-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a>    <span class="k">return</span> <span class="n">AssetClass</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2"></a>        <span class="n">PolicyId</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">script_source</span><span class="p">),</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3"></a>        <span class="n">token_name</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>To deploy a script to a UTxO in order to use it as a reference script in future, you can extract the <code>PlutusScript</code> from non-ref <code>ScriptResource</code>s and provide this as the optional <code>script_ref</code> argument of <code>TxBuilder.pay_to_address</code>. An example of this is provided as part of the demo:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-12-10">10</a></span>
+<span class="normal"><a href="#__codelineno-12-11">11</a></span>
+<span class="normal"><a href="#__codelineno-12-12">12</a></span>
+<span class="normal"><a href="#__codelineno-12-13">13</a></span>
+<span class="normal"><a href="#__codelineno-12-14">14</a></span>
+<span class="normal"><a href="#__codelineno-12-15">15</a></span>
+<span class="normal"><a href="#__codelineno-12-16">16</a></span>
+<span class="normal"><a href="#__codelineno-12-17">17</a></span>
+<span class="normal"><a href="#__codelineno-12-18">18</a></span>
+<span class="normal"><a href="#__codelineno-12-19">19</a></span>
+<span class="normal"><a href="#__codelineno-12-20">20</a></span>
+<span class="normal"><a href="#__codelineno-12-21">21</a></span>
+<span class="normal"><a href="#__codelineno-12-22">22</a></span>
+<span class="normal"><a href="#__codelineno-12-23">23</a></span>
+<span class="normal"><a href="#__codelineno-12-24">24</a></span>
+<span class="normal"><a href="#__codelineno-12-25">25</a></span>
+<span class="normal"><a href="#__codelineno-12-26">26</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="n">func</span> <span class="n">load_script_and_create_ref</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlutusScriptSource</span><span class="p">:</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a>    <span class="n">var</span> <span class="n">source</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">load_script</span><span class="p">(</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a>        <span class="n">load_user_or_res</span><span class="p">(</span><span class="s2">&quot;cip68_data/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">ScriptResource</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a>    <span class="p">)</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">is_ref</span><span class="p">():</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6"></a>        <span class="n">var</span> <span class="n">tx_hash</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">tx_with</span><span class="p">(</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7"></a>            <span class="n">func</span><span class="p">(</span><span class="n">tx_builder</span><span class="p">:</span> <span class="n">TxBuilder</span><span class="p">):</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8"></a>                <span class="n">tx_builder</span><span class="o">.</span><span class="n">pay_to_address</span><span class="p">(</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9"></a>                    <span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10"></a>                        <span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">ref_lock_source</span><span class="p">)</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11"></a>                    <span class="p">),</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12"></a>                    <span class="n">BigInt</span><span class="o">.</span><span class="n">zero</span><span class="p">(),</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13"></a>                    <span class="n">MultiAsset</span><span class="o">.</span><span class="n">empty</span><span class="p">(),</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14"></a>                    <span class="n">VoidData</span><span class="o">.</span><span class="n">to_data</span><span class="p">(),</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15"></a>                    <span class="n">source</span><span class="o">.</span><span class="n">script</span><span class="p">()</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16"></a>                <span class="p">),</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17"></a>            <span class="n">func</span> <span class="p">(</span><span class="n">tx</span><span class="p">:</span> <span class="n">TxComplete</span><span class="p">):</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18"></a>                <span class="n">tx</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="s2">&quot;1234&quot;</span><span class="p">)</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19"></a>        <span class="p">)</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20"></a>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21"></a>        <span class="k">if</span> <span class="n">tx_hash</span> <span class="o">!=</span> <span class="n">null</span><span class="p">:</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22"></a>            <span class="n">var</span> <span class="n">res</span> <span class="o">:=</span> <span class="n">ScriptFromOutRef</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">tx_hash</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23"></a>            <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">await_tx</span><span class="p">(</span><span class="n">tx_hash</span><span class="p">)</span>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24"></a>            <span class="n">ResourceSaver</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s2">&quot;user://cip68_data/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25"></a>            <span class="n">source</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">load_script</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26"></a>    <span class="k">return</span> <span class="n">source</span>
+</span></code></pre></div></td></tr></table></div>
+<p>In addition, you can provide a <code>ScriptResource</code> as the "Minting Policy" field of a <code>Cip68Config</code> resource and (after calling <code>Cip68Config.init_script</code>) allow the <code>TxBuilder</code> to handle the script requirements with the CIP68 helper methods provided. This usage can be seen in the demo under <code>res://cip68_data/</code>. The helper functions include:</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-13-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-13-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-13-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-13-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-13-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-13-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-13-10">10</a></span>
+<span class="normal"><a href="#__codelineno-13-11">11</a></span>
+<span class="normal"><a href="#__codelineno-13-12">12</a></span>
+<span class="normal"><a href="#__codelineno-13-13">13</a></span>
+<span class="normal"><a href="#__codelineno-13-14">14</a></span>
+<span class="normal"><a href="#__codelineno-13-15">15</a></span>
+<span class="normal"><a href="#__codelineno-13-16">16</a></span>
+<span class="normal"><a href="#__codelineno-13-17">17</a></span>
+<span class="normal"><a href="#__codelineno-13-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="n">func</span> <span class="n">mint_cip68_pair</span><span class="p">(</span><span class="n">redeemer</span><span class="p">:</span> <span class="n">PlutusData</span><span class="p">,</span> <span class="n">conf</span><span class="p">:</span> <span class="n">Cip68Config</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="n">func</span> <span class="n">mint_cip68_user_tokens</span><span class="p">(</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3"></a>    <span class="n">redeemer</span><span class="p">:</span> <span class="n">PlutusData</span><span class="p">,</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4"></a>    <span class="n">conf</span><span class="p">:</span> <span class="n">Cip68Config</span><span class="p">,</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5"></a>    <span class="n">quantity</span> <span class="o">:=</span> <span class="n">conf</span><span class="o">.</span><span class="n">get_quantity</span><span class="p">()</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7"></a><span class="n">func</span> <span class="n">pay_cip68_ref_token</span><span class="p">(</span><span class="n">address</span><span class="p">:</span> <span class="n">Address</span><span class="p">,</span> <span class="n">conf</span><span class="p">:</span> <span class="n">Cip68Config</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8"></a><span class="n">func</span> <span class="n">pay_cip68_user_tokens</span><span class="p">(</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9"></a>    <span class="n">address</span><span class="p">:</span> <span class="n">Address</span><span class="p">,</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10"></a>    <span class="n">conf</span><span class="p">:</span> <span class="n">Cip68Config</span><span class="p">,</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11"></a>    <span class="n">quantity</span> <span class="o">:=</span> <span class="n">conf</span><span class="o">.</span><span class="n">get_quantity</span><span class="p">()</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13"></a><span class="n">func</span> <span class="n">pay_cip68_user_tokens_with_datum</span><span class="p">(</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14"></a>    <span class="n">address</span><span class="p">:</span> <span class="n">Address</span><span class="p">,</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15"></a>    <span class="n">datum</span><span class="p">:</span> <span class="n">PlutusData</span><span class="p">,</span>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16"></a>    <span class="n">conf</span><span class="p">:</span> <span class="n">Cip68Config</span><span class="p">,</span>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17"></a>    <span class="n">quantity</span> <span class="o">:=</span> <span class="n">conf</span><span class="o">.</span><span class="n">get_quantity</span><span class="p">()</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TxBuilder</span><span class="p">:</span>
+</span></code></pre></div></td></tr></table></div>
+<p>The scripts provided in the demo each take a tag argument used to generate unique addresses and policy IDs. You can generate a unique shop of which your wallet is the owner by changing the tag to a number that has not yet been used. This tag can be found in the demo as <code>res://cip68_data/scripts_tag.tres</code></p>
+<h3 id="script-evaluation">Script evaluation</h3>
+<p>In general, <code>TxBuilder.complete</code> is the correct way to finalize a transaction by balancing and evaluating it, but in cases of script validation failure you may want to instead use <code>TxBuilder.balance</code> to obtain a balanced transaction <em>before</em> evaluation. This can be examined for diagnostic purposes but should not be treated as a completed transaction to be signed or submitted, as doing so could potentially mean losing the provided collateral.</p>
+<h3 id="building-the-buysell-transactions-in-the-demo">Building the buy/sell transactions in the demo</h3>
+<p>For building the buy/sell transaction, we use <code>OnlineWallet.tx_with</code> :</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-14-10">10</a></span>
+<span class="normal"><a href="#__codelineno-14-11">11</a></span>
+<span class="normal"><a href="#__codelineno-14-12">12</a></span>
+<span class="normal"><a href="#__codelineno-14-13">13</a></span>
+<span class="normal"><a href="#__codelineno-14-14">14</a></span>
+<span class="normal"><a href="#__codelineno-14-15">15</a></span>
+<span class="normal"><a href="#__codelineno-14-16">16</a></span>
+<span class="normal"><a href="#__codelineno-14-17">17</a></span>
+<span class="normal"><a href="#__codelineno-14-18">18</a></span>
+<span class="normal"><a href="#__codelineno-14-19">19</a></span>
+<span class="normal"><a href="#__codelineno-14-20">20</a></span>
+<span class="normal"><a href="#__codelineno-14-21">21</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a>    <span class="n">var</span> <span class="n">tx_hash</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">tx_with</span><span class="p">(</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2"></a>        <span class="n">func</span> <span class="p">(</span><span class="n">tx_builder</span><span class="p">:</span> <span class="n">TxBuilder</span><span class="p">):</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3"></a>            <span class="n">tx_builder</span><span class="o">.</span><span class="n">collect_from_script</span><span class="p">(</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4"></a>                <span class="n">shop_script_source</span><span class="p">,</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5"></a>                <span class="p">[</span><span class="n">selected_utxo</span><span class="p">],</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6"></a>                <span class="n">VoidData</span><span class="o">.</span><span class="n">to_data</span><span class="p">()</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7"></a>            <span class="p">)</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8"></a>            <span class="n">tx_builder</span><span class="o">.</span><span class="n">add_reference_input</span><span class="p">(</span><span class="n">ref_utxo</span><span class="p">)</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9"></a>            <span class="n">tx_builder</span><span class="o">.</span><span class="n">pay_to_address</span><span class="p">(</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10"></a>                <span class="n">WalletSingleton</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">make_address</span><span class="p">(</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11"></a>                    <span class="n">Credential</span><span class="o">.</span><span class="n">from_script_source</span><span class="p">(</span><span class="n">shop_script_source</span><span class="p">)</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12"></a>                <span class="p">),</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13"></a>                <span class="n">selected_utxo</span><span class="o">.</span><span class="n">coin</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14"></a>                    <span class="n">BigInt</span><span class="o">.</span><span class="n">from_int</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">extra_plutus_data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_int</span><span class="p">()</span> <span class="o">*</span> <span class="n">quantity</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15"></a>                <span class="p">)),</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16"></a>                <span class="n">assets</span><span class="p">,</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17"></a>                <span class="n">shop_datum</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18"></a>            <span class="p">),</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19"></a>        <span class="n">func</span> <span class="p">(</span><span class="n">tx</span><span class="p">:</span> <span class="n">TxComplete</span><span class="p">):</span>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20"></a>            <span class="n">tx</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="s2">&quot;1234&quot;</span><span class="p">)</span>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Here we provide <code>wallet.tx_with</code> with two <code>Callable</code>s: one for building the transaction, and one for signing it.</p>
+<p>The constraints used are:</p>
+<ul>
+<li><code>collect_from_script</code>: This is a <em>spending</em> constraint, it consumes the unspent output containing the user tokens. Since it’s locked by a Plutus script, the script and the redeemer are required parameters. It is worth nothing that this output is spent <strong>regardless</strong> of the transaction being a sale or a purchase of tokens: an output will be created at the validator any way and the validator will make sure that the amount of user tokens at the end follows the purchase/sale formula.</li>
+<li><code>add_reference_input</code>: This constraint adds the unspent output with the reference token (which contains the price of the user token) as a <em>reference input</em> to the transaction. This input is not consumed, but it is required nonetheless by the validator to make sure the user is paying/getting paid according to the token’s established price.</li>
+<li><code>pay_to_address</code>: As expected, a <em>paying</em> constraint is added to send user tokens back to the validator. This will include the amount of user tokens spent from the validator plus the difference of user tokens sold/purchased. It will also include the amount of ADA required by the price and amount of tokens exchanged.</li>
+</ul>
+<p>As can be seen above, purchases and sales can be handled uniformly by using three simple constraints and an appropriate formula.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; MLabs Ltd
+    </div>
+  
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/mlabs-haskell/godot-cardano" target="_blank" rel="noopener" title="godot-cardano on Github" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "toc.follow", "content.action.edit", "content.action.view", "content.code.annotate", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.dfff1995.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.dff1b7c8.min.js"></script>
+      
+    
+  </body>
+</html>
