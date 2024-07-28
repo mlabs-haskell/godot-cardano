@@ -44,7 +44,10 @@ class_name PlutusData
 static func wrap(v: Variant) -> PlutusData:
 	match typeof(v):
 		TYPE_ARRAY:
-			return PlutusList.new(v.map(PlutusData.wrap))
+			var wrapped: Array[PlutusData] = []
+			for e in v:
+				wrapped.push_back(PlutusData.wrap(e))
+			return PlutusList.new(wrapped)
 		TYPE_DICTIONARY:
 			var wrapped: Dictionary = {}
 			for key: Variant in v:
