@@ -19,52 +19,7 @@ use godot::prelude::*;
 use crate::bigint::BigInt;
 use crate::gresult::{FailsWith, GResult};
 
-#[derive(GodotClass)]
-#[class(base=RefCounted, rename=_PolicyId)]
-pub struct PolicyId {
-    pub policy_id: CSL::PolicyID,
-}
-
-#[derive(Debug)]
-pub enum PolicyIdError {
-    CouldNotDecodeHex(String),
-}
-
-impl GodotConvert for PolicyIdError {
-    type Via = i64;
-}
-
-impl ToGodot for PolicyIdError {
-    fn to_godot(&self) -> Self::Via {
-        use PolicyIdError::*;
-        match self {
-            CouldNotDecodeHex(_) => 1,
-        }
-    }
-}
-
-impl FailsWith for PolicyId {
-    type E = PolicyIdError;
-}
-
-#[godot_api]
-impl PolicyId {
-    fn from_hex(policy_id: GString) -> Result<PolicyId, PolicyIdError> {
-        CSL::crypto::ScriptHash::from_hex(&policy_id.to_string())
-            .map_err(|_| PolicyIdError::CouldNotDecodeHex(policy_id.to_string()))
-            .map(|policy_id| Self { policy_id })
-    }
-
-    #[func]
-    fn _from_hex(policy_id: GString) -> Gd<GResult> {
-        Self::to_gresult_class(Self::from_hex(policy_id))
-    }
-
-    #[func]
-    fn to_hex(&self) -> GString {
-        self.policy_id.to_hex().into_godot()
-    }
-}
+pub type PolicyId = ScriptHash;
 
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_AssetName)]
@@ -266,7 +221,7 @@ impl MultiAsset {
         quantity: Gd<BigInt>,
     ) -> Result<(), MultiAssetError> {
         self.assets.set_asset(
-            &policy_id.bind().policy_id,
+            &policy_id.bind().hash,
             &asset_name.bind().asset_name,
             BigNum::from_str(&quantity.bind().to_str())?,
         );
@@ -292,11 +247,34 @@ impl MultiAsset {
         Gd::from_object(
             BigInt::from_str(
                 self.assets
-                    .get_asset(&policy_id.bind().policy_id, &asset_name.bind().asset_name)
+                    .get_asset(&policy_id.bind().hash, &asset_name.bind().asset_name)
                     .to_str(),
             )
             .expect("Failed to convert asset quantity"),
         )
+    }
+
+    #[func]
+    pub fn _get_tokens(&self, policy_id: Gd<PolicyId>) -> Dictionary {
+        let tokens = self.assets.get(&policy_id.bind().hash);
+        let mut dict = Dictionary::new();
+        match tokens {
+            Some(tokens_) => {
+                let asset_names = tokens_.keys();
+                for i in 0..asset_names.len() {
+                    let asset_name = asset_names.get(i);
+                    let quantity = match tokens_.get(&asset_name) {
+                        Some(quantity) => {
+                            Gd::from_object(BigInt::from_str(quantity.to_str()).unwrap())
+                        }
+                        None => BigInt::zero(),
+                    };
+                    dict.insert(asset_name.to_hex(), quantity);
+                }
+            }
+            None => {}
+        }
+        dict
     }
 }
 
@@ -367,8 +345,8 @@ pub struct Credential {
 
 #[derive(Debug)]
 pub enum CredentialType {
-    Payment,
-    Stake,
+    KeyHash,
+    ScriptHash,
 }
 
 impl GodotConvert for CredentialType {
@@ -379,8 +357,8 @@ impl ToGodot for CredentialType {
     fn to_godot(&self) -> Self::Via {
         use CredentialType::*;
         match self {
-            Payment => 0,
-            Stake => 1,
+            KeyHash => 0,
+            ScriptHash => 1,
         }
     }
 }
@@ -389,8 +367,8 @@ impl FromGodot for CredentialType {
     fn try_from_godot(v: Self::Via) -> Result<Self, ConvertError> {
         use CredentialType::*;
         match v {
-            0 => Ok(Payment),
-            1 => Ok(Stake),
+            0 => Ok(KeyHash),
+            1 => Ok(ScriptHash),
             _ => Err(ConvertError::new()),
         }
     }
@@ -436,7 +414,10 @@ impl Credential {
 
     #[func]
     fn get_type(&self) -> CredentialType {
-        CredentialType::Payment
+        match self.credential.kind() {
+            CSL::address::StakeCredKind::Key => CredentialType::KeyHash,
+            CSL::address::StakeCredKind::Script => CredentialType::ScriptHash,
+        }
     }
 
     #[func]
@@ -461,23 +442,22 @@ impl Credential {
 
     #[func]
     fn to_bytes(&self) -> PackedByteArray {
-        let bytes = self
-            .credential
-            .to_keyhash()
-            .ok_or_else(|| self.credential.to_scripthash().map(|x| x.to_bytes()))
-            .map(|x| x.to_bytes())
-            .unwrap();
-        PackedByteArray::from(bytes.as_slice())
+        PackedByteArray::from(
+            match self.get_type() {
+                CredentialType::KeyHash => self.credential.to_keyhash().unwrap().to_bytes(),
+                CredentialType::ScriptHash => self.credential.to_scripthash().unwrap().to_bytes(),
+            }
+            .as_slice(),
+        )
     }
 
     #[func]
     fn to_hex(&self) -> GString {
-        self.credential
-            .to_keyhash()
-            .ok_or_else(|| self.credential.to_scripthash().map(|x| x.to_hex()))
-            .map(|x| x.to_hex())
-            .unwrap()
-            .into_godot()
+        match self.get_type() {
+            CredentialType::KeyHash => self.credential.to_keyhash().unwrap().to_hex(),
+            CredentialType::ScriptHash => self.credential.to_scripthash().unwrap().to_hex(),
+        }
+        .to_godot()
     }
 }
 

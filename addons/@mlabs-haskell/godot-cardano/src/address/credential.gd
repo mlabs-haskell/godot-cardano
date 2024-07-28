@@ -6,8 +6,8 @@ class_name Credential
 var _credential: _Credential = null
 
 enum CredentialType {
-	PAYMENT = 0,
-	STAKE = 1,
+	KEY_HASH = 0,
+	SCRIPT_HASH = 1,
 }
 
 enum Status { SUCCESS = 0, INCORRECT_TYPE = 1 }

@@ -57,6 +57,11 @@ func get_asset_quantity(asset: AssetClass) -> BigInt:
 		asset._asset_name._asset_name
 	))
 
+## Get a Dictionary mapping [class AssetName]s to [class BigInt]s under the 
+## given [param policy_id].
+func get_tokens(policy_id: PolicyId) -> Dictionary:
+	return _multi_asset._get_tokens(policy_id._policy_id)
+	
 ## Set the [param quantity] of the given [param asset].
 func set_asset_quantity(asset: AssetClass, quantity: BigInt) -> SetAssetResult:
 	return SetAssetResult.new(_multi_asset._set_asset_quantity(
