@@ -241,7 +241,7 @@ func new_tx() -> TxBuilder.CreateResult:
 		var builder := create_result.value
 		if _era_summaries.size() > 0:
 			builder.set_slot_config(
-				_era_summaries[-1]._start._time,
+				_network_genesis._system_start + _era_summaries[-1]._start._time,
 				_era_summaries[-1]._start._slot,
 				_era_summaries[-1]._parameters._slot_length,
 			)
@@ -249,7 +249,7 @@ func new_tx() -> TxBuilder.CreateResult:
 			builder.set_cost_models(_cost_models)
 	return create_result
 	
-## Converts POSIX time to slots.
+## Converts POSIX seconds to slots.
 func time_to_slot(time: int) -> int:
 	# FIXME: should return a `Result`?
 	if _network_genesis == null:
