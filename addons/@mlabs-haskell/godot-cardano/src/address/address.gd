@@ -71,4 +71,7 @@ func payment_credential() -> Credential:
 	return Credential.new(_address.payment_credential())
 	
 func stake_credential() -> Credential:
-	return Credential.new(_address.stake_credential())
+	var _cred = _address.stake_credential()
+	if _cred != null:
+		return Credential.new(_cred)
+	return null
