@@ -121,3 +121,27 @@ func to_script_source() -> PlutusScriptSource:
 	if _utxo.script_ref == null:
 		return null
 	return PlutusScriptSource.from_ref(_utxo)
+
+## Creates a duplicate of this UTxO with [param new_datum] as the new datum value.
+## Mainly useful for script testing and debugging. Returns null if the datum
+## value cannot be serialized.
+func replace_datum(new_datum: PlutusData) -> Utxo:
+	var serialize_result := new_datum.serialize()
+	
+	if serialize_result.is_err():
+		push_error("Utxo.replace_datum: Failed to serialize datum")
+		return null
+
+	return Utxo.create(
+		tx_hash().to_hex(),
+		output_index(),
+		address().to_bech32(),
+		coin().to_str(),
+		assets().to_dictionary(),
+		ProviderApi._build_datum_info(
+			_Cbor.hash_plutus_data(serialize_result.value).hex_encode(),
+			serialize_result.value.hex_encode(),
+			""
+		),
+		null
+	).value

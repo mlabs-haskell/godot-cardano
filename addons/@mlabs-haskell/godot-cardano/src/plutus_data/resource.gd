@@ -57,12 +57,13 @@ var data_as_hex: String:
 	set(v):
 		if (v.length() % 2 == 0):
 			data_bytes = v.hex_decode()
-@export
-var data_as_utf8: String:
-	get:
-		return data_bytes.get_string_from_utf8()
-	set(v):
-		data_bytes = v.to_utf8_buffer()
+# FIXME: try to only decode if we can verify that these are valid UTF8 bytes
+#@export
+#var data_as_utf8: String:
+	#get:
+		#return data_bytes.get_string_from_utf8()
+	#set(v):
+		#data_bytes = v.to_utf8_buffer()
 
 var data_cbor: PackedByteArray:
 	get:
