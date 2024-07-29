@@ -615,7 +615,7 @@ impl GTxBuilder {
             )?;
         }
 
-        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::RandomImproveMultiAsset)?;
+        tx_builder.add_inputs_from(&utxos, CoinSelectionStrategyCIP2::LargestFirstMultiAsset)?;
 
         if self.uses_plutus_scripts {
             tx_builder.calc_script_data_hash(&self.cost_models)?;
