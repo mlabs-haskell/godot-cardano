@@ -254,7 +254,7 @@ func _get_tx_status(_tx_hash: TransactionHash) -> bool:
 ## inline datum set to it.[br]
 ## Otherwise, the result will contain the provided [param datum_hash]
 ## and, optionally, the [param datum_resolved_str] as the hashed data.
-func _build_datum_info(
+static func _build_datum_info(
 	datum_hash: String,
 	datum_inline_str: String,
 	datum_resolved_str: String,

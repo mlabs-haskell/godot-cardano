@@ -309,6 +309,14 @@ impl Cbor {
     fn _from_variant(variant: Variant) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_variant(variant))
     }
+
+    #[func]
+    fn hash_plutus_data(bytes: PackedByteArray) -> PackedByteArray {
+        PackedByteArray::from(
+            cardano_serialization_lib::chain_crypto::Blake2b256::new(bytes.to_vec().as_slice())
+                .as_hash_bytes(),
+        )
+    }
 }
 
 // FIXME: shouldn't fail if provided with `PlutusData` types from GDScript,
