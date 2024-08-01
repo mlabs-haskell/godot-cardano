@@ -181,11 +181,9 @@ impl SingleAddressWallet {
 /// this is a single address wallet, not much privacy is lost by simply storing
 /// the public key, as it is equivalent to storing the only address that will
 /// be in use for any given account.
-#[derive(GodotClass)]
-#[class(base=Node, rename=_SingleAddressWalletLoader)]
+#[derive(GodotClass, Clone, Default)]
+#[class(init, base=RefCounted, rename=_SingleAddressWalletLoader)]
 pub struct SingleAddressWalletLoader {
-    receiver:
-        Option<Receiver<Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError>>>,
     encrypted_master_private_key: Vec<u8>,
     salt: Vec<u8>,
     aes_iv: Vec<u8>,
@@ -432,7 +430,6 @@ impl SingleAddressWalletLoader {
         accounts.insert(account_index, account.clone());
 
         let wallet_loader = Self {
-            receiver: None,
             encrypted_master_private_key: encrypted_master_private_key.to_vec(),
             accounts,
             scrypt_params,
@@ -536,25 +533,8 @@ impl SingleAddressWalletLoader {
         ))
     }
 
-    #[func]
-    pub fn get_import_result(&mut self) -> Option<Gd<GResult>> {
-        if let Some(rec) = &self.receiver {
-            let res = rec.try_recv();
-            match res {
-                Ok(import_result) => {
-                    self.receiver = None;
-                    println!("Received import from the Rust thread");
-                    Some(Self::to_gresult_class(import_result))
-                }
-                Err(_) => None,
-            }
-        } else {
-            None
-        }
-    }
-
     // helper for importing in a separate thread
-    fn import_in_thread<F>(&mut self, f: F)
+    fn import_in_thread<F>(f: F) -> Gd<WalletImportReceiver>
     where
         F: Fn(Sender<Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError>>)
             + Send
@@ -562,30 +542,13 @@ impl SingleAddressWalletLoader {
     {
         let (sender, receiver) = mpsc::channel();
 
-        self.receiver = Some(receiver);
-
         thread::spawn(move || {
             f(sender);
         });
-    }
 
-    // a workaround, since receiver does not implement `Copy`. This is not a
-    // problem, since a receiver shouldn't be copied to begin with.
-    fn copy_without_receiver(
-        res: Result<SingleAddressWalletLoader, SingleAddressWalletLoaderError>,
-    ) -> Result<SingleAddressWalletLoader, SingleAddressWalletLoaderError> {
-        match res {
-            Ok(loader) => Ok(SingleAddressWalletLoader {
-                receiver: None,
-                encrypted_master_private_key: loader.encrypted_master_private_key,
-                salt: loader.salt,
-                aes_iv: loader.aes_iv,
-                scrypt_params: loader.scrypt_params,
-                accounts: loader.accounts,
-                network: loader.network,
-            }),
-            Err(e) => Err(e),
-        }
+        Gd::from_object(WalletImportReceiver {
+            receiver: Some(receiver),
+        })
     }
 
     // helper for getting attributes and casting them to the appropriate type
@@ -668,7 +631,6 @@ impl SingleAddressWalletLoader {
         let salt = Self::get_attr::<PackedByteArray>("salt", &resource)?.to_vec();
 
         Ok(Self {
-            receiver: None,
             encrypted_master_private_key,
             accounts,
             aes_iv,
@@ -717,11 +679,8 @@ impl SingleAddressWalletLoader {
             .collect()
     }
 
-    // EXPORT WRAPPERS
-
     #[func]
     fn _import_from_seedphrase(
-        &mut self,
         phrase: String,
         mnemonic_password: PackedByteArray,
         wallet_password: PackedByteArray,
@@ -729,10 +688,10 @@ impl SingleAddressWalletLoader {
         account_name: String,
         account_description: String,
         network: u8,
-    ) {
+    ) -> Gd<WalletImportReceiver> {
         let mnemonic_password_v = mnemonic_password.to_vec();
         let wallet_password_v = wallet_password.to_vec();
-        self.import_in_thread(move |sender| {
+        Self::import_in_thread(move |sender| {
             let result = Self::import_from_seedphrase(
                 phrase.clone(),
                 mnemonic_password_v.clone(),
@@ -748,13 +707,13 @@ impl SingleAddressWalletLoader {
                     "_import_from_seedphrase: There was error while trying to send the result: {e} "
                 )
             }
-        });
+        })
     }
 
     #[func]
-    fn _import_from_resource(&mut self, resource: Gd<Resource>, network: u8) {
+    fn _import_from_resource(resource: Gd<Resource>, network: u8) -> Gd<WalletImportReceiver> {
         let loader = Self::import_from_dict(resource, network);
-        self.import_in_thread(move |sender| {
+        Self::import_in_thread(move |sender| {
             let result: Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError> = {
                 loader.clone().and_then(|wallet_loader| {
                     Self::check_fields(&wallet_loader).and_then(|wallet| {
@@ -771,7 +730,7 @@ impl SingleAddressWalletLoader {
                     "_import_from_resource: There was error while trying to send the result: {e} "
                 )
             }
-        });
+        })
     }
 
     #[func]
@@ -808,36 +767,6 @@ impl SingleAddressWalletLoader {
     }
 }
 
-impl Clone for SingleAddressWalletLoader {
-    fn clone(&self) -> Self {
-        SingleAddressWalletLoader {
-            receiver: None,
-            encrypted_master_private_key: self.encrypted_master_private_key.clone(),
-            salt: self.salt.clone(),
-            aes_iv: self.aes_iv.clone(),
-            scrypt_params: self.scrypt_params,
-            accounts: self.accounts.clone(),
-            network: self.network,
-        }
-    }
-}
-
-// #[godot_api]
-// impl INode for SingleAddressWalletLoader {
-//     fn process(&mut self, _delta: f64) {
-//         if let Some(rec) = &self.receiver {
-//             let res = rec.try_recv();
-//             match res {
-//                 Ok(from_sender) => {
-//                     let res_str = format!("Detected finalization of wallet import: {from_sender}");
-//                     self.base.emit_signal("".into(), &[Variant::from(res_str)]);
-//                 }
-//                 Err(_) => (),
-//             }
-//         }
-//     }
-// }
-
 /// An account as tracked inside `SingleAddressWallet`.
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Account)]
@@ -866,11 +795,27 @@ impl Clone for Account {
     }
 }
 
+// This class must be passed from the Rust thread back to Godot, so
+// it can't hold any GDExt types. Therefore we must provide accessor
+// functions for wrapping the properties in a Gd pointer.
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_SingleAddressWalletImportResult)]
 pub struct SingleAddressWalletImportResult {
     wallet_loader: SingleAddressWalletLoader,
     wallet: SingleAddressWallet,
+}
+
+#[godot_api]
+impl SingleAddressWalletImportResult {
+    #[func]
+    fn wallet_loader(&self) -> Gd<SingleAddressWalletLoader> {
+        Gd::from_object(self.wallet_loader.clone())
+    }
+
+    #[func]
+    fn wallet(&self) -> Gd<SingleAddressWallet> {
+        Gd::from_object(self.wallet.clone())
+    }
 }
 
 #[derive(GodotClass)]
@@ -882,6 +827,36 @@ pub struct SingleAddressWalletCreateResult {
     wallet: Gd<SingleAddressWallet>,
     #[var]
     seed_phrase: GString,
+}
+
+#[derive(GodotClass)]
+#[class(base=RefCounted)]
+pub struct WalletImportReceiver {
+    receiver:
+        Option<Receiver<Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError>>>,
+}
+
+#[godot_api]
+impl WalletImportReceiver {
+    #[func]
+    pub fn get_import_result(&mut self) -> Option<Gd<GResult>> {
+        if let Some(rec) = &self.receiver {
+            let res = rec.try_recv();
+            match res {
+                Ok(import_result) => {
+                    self.receiver = None;
+                    println!("(WalletImportReceiver) Received import from the Rust thread");
+                    Some(SingleAddressWalletLoader::to_gresult_class(import_result))
+                }
+                Err(_) => None,
+            }
+        } else {
+            println!(
+                "(WalletImportReceiver) Tried to obtain result from a used WalletImportReceiver"
+            );
+            None
+        }
+    }
 }
 
 // Utility functions
