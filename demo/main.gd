@@ -52,6 +52,9 @@ func _ready() -> void:
 	add_child(provider)
 	wallet_details.text = "No wallet set"
 	
+	# Quite important to add the loader to the tree, otherwise imports will fail
+	add_child(loader)
+
 	# if a seed phrase file is available, we load the seed phrase from there
 	var seed_phrase_file := FileAccess.open("./seed_phrase.txt", FileAccess.READ)
 	if seed_phrase_file != null:
