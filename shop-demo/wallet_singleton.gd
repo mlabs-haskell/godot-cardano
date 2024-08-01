@@ -3,6 +3,8 @@ extends Node
 # TODO: save and import as resource
 var wallet: OnlineWallet.OnlineSingleAddressWallet = null
 
+var loader: SingleAddressWalletLoader = null
+
 var provider: Provider = null
 
 var user_funds: BigInt
@@ -71,12 +73,14 @@ func create_new_wallet() -> SingleAddressWallet:
 
 func load_wallet() -> SingleAddressWalletLoader.WalletImportResult:
 	var wallet_resource: SingleAddressWalletResource = load(wallet_path)
-	var loader = SingleAddressWalletLoader.new(network)
+	self.loader = SingleAddressWalletLoader.new(network)
+	add_child(loader)
 	return await loader.import_from_resource(wallet_resource)
 
 func load_wallet_from_seedphrase() -> SingleAddressWalletLoader.WalletImportResult:
 	var seed_phrase = FileAccess.get_file_as_string("res://seed_phrase.txt")
-	var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
+	self.loader = SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
+	add_child(loader)
 	var import_result := await loader.import_from_seedphrase(
 		seed_phrase,
 		"",

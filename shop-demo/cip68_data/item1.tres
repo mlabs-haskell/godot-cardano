@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd" id="1_6u7f1"]
 [ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/cip68/cip68_config.gd" id="1_lqwh5"]
-[ext_resource type="Resource" uid="uid://dl2svvjv2h0pf" path="res://cip68_data/minting_policy.tres" id="1_tdyhv"]
+[ext_resource type="Resource" uid="uid://dl2svvjv2h0pf" path="res://cip68_data/minting_policy.tres" id="2_k67vb"]
 
 [sub_resource type="Resource" id="Resource_x4vqm"]
 script = ExtResource("1_6u7f1")
@@ -19,7 +19,7 @@ data_json_path = ""
 
 [resource]
 script = ExtResource("1_lqwh5")
-minting_policy = ExtResource("1_tdyhv")
+minting_policy = ExtResource("2_k67vb")
 token_name = PackedByteArray(73, 116, 101, 109, 49)
 token_name_as_hex = "4974656d31"
 token_name_as_utf8 = "Item1"
