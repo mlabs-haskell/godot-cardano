@@ -1,4 +1,4 @@
-extends RefCounted
+extends Node
 ## A utility class used for loading/creating wallets
 ##
 ## This class is provided for the safe construction, import and export of
@@ -20,27 +20,47 @@ enum Status {
 	NO_ACCOUNTS_IN_WALLET = 9,
 }
 
-## Emitted when [method SingleAddressWalletStore.import_from_seedphrase]
-## returns a result.
+## Emitted when [method SingleAddressWalletStore.import_from_seedphrase] or
+## [method SingleAddressWalletStore.import_from_resource] return a result.
 signal import_completed(res: WalletImportResult)
+
+## Used internally
+signal _import_completed(res: _Result)
 
 # May be null if no wallet was loaded
 var _wallet_loader : _SingleAddressWalletLoader
+# Always null except when an import is in progress
+var _wallet_import_receiver : WalletImportReceiver
 
 var _network: ProviderApi.Network
 
-# Used when importing
-var thread: Thread
-
 ## Only construct a [SingleAddressWalletLoader] if you plan to use a non-static
-## method for obtaining a [SingleAddressWallet].
+## method for creating a [SingleAddressWallet].
 func _init(
 	network: ProviderApi.Network,
 	wallet_loader: _SingleAddressWalletLoader = null,
 ) -> void:
 	_wallet_loader = wallet_loader
 	_network = network
-	pass
+	
+## Used for checking if imports have finished in the Rust thread and communicating
+## the result back
+func _process(_delta: float) -> void:
+	if _wallet_import_receiver == null:
+		# no import in progress
+		return
+	var maybe_result: _Result = _wallet_import_receiver.get_import_result()
+	if maybe_result == null:
+		# import in progress
+		return
+	print_debug("Succesfully retrieved import result")
+	if maybe_result.is_err():
+		print_debug("Import failed due to some error: ", maybe_result.unsafe_error())
+	else:
+		print_debug("Import succeeded!")
+	_import_completed.emit(maybe_result)
+	
+	
 
 class GetWalletResult extends Result:
 	var _wallet_loader : SingleAddressWalletLoader
@@ -60,14 +80,13 @@ class WalletImport extends RefCounted:
 	var _loader: SingleAddressWalletLoader
 	var wallet: SingleAddressWallet:
 		get: return SingleAddressWallet.new(
-			_import_res.wallet,
+			_import_res.wallet(),
 			_loader
 		)
 	
 	func _init(import_res: _SingleAddressWalletImportResult, loader: SingleAddressWalletLoader):
 		_import_res = import_res
 		_loader = loader
-		_loader._wallet_loader = _import_res.wallet_loader
 
 class WalletImportResult extends Result:
 	var _loader: SingleAddressWalletLoader
@@ -85,7 +104,7 @@ class WalletImportResult extends Result:
 		super(res)
 		_loader = loader
 
-## Construct a [WalletImportResult] from a mnemonic [param phrase].
+## Asynchronously construct a [WalletImportResult] from a mnemonic [param phrase].
 ## 
 ## The phrase should follow the BIP32 standard and it may have a [phrase_password]
 ## (if not, an empty string should be passed). This standard is followed by
@@ -110,24 +129,22 @@ func import_from_seedphrase(
 	account_index: int,
 	name: String,
 	account_description: String) -> WalletImportResult:
-		if not (thread == null):
-			if thread.is_alive():
-				push_warning("Import in progress, ignoring latest call...")
-				var old_res: WalletImportResult = await(import_completed)
-				return old_res
-			elif thread.is_started():
-				thread.wait_to_finish() # the thread should have stopped working by now
-			else:
-				push_warning("thread object is initialized but not started")
-		thread = Thread.new()
-		thread.start(
-			_wrap_import_from_seedphrase.bind(
-				phrase, phrase_password, wallet_password, account_index, name, account_description
-			)
+		self._wallet_import_receiver = _SingleAddressWalletLoader._import_from_seedphrase(
+				phrase,
+				phrase_password.to_utf8_buffer(),
+				wallet_password.to_utf8_buffer(),
+				account_index,
+				name,
+				account_description,
+				1 if _network == ProviderApi.Network.MAINNET else 0)
+		var import_result : _Result = await _import_completed
+		self._wallet_import_receiver = null
+		var wallet_import_result := WalletImportResult.new(
+				SingleAddressWalletLoader.new(_network),
+				import_result
 		)
-		var res: WalletImportResult = await import_completed
-		thread.wait_to_finish()
-		return res
+		import_completed.emit(wallet_import_result)
+		return wallet_import_result
 		
 ## Import from a [class SingleAddressWalletResource]. If the resource is
 ## malformed, an error will be thrown. To export a wallet, read
@@ -136,24 +153,15 @@ func import_from_seedphrase(
 ## This function is asynchronous. You can await it or connect a callback to
 ## [signal SingleAddressWalletLoader.import_completed].
 func import_from_resource(resource: SingleAddressWalletResource) -> WalletImportResult:
-		if not (thread == null):
-			if thread.is_alive():
-				push_warning("Import in progress, ignoring latest call...")
-				var old_res: WalletImportResult = await(import_completed)
-				return old_res
-			elif thread.is_started():
-				thread.wait_to_finish() # the thread should have stopped working by now
-			else:
-				push_warning("thread object is initialized but not started")
-		thread = Thread.new()
-		thread.start(
-			_wrap_import_from_resource.bind(
-				resource
-			)
-		)
-		var res: WalletImportResult = await import_completed
-		thread.wait_to_finish()
-		return res
+	self._wallet_import_receiver = _SingleAddressWalletLoader._import_from_resource(resource, _network)
+	var import_result : _Result = await _import_completed
+	var wallet_import_result := WalletImportResult.new(
+			SingleAddressWalletLoader.new(_network),
+			import_result
+	)
+	self._wallet_import_receiver = null
+	import_completed.emit(wallet_import_result)
+	return wallet_import_result
 		
 ## Export the wallet to a [class SingleAddressWalletResource], which can
 ## subsequently used like any other Godot [class Resource].
@@ -181,34 +189,7 @@ func export() -> SingleAddressWalletResource:
 	res.scrypt_p = dict["scrypt_p"]
 	res.aes_iv = dict["aes_iv"]
 	return res
-			
-func _wrap_import_from_seedphrase(
-	phrase: String,
-	phrase_password: String, 
-	wallet_password: String,
-	account_index: int,
-	name: String,
-	account_description: String) -> void:
-		var res := WalletImportResult.new(
-			SingleAddressWalletLoader.new(_network),
-			_SingleAddressWalletLoader._import_from_seedphrase(
-				phrase,
-				phrase_password.to_utf8_buffer(),
-				wallet_password.to_utf8_buffer(),
-				account_index,
-				name,
-				account_description,
-				1 if _network == ProviderApi.Network.MAINNET else 0))
-		call_deferred("emit_signal", "import_completed", res)
-		
-func _wrap_import_from_resource(resource: SingleAddressWalletResource) -> void:
-		var res := WalletImportResult.new(
-			SingleAddressWalletLoader.new(_network),
-			_SingleAddressWalletLoader._import_from_resource(
-				resource,
-				1 if _network == ProviderApi.Network.MAINNET else 0))
-		call_deferred("emit_signal", "import_completed", res)
-			
+
 ## The output of creating a wallet. It consists of a [member WalletCreation.seed_phrase] and a
 ## [member WalletCreation.wallet] that can be used 
 class WalletCreation extends RefCounted:

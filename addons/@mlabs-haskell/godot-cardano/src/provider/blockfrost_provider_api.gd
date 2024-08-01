@@ -428,7 +428,7 @@ func _paged_request(make_request: Callable, page_size := 100) -> Array:
 	var page := 1
 	while true:
 		var response: Variant = await blockfrost_request(make_request.call(page) as Request)
-		if typeof(response) == TYPE_DICTIONARY and response['status_code'] == 404:
+		if typeof(response) == TYPE_DICTIONARY and response['status_code'] != 200:
 			break
 		results.append_array(response as Array)
 		if (response as Array).size() < page_size:
