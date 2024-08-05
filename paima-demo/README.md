@@ -28,7 +28,7 @@ To start "moving" you will need to load the `godot-cardano` wallet from seed-phr
 
 Although, this demo is tied to `godot-cardano` wallet, Paima addon can be used completely independently with any other Godot project. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). And example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core. It can be used to run Godot open-world demo with any wallet supported by Pima via proper `PaimaMiddleware.LoginInfo` provided for login.
 
-It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
+❗It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
 
 ## Prerequisites
 
@@ -85,11 +85,11 @@ If `.so` is added, project can be run from Godot editor, but only one button to 
 1. Copy or link to root Paima engine as `paima-engine`
 2. `make init` (goes through initialization process according to the [open-world-readme](./open-world/README.md); tested in Linux,some extra flags are required for macOS, see the readme; if there is some "red" messages about vulnerabilities it should be ok
 3. `make replace-env-file`. ⚠️ This command changes `.env.localhost`, generated from `./open-world/.env.example`, to properly edited version - `.env.localhost.godot`. It adds proper `BATCHER_URI`, changes `BATCHER_DB_HOST` (see generated [open-world/.env.example](./open-world/.env.example) for comparison). It is important to make this replace before the next step, or the middleware that will be built next, will miss some important settings.
-4. [Optional] Adjust `RoundExecutor` query. See [Note on adjusting RoundExecutor query](#note-on-adjusting-roundexecutor-query)fail. Fortunately, for demo purposes
-5. `make paima-middleware`
+4. [Optional] Adjust `RoundExecutor` query. See [Note on adjusting RoundExecutor query](#note-on-adjusting-roundexecutor-query).
+5. `make paima-middleware` (⚠️ if want to check out `RoundExecutor` example with this demo, make sure you finished step 4 before `make paima-middleware`)
 6. `make init-batcher` - requests `sudo` to make batcher script (`./batcher/start.sh`) executable. ⚠️ `./batcher/.env.localhost` also changed according to `.env.localhost.godot`
-7. `make webserver-dir`
-8. `make distribute-middleware`
+7. `make webserver-dir` (prepares server directory fro Godot web-export and Paima middleware package)
+8. `make distribute-middleware` (puts Paima middleware where it needs to be present to run the demo)
 
 ### Export Godot demo project
 
@@ -137,9 +137,9 @@ Couple attempts to do the same via `JavaScriptBridge` (like evaluating JS in [ci
 
 ### Note on adjusting `RoundExecutor` query
 
-`open-world` template that was used for the demo does not use `RoundExecutor` from the Paima Engine when generated. For reproducibility we opt to work with freshly generated template to setup the demo, so there will be no functional query to the `RoundExecutor` out of the box. However it still would be great to see interactions with `RoundExecutor` as it is important part of th Paima Engine and it is not hard to accomplish.
+`open-world` template that was used for the demo does not use `RoundExecutor` from the Paima Engine when generated. For reproducibility we opt to work with freshly generated template to setup the demo, so there will be no functional query to the `RoundExecutor` out of the box. However it still would be great to see interactions with `RoundExecutor` as it is important part of th Paima Engine and it is not hard to accomplish in our case.
 
-The only issue is that despite having proper query in the middleware to get the `RoundExecutor`, real executor is not created during `open-world` demo run and not persisted to the database. So if we attempt to query it via middleware endpoint, the query will fail. Luckily, this query can be mocked pretty easily. We will need to adjust just couple lines in `queries.ts` file. If you followed setup steps it should be located under [{repo_root}/open-world/middleware/src/endpoints/queries.ts](./open-world/middleware/src/endpoints/queries.ts)
+The only issue is that despite having proper query in the middleware to get the `RoundExecutor`, real executor is not created during `open-world` demo run and not persisted in the database. So if we attempt to query it via middleware endpoint, the query will fail. Luckily, this query can be mocked pretty easily. We will need to adjust just couple lines in `queries.ts` file. If you followed setup steps it should be located under [{repo_root}/open-world/middleware/src/endpoints/queries.ts](./open-world/middleware/src/endpoints/queries.ts)
 
 Search for `async function getRoundExecutor`. There you should see query to the backend:
 

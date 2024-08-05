@@ -130,7 +130,7 @@ impl SingleAddressWallet {
         data: Vec<u8>,
     ) -> Result<DataSignature, SingleAddressWalletError> {
         let pbes2_params = unsafe_get_pbes2_params(&self.aes_iv, &self.scrypt_params, &self.salt);
-        let current_account = self.account.bind();
+        let current_account = &self.account;
         let res = with_account_private_key(
             pbes2_params,
             self.encrypted_master_private_key.as_slice(),
@@ -140,7 +140,7 @@ impl SingleAddressWallet {
                 let spend_key = account_private_key.derive(0).derive(0);
                 cip_8_sign::sign_data(
                     &spend_key,
-                    self.account.bind().address.to_bytes(),
+                    self.account.address.to_bytes(),
                     data.to_vec(),
                 )
                 .map_err(SingleAddressWalletError::DataSignCip30Error)

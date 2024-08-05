@@ -19,6 +19,8 @@ func _ready():
 	print("GD: starting cardano-godot Paima demo")
 	ui_grid = GridContainer.new()
 	add_child(ui_grid)
+	add_child(loader)
+	
 	var set_seed_grid = SeedSetter.new()
 	set_seed_grid.on_seed_received.connect(init_cardano_wallet)
 	ui_grid.add_child(set_seed_grid)
@@ -26,7 +28,7 @@ func _ready():
 func init_cardano_wallet(seedphrase):
 	print("GD: Loading cardano wallet...")
 	_remove_buttons()
-	var load_result = await loader.import_from_seedphrase_wo_new_thread(
+	var load_result = await loader.import_from_seedphrase(
 		seedphrase, "", "", 0, "Acc name", "Acc description"
 		)
 	if load_result.is_err():
