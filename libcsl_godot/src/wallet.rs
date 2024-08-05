@@ -886,11 +886,11 @@ impl WalletImportReceiver {
     pub fn get_import_result(&mut self) -> Option<Gd<GResult>> {
         if let Some(rec) = &self.receiver {
             let res = rec.try_recv();
+            println!("get_import_result");
             match res {
                 Ok(import_result) => {
-                    self.receiver = None;
                     println!("(WalletImportReceiver) Received import from the Rust thread");
-                    Some(SingleAddressWalletLoader::to_gresult_class(import_result))
+                    None
                 }
                 Err(_) => None,
             }
