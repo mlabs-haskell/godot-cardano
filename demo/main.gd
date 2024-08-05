@@ -1,10 +1,10 @@
 extends Node2D
 
 @export
-var mint_token_conf: MintCip68Pair
+var mint_token_conf: Cip68Config
 
 var provider: Provider
-var wallet: Wallet.MnemonicWallet = null
+var wallet: OnlineWallet.OnlineSingleAddressWallet = null
 var correct_password: String = ""
 var loader := SingleAddressWalletLoader.new(ProviderApi.Network.PREVIEW)
 
@@ -52,11 +52,16 @@ func _ready() -> void:
 	add_child(provider)
 	wallet_details.text = "No wallet set"
 	
+	# Quite important to add the loader to the tree, otherwise imports will fail
+	add_child(loader)
+
 	# if a seed phrase file is available, we load the seed phrase from there
 	var seed_phrase_file := FileAccess.open("./seed_phrase.txt", FileAccess.READ)
 	if seed_phrase_file != null:
 		phrase_input.text = seed_phrase_file.get_as_text(true)
 		_create_wallet_from_seedphrase(phrase_input.text)
+	
+	await mint_token_conf.init_script(provider)
 
 func _process(_delta: float) -> void:
 	if wallet != null:
@@ -128,8 +133,6 @@ func _on_send_ada_button_pressed() -> void:
 		return
 		
 	var tx := create_tx_result.value
-	print(tx)
-	print(tx._wallet)
 	tx.pay_to_address(
 		address_result.value,
 		amount_result.value,
@@ -161,27 +164,13 @@ func _on_mint_token_button_pressed() -> void:
 		return
 	var tx : TxBuilder = create_tx_result.value
 	
-	# We mint the CIP68 pair
-	var policy_script = PlutusScript.create("46010000222499".hex_decode())
-	var redeemer = VoidData.new().to_data(true)
-	tx.mint_cip68_pair(policy_script, redeemer, mint_token_conf)
-
 	# Create MultiAsset with both tokens
-	var policy_hex := policy_script.hash_as_hex()
-	var minted_value_dict := {}
-	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_user_token_name().hex_encode()]] = BigInt.one()._b
-	minted_value_dict["%s%s" % [policy_hex, mint_token_conf.get_ref_token_name().hex_encode()]] = BigInt.one()._b
-	var minted_value_result := MultiAsset.from_dictionary(minted_value_dict)
-	if minted_value_result.is_err():
-		push_error("Could not created minted value from dictionary: ", minted_value_result.error)
-	var minted_value := minted_value_result.value
+	tx.mint_cip68_pair(VoidData.to_data(), mint_token_conf)
 	
 	# Send both tokens to myself and set its corresponding metadata
-	tx.pay_to_address_with_datum(
+	tx.pay_cip68_ref_token(
 		address,
-		BigInt.from_int(5_000_000),
-		minted_value,
-		mint_token_conf.to_data(true)
+		mint_token_conf
 	)
 
 	var result := await tx.complete()
@@ -200,7 +189,7 @@ func set_wallet(key_ring: SingleAddressWallet):
 	if wallet != null:
 		wallet.queue_free()
 
-	wallet = Wallet.MnemonicWallet.new(key_ring, provider)
+	wallet = OnlineWallet.OnlineSingleAddressWallet.new(key_ring, provider)
 	add_child(wallet)
 	correct_password = password_input.text
 	password_warning.text = ""

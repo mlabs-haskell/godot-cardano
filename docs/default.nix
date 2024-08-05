@@ -21,20 +21,20 @@
         rm -f addons/@mlabs-haskell/godot-cardano
         cp -r $DIR addons/@mlabs-haskell/godot-cardano
         chmod -R u+wx addons
-        sed 's/^signal.*$//' -i addons/@mlabs-haskell/godot-cardano/src/provider_api.gd
+        sed 's/^signal.*$//' -i addons/@mlabs-haskell/godot-cardano/src/provider/provider_api.gd
       '';
       buildPhase = ''
         echo "Reimporting resources"
         timeout 10s ${self'.packages.godot}/bin/godot4 --headless --editor || true
         echo "Building reference.json"
-        timeout 30s ${self'.packages.godot}/bin/godot4 \
+        timeout 200s ${self'.packages.godot}/bin/godot4 \
             --headless \
             --editor \
             --exit \
             --script ./ReferenceCollectorCLIGd4.gd \
             || true
         if [ ! -f reference.json ]; then
-          echo "Failed to build reference.json"
+          echo "Failed to build reference.json in 200s"
           exit 1
         fi
       '';

@@ -8,6 +8,8 @@
 //! side of the codebase.
 use std::array::TryFromSliceError;
 use std::collections::BTreeMap;
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::thread;
 
 use bip32::{Language, Mnemonic};
 use cardano_serialization_lib::address::Address as CSLAddress;
@@ -37,14 +39,14 @@ use cardano_message_signing as cms;
 ///
 /// After any mutation to the backing `SingleAddressWalletLoader`, a `SingleAddressWallet`
 /// instance becomes immediately outdated and should be replaced.
-#[derive(GodotClass)]
+#[derive(GodotClass, Clone)]
 #[class(base=RefCounted, rename=_SingleAddressWallet)]
 pub struct SingleAddressWallet {
     encrypted_master_private_key: Vec<u8>,
     salt: Vec<u8>,
     aes_iv: Vec<u8>,
     scrypt_params: scrypt::Params,
-    account: Gd<Account>,
+    account: Account,
     network: u8,
 }
 
@@ -100,12 +102,11 @@ impl SingleAddressWallet {
         gtx: Gd<Transaction>,
     ) -> Result<Signature, SingleAddressWalletError> {
         let pbes2_params = unsafe_get_pbes2_params(&self.aes_iv, &self.scrypt_params, &self.salt);
-        let current_account = self.account.bind();
         with_account_private_key(
             pbes2_params,
             self.encrypted_master_private_key.as_slice(),
             password.to_vec().as_slice(),
-            current_account.index,
+            self.account.index,
             &mut |account_private_key| {
                 let spend_key = account_private_key.derive(0).derive(0).to_raw_key();
                 let tx_hash = hash_transaction(&gtx.bind().transaction.body());
@@ -162,7 +163,7 @@ impl SingleAddressWallet {
 
     pub fn get_address(&self) -> Gd<Address> {
         Gd::from_object(Address {
-            address: self.account.bind().address.clone(),
+            address: self.account.address.clone(),
         })
     }
 
@@ -173,14 +174,14 @@ impl SingleAddressWallet {
 
     #[func]
     pub fn get_address_bech32(&self) -> GString {
-        self.account.bind().address_bech32.to_owned()
+        self.account.address_bech32.to_godot()
     }
 
     // Switch to the given account
     #[func]
     pub fn switch_account(&mut self, new_account: Gd<Account>) -> u32 {
-        self.account = new_account;
-        self.account.bind().index
+        self.account = new_account.bind().clone();
+        self.account.index
     }
 
     #[func]
@@ -224,18 +225,18 @@ impl SingleAddressWallet {
 /// this is a single address wallet, not much privacy is lost by simply storing
 /// the public key, as it is equivalent to storing the only address that will
 /// be in use for any given account.
-#[derive(GodotClass)]
-#[class(base=RefCounted, rename=_SingleAddressWalletLoader)]
+#[derive(GodotClass, Clone, Default)]
+#[class(init, base=RefCounted, rename=_SingleAddressWalletLoader)]
 pub struct SingleAddressWalletLoader {
     encrypted_master_private_key: Vec<u8>,
     salt: Vec<u8>,
     aes_iv: Vec<u8>,
     scrypt_params: scrypt::Params,
-    accounts: BTreeMap<u32, Gd<Account>>,
+    accounts: BTreeMap<u32, Account>,
     network: u8,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SingleAddressWalletLoaderError {
     BadPhrase(bip32::Error),
     Bip32Error(JsError),
@@ -304,8 +305,8 @@ impl SingleAddressWalletLoader {
     /// A name and description may be used for the account.
     pub fn import_from_seedphrase(
         phrase: String,
-        phrase_password: PackedByteArray,
-        wallet_password: PackedByteArray,
+        phrase_password: Vec<u8>,
+        wallet_password: Vec<u8>,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -324,8 +325,8 @@ impl SingleAddressWalletLoader {
         .map_err(|e| SingleAddressWalletLoaderError::BadPhrase(e))?;
         Self::from_entropy(
             mnemonic.entropy(),
-            phrase_password,
-            wallet_password,
+            phrase_password.to_vec(),
+            wallet_password.to_vec(),
             account_index,
             account_name,
             account_description,
@@ -333,47 +334,16 @@ impl SingleAddressWalletLoader {
         )
     }
 
-    /// This method allows initialization of all the internal fields by copying
-    /// them from a generic resource. It will fail if any attributes are missing
-    /// or they don't match the expected type.
-    pub fn import_from_resource(
-        resource: Gd<Resource>,
-        network: u8,
-    ) -> Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError> {
-        // parse accounts
-        let accounts = Self::parse_accounts(&resource, network)?;
-
-        // use first account found in wallet or fail
-        let first_account = accounts
-            .get(&0)
-            .ok_or(SingleAddressWalletLoaderError::NoAccountsInWallet)?
-            .clone();
-
-        // create wallet loader
-        let wallet_loader = {
-            let encrypted_master_private_key =
-                Self::get_attr::<PackedByteArray>("encrypted_master_private_key", &resource)?
-                    .to_vec();
-
-            let scrypt_params = {
-                let log_n = Self::get_attr("scrypt_log_n", &resource)?;
-                let r = Self::get_attr("scrypt_r", &resource)?;
-                let p = Self::get_attr("scrypt_p", &resource)?;
-                scrypt::Params::new(log_n, r, p, 32)
-            }?;
-
-            let aes_iv = Self::get_attr::<PackedByteArray>("aes_iv", &resource)?.to_vec();
-            let salt = Self::get_attr::<PackedByteArray>("salt", &resource)?.to_vec();
-
-            Self {
-                encrypted_master_private_key,
-                accounts,
-                aes_iv,
-                scrypt_params,
-                salt,
-                network,
-            }
-        };
+    /// This method checks that all fields are valid. It will do so by using
+    /// the provided encryption parameters to load a wallet.
+    fn check_fields(
+        wallet_loader: &SingleAddressWalletLoader,
+    ) -> Result<SingleAddressWallet, SingleAddressWalletLoaderError> {
+        let first_account = wallet_loader
+            .accounts
+            .values()
+            .next()
+            .ok_or(SingleAddressWalletLoaderError::NoAccountsInWallet)?;
 
         // We validate that the PBES2 parameters are creatable.
         let aes_iv = <&[u8; 16]>::try_from(wallet_loader.aes_iv.as_slice())
@@ -386,12 +356,9 @@ impl SingleAddressWalletLoader {
         .map_err(|e| SingleAddressWalletLoaderError::Pkcs5Error(e))?;
 
         // obtain a wallet
-        let wallet = wallet_loader.get_wallet(first_account.bind().index)?;
+        let wallet = wallet_loader.get_wallet(first_account.index)?;
 
-        Ok(SingleAddressWalletImportResult {
-            wallet_loader: Gd::from_object(wallet_loader),
-            wallet: Gd::from_object(wallet),
-        })
+        Ok(wallet)
     }
 
     /// Create a `SingleAddressWalletLoader` by using entropy to generate the
@@ -399,7 +366,7 @@ impl SingleAddressWalletLoader {
     ///
     /// The seed phrase is stored in the `wallet_seedphrase` parameter.
     pub fn create(
-        wallet_password: PackedByteArray,
+        wallet_password: Vec<u8>,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -415,7 +382,7 @@ impl SingleAddressWalletLoader {
             wallet,
         } = Self::from_entropy(
             entropy_bytes,
-            PackedByteArray::new(),
+            Vec::new(),
             wallet_password,
             account_index,
             account_name,
@@ -423,16 +390,16 @@ impl SingleAddressWalletLoader {
             network,
         )?;
         Ok(SingleAddressWalletCreateResult {
-            wallet_loader,
-            wallet,
+            wallet_loader: Gd::from_object(wallet_loader),
+            wallet: Gd::from_object(wallet),
             seed_phrase: seed_phrase.phrase().to_string().to_godot(),
         })
     }
 
     fn from_entropy(
         entropy: &[u8],
-        phrase_password: PackedByteArray,
-        wallet_password: PackedByteArray,
+        phrase_password: Vec<u8>,
+        wallet_password: Vec<u8>,
         account_index: u32,
         account_name: String,
         account_description: String,
@@ -459,9 +426,12 @@ impl SingleAddressWalletLoader {
         };
 
         // Create PBES2 params and encrypt the master key.
-        // FIXME: find the right parameters to balance performance with security. See
+        // FIXME: ideally we would have a better choice for these parameters
+        // for improved security, but this would depend on performing more
+        // operations asynchronously and/or using a different set of parameters
+        // for on-disk storage vs. in-memory.
         //let scrypt_params = scrypt::Params::recommended();
-        let scrypt_params = fast_scrypt_params();
+        let scrypt_params = mew_scrypt_params();
         let pbes2_params =
             pbes2::Parameters::scrypt_aes128cbc(scrypt_params, salt.as_slice(), &aes_iv_array)
                 .map_err(|e| SingleAddressWalletLoaderError::Pkcs5Error(e))?;
@@ -479,20 +449,19 @@ impl SingleAddressWalletLoader {
             let address = address_from_key(network, &account_pub_key);
             let address_bech32 = address
                 .to_bech32(None)
-                .map_err(|e| SingleAddressWalletLoaderError::Bip32Error(e))?
-                .to_godot();
+                .map_err(|e| SingleAddressWalletLoaderError::Bip32Error(e))?;
 
             Account {
                 index: account_index,
                 name: if account_name == "" {
-                    GString::from("Default")
+                    "Default".to_string()
                 } else {
-                    account_name.to_godot()
+                    account_name
                 },
                 description: if account_description == "" {
-                    GString::from("Default account")
+                    "Default account".to_string()
                 } else {
-                    account_description.to_godot()
+                    account_description
                 },
                 public_key: duplicate_key(&account_pub_key),
                 address,
@@ -501,8 +470,8 @@ impl SingleAddressWalletLoader {
             }
         };
 
-        let mut accounts: BTreeMap<u32, Gd<Account>> = BTreeMap::new();
-        accounts.insert(account_index, Gd::from_object(account.clone()));
+        let mut accounts: BTreeMap<u32, Account> = BTreeMap::new();
+        accounts.insert(account_index, account.clone());
 
         let wallet_loader = Self {
             encrypted_master_private_key: encrypted_master_private_key.to_vec(),
@@ -517,8 +486,8 @@ impl SingleAddressWalletLoader {
         let wallet = wallet_loader.make_wallet(account);
 
         Ok(SingleAddressWalletImportResult {
-            wallet_loader: Gd::from_object(wallet_loader),
-            wallet: Gd::from_object(wallet),
+            wallet_loader,
+            wallet,
         })
     }
 
@@ -532,7 +501,7 @@ impl SingleAddressWalletLoader {
             SingleAddressWalletLoaderError::AccountNotFound(account_index),
         )?;
 
-        Ok(self.make_wallet(account.bind().to_owned()))
+        Ok(self.make_wallet(account.clone()))
     }
 
     /// This just stores the public key of the new account
@@ -554,8 +523,7 @@ impl SingleAddressWalletLoader {
             encrypted_master_private_key.as_slice(),
             self.network,
         )?;
-        self.accounts
-            .insert(account_index, Gd::from_object(account.clone()));
+        self.accounts.insert(account_index, account.clone());
         Ok(account)
     }
 
@@ -569,7 +537,7 @@ impl SingleAddressWalletLoader {
             salt: self.salt.clone(),
             aes_iv: self.aes_iv.clone(),
             scrypt_params: self.scrypt_params,
-            account: Gd::from_object(account),
+            account,
             network: self.network,
         }
     }
@@ -577,7 +545,7 @@ impl SingleAddressWalletLoader {
     fn parse_accounts(
         resource: &Gd<Resource>,
         network: u8,
-    ) -> Result<BTreeMap<u32, Gd<Account>>, SingleAddressWalletLoaderError> {
+    ) -> Result<BTreeMap<u32, Account>, SingleAddressWalletLoaderError> {
         let accounts_untyped: Array<Gd<Resource>> = Self::get_attr("accounts", &resource)?;
         accounts_untyped
             .iter_shared()
@@ -590,14 +558,14 @@ impl SingleAddressWalletLoader {
         idx: usize,
         res: Gd<Resource>,
         network: u8,
-    ) -> Result<(u32, Gd<Account>), SingleAddressWalletLoaderError> {
+    ) -> Result<(u32, Account), SingleAddressWalletLoaderError> {
         let public_key_ba: PackedByteArray = Self::get_attr("public_key", &res)?;
         let public_key = Bip32PublicKey::from_bytes(public_key_ba.as_slice())?;
         let address = address_from_key(network, &public_key);
-        let address_bech32 = address.to_bech32(None)?.to_godot();
+        let address_bech32 = address.to_bech32(None)?;
         Ok((
             idx as u32,
-            Gd::from_object(Account {
+            Account {
                 index: Self::get_attr("index", &res)?,
                 name: Self::get_attr("name", &res)?,
                 description: Self::get_attr("description", &res)?,
@@ -605,8 +573,26 @@ impl SingleAddressWalletLoader {
                 address,
                 address_bech32,
                 network,
-            }),
+            },
         ))
+    }
+
+    // helper for importing in a separate thread
+    fn import_in_thread<F>(f: F) -> Gd<WalletImportReceiver>
+    where
+        F: Fn(Sender<Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError>>)
+            + Send
+            + 'static,
+    {
+        let (sender, receiver) = mpsc::channel();
+
+        thread::spawn(move || {
+            f(sender);
+        });
+
+        Gd::from_object(WalletImportReceiver {
+            receiver: Some(receiver),
+        })
     }
 
     // helper for getting attributes and casting them to the appropriate type
@@ -635,7 +621,7 @@ impl SingleAddressWalletLoader {
     fn export_account_dicts(&self) -> Array<Dictionary> {
         let mut arr = Array::new();
         for (key, account) in &self.accounts {
-            let account = account.bind();
+            let account = account;
             let mut dict = Dictionary::new();
             dict.set("index", key.to_variant());
             dict.set("name", account.name.clone());
@@ -656,7 +642,7 @@ impl SingleAddressWalletLoader {
             "encrypted_master_private_key",
             PackedByteArray::from(self.encrypted_master_private_key.as_slice()),
         );
-        dict.set("scrypt_salt", PackedByteArray::from(self.salt.as_slice()));
+        dict.set("salt", PackedByteArray::from(self.salt.as_slice()));
         dict.set("scrypt_log_n", self.scrypt_params.log_n());
         dict.set("scrypt_r", self.scrypt_params.r());
         dict.set("scrypt_p", self.scrypt_params.p());
@@ -665,6 +651,38 @@ impl SingleAddressWalletLoader {
         dict
     }
 
+    // UNSAFE! The fields need to be checked after importing
+    fn import_from_dict(
+        resource: Gd<Resource>,
+        network: u8,
+    ) -> Result<SingleAddressWalletLoader, SingleAddressWalletLoaderError> {
+        // parse accounts
+        let accounts = Self::parse_accounts(&resource, network)?;
+
+        // create wallet loader
+
+        let encrypted_master_private_key =
+            Self::get_attr::<PackedByteArray>("encrypted_master_private_key", &resource)?.to_vec();
+
+        let scrypt_params = {
+            let log_n = Self::get_attr("scrypt_log_n", &resource)?;
+            let r = Self::get_attr("scrypt_r", &resource)?;
+            let p = Self::get_attr("scrypt_p", &resource)?;
+            scrypt::Params::new(log_n, r, p, 32)
+        }?;
+
+        let aes_iv = Self::get_attr::<PackedByteArray>("aes_iv", &resource)?.to_vec();
+        let salt = Self::get_attr::<PackedByteArray>("salt", &resource)?.to_vec();
+
+        Ok(Self {
+            encrypted_master_private_key,
+            accounts,
+            aes_iv,
+            scrypt_params,
+            salt,
+            network,
+        })
+    }
     // This implementation avoids using &mut self to escape borrowing issues.
     fn add_account_helper(
         name: GString,
@@ -686,11 +704,11 @@ impl SingleAddressWalletLoader {
                 let new_account = Account {
                     index: new_account_index,
                     public_key: duplicate_key(&new_account_key),
-                    name: name.clone(),
-                    description: description.clone(),
+                    name: name.to_string(),
+                    description: description.to_string(),
                     network,
                     address,
-                    address_bech32,
+                    address_bech32: address_bech32.to_string(),
                 };
                 Ok((new_account, new_account_key))
             },
@@ -699,10 +717,11 @@ impl SingleAddressWalletLoader {
 
     #[func]
     fn get_accounts(&self) -> Array<Gd<Account>> {
-        self.accounts.values().cloned().collect()
+        self.accounts
+            .values()
+            .map(|o| Gd::from_object(o.clone()))
+            .collect()
     }
-
-    // EXPORT WRAPPERS
 
     #[func]
     fn _import_from_seedphrase(
@@ -713,21 +732,49 @@ impl SingleAddressWalletLoader {
         account_name: String,
         account_description: String,
         network: u8,
-    ) -> Gd<GResult> {
-        Self::to_gresult_class(Self::import_from_seedphrase(
-            phrase,
-            mnemonic_password,
-            wallet_password,
-            account_index,
-            account_name,
-            account_description,
-            network,
-        ))
+    ) -> Gd<WalletImportReceiver> {
+        let mnemonic_password_v = mnemonic_password.to_vec();
+        let wallet_password_v = wallet_password.to_vec();
+        Self::import_in_thread(move |sender| {
+            let result = Self::import_from_seedphrase(
+                phrase.clone(),
+                mnemonic_password_v.clone(),
+                wallet_password_v.clone(),
+                account_index,
+                account_name.clone(),
+                account_description.clone(),
+                network,
+            );
+            let send_res = sender.send(result);
+            if let Err(e) = send_res {
+                println!(
+                    "_import_from_seedphrase: There was error while trying to send the result: {e} "
+                )
+            }
+        })
     }
 
     #[func]
-    fn _import_from_resource(resource: Gd<Resource>, network: u8) -> Gd<GResult> {
-        Self::to_gresult_class(Self::import_from_resource(resource, network))
+    fn _import_from_resource(resource: Gd<Resource>, network: u8) -> Gd<WalletImportReceiver> {
+        let loader = Self::import_from_dict(resource, network);
+        Self::import_in_thread(move |sender| {
+            let result: Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError> = {
+                loader.clone().and_then(|wallet_loader| {
+                    Self::check_fields(&wallet_loader).and_then(|wallet| {
+                        Ok(SingleAddressWalletImportResult {
+                            wallet_loader,
+                            wallet,
+                        })
+                    })
+                })
+            };
+            let send_res = sender.send(result);
+            if let Err(e) = send_res {
+                println!(
+                    "_import_from_resource: There was error while trying to send the result: {e} "
+                )
+            }
+        })
     }
 
     #[func]
@@ -739,7 +786,7 @@ impl SingleAddressWalletLoader {
         network: u8,
     ) -> Gd<GResult> {
         Self::to_gresult_class(Self::create(
-            wallet_password,
+            wallet_password.to_vec(),
             account_index,
             account_name,
             account_description,
@@ -768,17 +815,12 @@ impl SingleAddressWalletLoader {
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Account)]
 pub struct Account {
-    #[var]
     index: u32,
-    #[var]
-    name: GString,
-    #[var]
-    description: GString,
+    name: String,
+    description: String,
     public_key: Bip32PublicKey,
     address: CSLAddress,
-    #[var]
-    address_bech32: GString,
-    #[var]
+    address_bech32: String,
     network: u8,
 }
 
@@ -797,13 +839,27 @@ impl Clone for Account {
     }
 }
 
+// This class must be passed from the Rust thread back to Godot, so
+// it can't hold any GDExt types. Therefore we must provide accessor
+// functions for wrapping the properties in a Gd pointer.
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_SingleAddressWalletImportResult)]
 pub struct SingleAddressWalletImportResult {
-    #[var]
-    wallet_loader: Gd<SingleAddressWalletLoader>,
-    #[var]
-    wallet: Gd<SingleAddressWallet>,
+    wallet_loader: SingleAddressWalletLoader,
+    wallet: SingleAddressWallet,
+}
+
+#[godot_api]
+impl SingleAddressWalletImportResult {
+    #[func]
+    fn wallet_loader(&self) -> Gd<SingleAddressWalletLoader> {
+        Gd::from_object(self.wallet_loader.clone())
+    }
+
+    #[func]
+    fn wallet(&self) -> Gd<SingleAddressWallet> {
+        Gd::from_object(self.wallet.clone())
+    }
 }
 
 #[derive(GodotClass)]
@@ -815,6 +871,36 @@ pub struct SingleAddressWalletCreateResult {
     wallet: Gd<SingleAddressWallet>,
     #[var]
     seed_phrase: GString,
+}
+
+#[derive(GodotClass)]
+#[class(base=RefCounted)]
+pub struct WalletImportReceiver {
+    receiver:
+        Option<Receiver<Result<SingleAddressWalletImportResult, SingleAddressWalletLoaderError>>>,
+}
+
+#[godot_api]
+impl WalletImportReceiver {
+    #[func]
+    pub fn get_import_result(&mut self) -> Option<Gd<GResult>> {
+        if let Some(rec) = &self.receiver {
+            let res = rec.try_recv();
+            match res {
+                Ok(import_result) => {
+                    self.receiver = None;
+                    println!("(WalletImportReceiver) Received import from the Rust thread");
+                    Some(SingleAddressWalletLoader::to_gresult_class(import_result))
+                }
+                Err(_) => None,
+            }
+        } else {
+            println!(
+                "(WalletImportReceiver) Tried to obtain result from a used WalletImportReceiver"
+            );
+            None
+        }
+    }
 }
 
 // Utility functions
@@ -890,6 +976,12 @@ fn unsafe_get_pbes2_params<'a>(
         .unwrap()
 }
 
-fn fast_scrypt_params() -> scrypt::Params {
+// The parameters used by MyEtherWallet--not considered secure without a
+// sufficiently strong password.
+fn mew_scrypt_params() -> scrypt::Params {
+    scrypt::Params::new(13, 8, 1, 32).unwrap() // safe by construction
+}
+
+fn _fast_scrypt_params() -> scrypt::Params {
     scrypt::Params::new(12, 4, 1, 32).unwrap() // safe by construction
 }

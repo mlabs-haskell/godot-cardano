@@ -26,57 +26,40 @@ func _init(
 	_big_int = b
 	_extra_data = extra_data
 
-func to_data(strict := true) -> Variant:
-	if strict:
-		var extra_data_encoded := {}
-		for key: String in _extra_data:
-			assert(typeof(key) == TYPE_STRING)
-			var key_encoded := key.to_utf8_buffer()
-			extra_data_encoded[key_encoded] = _extra_data[key]
-			
-		return Constr.new(
-			BigInt.from_int(1),
-			[
-				_void.to_data(strict),
-				_msg.to_utf8_buffer() as Variant,
-				BoolData.new(_active).to_data(strict),
-				BigInt.from_int(_int), 
-				_big_int,
-				extra_data_encoded as Variant
-			]
-		)
-		
-	return Constr.new(
-		BigInt.from_int(1),
-		[
-			_void,
-			_msg,
-			_active,
-			_int, 
-			_big_int,
-			_extra_data
-		]
-	)
+func to_data() -> PlutusData:
+	var extra_data_encoded := {}
+	for key: String in _extra_data:
+		assert(key is String)
+		var key_encoded := PlutusBytes.new(key.to_utf8_buffer())
+		extra_data_encoded[key_encoded] = _extra_data[key]
+	var fields: Array[PlutusData] = [
+		_void.to_data(),
+		PlutusBytes.new(_msg.to_utf8_buffer()),
+		BoolData.new(_active).to_data(),
+		BigInt.from_int(_int), 
+		_big_int,
+		PlutusMap.new(extra_data_encoded)
+	]
+	return Constr.new(BigInt.from_int(1), fields)
 
-static func from_data(v: Variant) -> ExampleDatum:
-	assert(is_instance_of(v, Constr))
+static func from_data(v: PlutusData) -> ExampleDatum:
+	assert(v is Constr)
 	var constr := v as Constr
 	assert(constr._constructor.eq(BigInt.one()))
 	var fields := constr._fields
-	assert(typeof(fields[1]) == TYPE_PACKED_BYTE_ARRAY)
-	assert(is_instance_of(fields[3], BigInt))
-	assert(is_instance_of(fields[4], BigInt))
-	assert(typeof(fields[5]) == TYPE_DICTIONARY)
+	assert(fields[1] is PlutusBytes)
+	assert(fields[3] is BigInt)
+	assert(fields[4] is BigInt)
+	assert(fields[5] is PlutusMap)
 	
-	var msg := fields[1] as Variant as PackedByteArray
+	var msg: PackedByteArray = (fields[1] as PlutusBytes).get_data()
 	var active := BoolData.from_data(fields[2])._b
-	var i := fields[3] as Variant as BigInt
-	var b := fields[4] as Variant as BigInt
-	var extra_data := fields[5] as Variant as Dictionary
+	var i := fields[3] as BigInt
+	var b := fields[4] as BigInt
+	var extra_data: Dictionary = (fields[5] as PlutusMap).get_data()
 	var extra_data_decoded := {}
-	for key: Variant in extra_data:
-		assert(typeof(key) == TYPE_PACKED_BYTE_ARRAY)
-		var key_decoded := (key as Variant as PackedByteArray).get_string_from_utf8()
+	for key: PlutusBytes in extra_data:
+		var key_decoded: String = key.get_data().get_string_from_utf8()
 		extra_data_decoded[key_decoded] = extra_data[key]
 	
 	return ExampleDatum.new(
