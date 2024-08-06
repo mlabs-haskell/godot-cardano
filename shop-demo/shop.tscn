@@ -1,0 +1,154 @@
+[gd_scene load_steps=10 format=3 uid="uid://h3yk18tq7pyn"]
+
+[ext_resource type="Texture2D" uid="uid://cetanqekjmkyy" path="res://ui/bag.png" id="1_d460o"]
+[ext_resource type="Script" path="res://shop.gd" id="1_n7hu2"]
+[ext_resource type="Script" path="res://ui/confirm_button.gd" id="2_mcnlb"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2h07v"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.384314, 0.384314, 0.384314, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.2, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_d60ub"]
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sa2h1"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_omcx3"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yylvk"]
+bg_color = Color(0.0745098, 0.0745098, 0.0745098, 0.764706)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7mq2t"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+
+[node name="Shop" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_n7hu2")
+
+[node name="MainScreen" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+
+[node name="Control" type="CenterContainer" parent="MainScreen"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 6
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainScreen/Control"]
+custom_minimum_size = Vector2(700, 300)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2h07v")
+horizontal_scroll_mode = 2
+
+[node name="ItemContainer" type="BoxContainer" parent="MainScreen/Control/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_constants/separation = 20
+
+[node name="PanelContainer" type="PanelContainer" parent="MainScreen"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_d60ub")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MainScreen/PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 10
+
+[node name="InventoryButton" type="Button" parent="MainScreen/PanelContainer/HBoxContainer"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_sa2h1")
+icon = ExtResource("1_d460o")
+expand_icon = true
+
+[node name="UserFundsLabel" type="Label" parent="MainScreen/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "4195.24 t₳"
+
+[node name="InventoryScreen" type="CenterContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(1280, 720)
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+scale = Vector2(-0.0303623, -0.0303623)
+pivot_offset = Vector2(1147, 658)
+mouse_filter = 2
+
+[node name="Inventory" type="HBoxContainer" parent="InventoryScreen"]
+unique_name_in_owner = true
+z_index = 1
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="InventoryScreen/Inventory"]
+custom_minimum_size = Vector2(595, 400)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_omcx3")
+horizontal_scroll_mode = 0
+
+[node name="UserItemContainer" type="GridContainer" parent="InventoryScreen/Inventory/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 15
+columns = 4
+
+[node name="Control" type="PanelContainer" parent="InventoryScreen/Inventory"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yylvk")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="InventoryScreen/Inventory/Control"]
+layout_mode = 2
+
+[node name="SelectedItemDescription" type="RichTextLabel" parent="InventoryScreen/Inventory/Control/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="InventoryScreen/Inventory/Control/VBoxContainer"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_7mq2t")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="SelectedItemPrice" type="Label" parent="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectedItemSellButton" type="Button" parent="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+disabled = true
+text = "Sell"
+script = ExtResource("2_mcnlb")
+
+[connection signal="gui_input" from="MainScreen" to="." method="_on_main_screen_gui_input"]
+[connection signal="pressed" from="MainScreen/PanelContainer/HBoxContainer/InventoryButton" to="." method="_on_inventory_button_pressed"]
+[connection signal="confirmed" from="InventoryScreen/Inventory/Control/VBoxContainer/PanelContainer/HBoxContainer/SelectedItemSellButton" to="." method="_on_selected_item_sell_button_confirmed"]

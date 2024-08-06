@@ -459,9 +459,12 @@ impl SingleAddressWalletLoader {
         };
 
         // Create PBES2 params and encrypt the master key.
-        // FIXME: find the right parameters to balance performance with security. See
+        // FIXME: ideally we would have a better choice for these parameters
+        // for improved security, but this would depend on performing more
+        // operations asynchronously and/or using a different set of parameters
+        // for on-disk storage vs. in-memory.
         //let scrypt_params = scrypt::Params::recommended();
-        let scrypt_params = fast_scrypt_params();
+        let scrypt_params = mew_scrypt_params();
         let pbes2_params =
             pbes2::Parameters::scrypt_aes128cbc(scrypt_params, salt.as_slice(), &aes_iv_array)
                 .map_err(|e| SingleAddressWalletLoaderError::Pkcs5Error(e))?;
@@ -656,7 +659,7 @@ impl SingleAddressWalletLoader {
             "encrypted_master_private_key",
             PackedByteArray::from(self.encrypted_master_private_key.as_slice()),
         );
-        dict.set("scrypt_salt", PackedByteArray::from(self.salt.as_slice()));
+        dict.set("salt", PackedByteArray::from(self.salt.as_slice()));
         dict.set("scrypt_log_n", self.scrypt_params.log_n());
         dict.set("scrypt_r", self.scrypt_params.r());
         dict.set("scrypt_p", self.scrypt_params.p());
@@ -890,6 +893,12 @@ fn unsafe_get_pbes2_params<'a>(
         .unwrap()
 }
 
-fn fast_scrypt_params() -> scrypt::Params {
+// The parameters used by MyEtherWallet--not considered secure without a
+// sufficiently strong password.
+fn mew_scrypt_params() -> scrypt::Params {
+    scrypt::Params::new(13, 8, 1, 32).unwrap() // safe by construction
+}
+
+fn _fast_scrypt_params() -> scrypt::Params {
     scrypt::Params::new(12, 4, 1, 32).unwrap() // safe by construction
 }

@@ -1,0 +1,25 @@
+[gd_scene load_steps=6 format=3 uid="uid://cte3k6ruhj3xy"]
+
+[ext_resource type="Script" path="res://item/inventory_item.gd" id="1_hijgp"]
+[ext_resource type="Texture2D" uid="uid://bl6qq6ah62p24" path="res://icon.svg" id="2_6n6wd"]
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/big_int.gd" id="2_r7h51"]
+[ext_resource type="Resource" uid="uid://bgd1o5q07md87" path="res://cip68_data/item1.tres" id="3_2rb5m"]
+
+[sub_resource type="Resource" id="Resource_4q77h"]
+script = ExtResource("2_r7h51")
+value = "100000000"
+
+[node name="InventoryItem" type="PanelContainer"]
+custom_minimum_size = Vector2(128, 128)
+offset_right = 128.0
+offset_bottom = 128.0
+script = ExtResource("1_hijgp")
+item_name = "Item"
+price = SubResource("Resource_4q77h")
+conf = ExtResource("3_2rb5m")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("2_6n6wd")
+centered = false
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]
