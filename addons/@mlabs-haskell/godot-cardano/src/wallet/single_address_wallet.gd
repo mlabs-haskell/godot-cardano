@@ -47,9 +47,17 @@ func sign_transaction(password: String, tx: Transaction) -> OnlineWallet.SignTxR
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
 	)
 
+class SignDataResult extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: DataSignature:
+		get: return _res.unsafe_value() as DataSignature
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
+
 ## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
-func sign_data(password: String, data: String) -> Wallet.SignDataResult:
-	return Wallet.SignDataResult.new(
+func sign_data(password: String, data: String) -> SignDataResult:
+	return SignDataResult.new(
 		_wallet._sign_data(password.to_utf8_buffer(), data.hex_decode())
 	)
 
