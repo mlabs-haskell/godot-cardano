@@ -55,7 +55,7 @@ func login(login_info: LoginInfo, on_login_cb = null) -> bool:
 	var js_login_info = _to_js_login_info(login_info)
 	console.log("GD:Paima: login_info: ", js_login_info)
 	_endpoints.userWalletLogin(js_login_info).then(_on_login_js)
-	var login_successful = await  on_paima_login
+	var login_successful = await on_paima_login
 	return login_successful
 
 ### Signal for `await`

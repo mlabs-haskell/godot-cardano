@@ -15,9 +15,9 @@ var _player_pos_button
 var _player_move_box = HBoxContainer.new()
 
 func _init(
-		cip_30_wallet: Cip30WalletApi, 
 		godot_login_info: PaimaMiddleware.LoginInfo,
-		window
+		window,
+		cip_30_wallet: Cip30WalletApi # Needed for test sign button only
 	) -> void:
 	_cip_30_wallet = cip_30_wallet
 	_godot_login_info = godot_login_info
@@ -156,8 +156,10 @@ func _test_mock_executor_executor():
 	prints("RoundExecutor.process_all_ticks(): ", round_executor.process_all_ticks() )
 	console.log("RoundExecutor.current_state: ", round_executor.get_current_state() )
 	console.log("RoundExecutor.end_state(): ", round_executor.end_state() )
-	
-	
+
+
+
+
 
 
 # Test/Debug signing of known data
@@ -182,7 +184,7 @@ func _test_sing():
 	## JavaScriptBridge always creates `null` object if not in the browser context
 	if _window:
 		print("Signing in browser env")
-		var sign_res = _cip_30_wallet.sign_data("", test_hex)
+		var sign_res = await _cip_30_wallet.sign_data("", test_hex)
 		key = sign_res.key
 		signature = sign_res.signature
 	else:
