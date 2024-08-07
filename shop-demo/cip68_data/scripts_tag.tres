@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PlutusDataResource" load_steps=2 format=3 uid="uid://c1tawdbn3fvl5"]
+
+[ext_resource type="Script" path="res://addons/@mlabs-haskell/godot-cardano/src/plutus_data/resource.gd" id="1_lf2w2"]
+
+[resource]
+script = ExtResource("1_lf2w2")
+data_type = 0
+data_int = 239058
+data_bytes = PackedByteArray()
+data_as_hex = ""
+data_as_utf8 = ""
+data_cbor_hex = "1a0003a5d2"
+data_json = "{
+  \"int\": \"239058\"
+}"
+data_json_path = ""

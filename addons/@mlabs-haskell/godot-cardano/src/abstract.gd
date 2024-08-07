@@ -1,8 +1,15 @@
 class_name Abstract
-extends RefCounted
+## Used for representing abstract classes
+##
 ## Used to represent abstract classes which should never be instantiated. 
-## Concrete classes inheriting from this class should always override _init.
+## Concrete classes inheriting from this class should always override
+## [method Abstract._init].
 
+extends RefCounted
+
+## [b]WARNING: Do not use without overriding![/b].
 func _init() -> void:
 	var abstract_name: String = get("_abstract_name")
-	assert(false, "Abstract class `%s` instantiated" % (abstract_name if abstract_name else "Unknown"))
+	var err_msg := "Abstract class `%s` instantiated" % (abstract_name if abstract_name else "Unknown")
+	assert(false, err_msg)
+	push_error(err_msg)

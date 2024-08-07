@@ -93,6 +93,10 @@
           package = self'.packages.private-testnet-fund-ada;
           help = "Fund test wallet";
         }
+        {
+          name = "aiken";
+          package = self'.packages.aiken;
+        }
       ];
       devshell.startup.setup-dev-env.text = ''
         setup-dev-env
