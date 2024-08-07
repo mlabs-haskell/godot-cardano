@@ -18,7 +18,7 @@ func _ready():
 	add_child(_seed_field)
 	
 	var set_seed_btn = Button.new()
-	set_seed_btn.text = "Set seed"
+	set_seed_btn.text = "Init cardano-godot"
 	set_seed_btn.pressed.connect(set_seed)
 	add_child(set_seed_btn)
 

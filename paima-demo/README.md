@@ -1,8 +1,10 @@
 # Godot-cardano and Paima's "Open World" prototype
 
 - [Godot-cardano and Paima's "Open World" prototype](#godot-cardano-and-paimas-open-world-prototype)
-  - [Prerequisites](#prerequisites)
+  - [Demo overview](#demo-overview)
+    - [Paima addon](#paima-addon)
   - [Setting up the demo](#setting-up-the-demo)
+    - [Prerequisites](#prerequisites)
     - [Add `addons`](#add-addons)
     - [Compile WASM](#compile-wasm)
     - [Generate and setup Paima template and Batcher](#generate-and-setup-paima-template-and-batcher)
@@ -12,7 +14,7 @@
     - [Starting frontend](#starting-frontend)
   - [Notes](#notes)
     - [Note on getting access to Paima endpoints](#note-on-getting-access-to-paima-endpoints)
-    - [Note on adjusting `RoundExecutor` query](#note-on-adjusting-roundexecutor-query)
+    - [Calling `RoundExecutor`](#calling-roundexecutor)
     - [Note on CIP-30 callbacks](#note-on-cip-30-callbacks)
   - [CIP-30 API](#cip-30-api)
     - [Note #1](#note-1)
@@ -20,17 +22,48 @@
     - [Note #3: Sign data test output](#note-3-sign-data-test-output)
   - [Possible improvements](#possible-improvements)
 
-This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by `cardano-godot`.
+## Demo overview
+
+This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by either `cardano-godot` library or light wallet in the browser.
 
 The demo provides very simple UI: unlike original frontend for "open-world" game, it does not show the "world map" made from tiles, where player can click desired tile to move there. Instead, it shows current player position as `{x,y}` and 4 buttons to move left, right, up or down. All blockchain interactions are exactly the same as they would be in the original "open-world" demo.
 
-To start "moving" you will need to load the `godot-cardano` wallet from seed-phrase, login with `Paima` and join the world.
+❗Note: It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
 
-Although, this demo is tied to `godot-cardano` wallet, Paima addon can be used completely independently with any other Godot project. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). And example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core. It can be used to run Godot open-world demo with any wallet supported by Pima via proper `PaimaMiddleware.LoginInfo` provided for login.
+To start "playing" (moving on the map) you will need either:
 
-❗It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
+- Enable light wallet installed in your browser
+  - Enter wallet name into the text field above `Enable wallet` button (most common names are listed in the hint above the input field)
+  - Press `Enable wallet`
+- Load the `godot-cardano` wallet from seed-phrase
+  - Put the seed phrase into the text field above `Init cardano-godot` button
+  - Press `Init cardano-godot`
 
-## Prerequisites
+After wallet is enabled you should see interface like this
+
+![paima demo interface](./doc/paima-demo-interface.png)
+
+From here you can start the "game" by logging in to Paima with selected wallet and then joining the world. . All blockchain interactions (joining the world and moving on map) take some time to be propagated on chain and processed by the game node. From player's point of view this actions will change UI in some short time period after button is pressed. To be aware of what is going on under the hood, diagnostic messages will be printed to the console:
+
+- For joining the world
+  - First message `GD:Paima: Joining game world...` will be printed ot the browser console
+  - Then, when join action is processed, you should see `GD:Paima: join world result: ...` containing either error or success result. If result is success, then movement buttons will be enabled
+- For pressing movement buttons
+  - First message `GD:Paima: Submitting move...` will be printed ot the browser console
+  - Then, when action is processed, you should see `GD:Paima: Moves submit result: ...` containing either error or success result. If action succeeded, current position will be update on the `Player position` UI element
+
+The other two buttons in the UI:
+
+- `Show Paima Status` - shows current player stats as they are represented in the game middleware, mostly for debugging
+- `Query and test Round Executor` - calls endpoint to get round executor and exercise its public API, see  [Calling `RoundExecutor` note](#calling-roundexecutor) for details
+
+### Paima addon
+
+At its current state this particular demo is tightly coupled with `godot-cardano` wallet framework, so even if you plan to run it with light wallet, Rust libraries still have to be compiled and linked (see [Setting up the demo](#setting-up-the-demo)) - without them Godot project for the demo won't compile. But Paima addon itself is completely independent and can be used with any other Godot project and any wallet supported by Paima. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). An example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core. It can be used to run Godot open-world demo with any wallet supported by Pima with proper `PaimaMiddleware.LoginInfo` provided during login-in.
+
+## Setting up the demo
+
+### Prerequisites
 
 - `Docker` (required to start testnet an other infra for Paima)
 - `paima-engine`. Tested with `paima-engine-linux-2.3.0`.
@@ -41,8 +74,6 @@ Although, this demo is tied to `godot-cardano` wallet, Paima addon can be used c
 - `python` - to run web-server with required CORS headers (script taken from [godot manual `Tip` section](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html#serving-the-files))
 
 `node`, `npm` and `python` are available via `flake.nix` in the root of the current dir.
-
-## Setting up the demo
 
 ### Add `addons`
 
@@ -85,7 +116,7 @@ If `.so` is added, project can be run from Godot editor, but only one button to 
 1. Copy or link to root Paima engine as `paima-engine`
 2. `make init` (goes through initialization process according to the [open-world-readme](./open-world/README.md); tested in Linux,some extra flags are required for macOS, see the readme; if there is some "red" messages about vulnerabilities it should be ok
 3. `make replace-env-file`. ⚠️ This command changes `.env.localhost`, generated from `./open-world/.env.example`, to properly edited version - `.env.localhost.godot`. It adds proper `BATCHER_URI`, changes `BATCHER_DB_HOST` (see generated [open-world/.env.example](./open-world/.env.example) for comparison). It is important to make this replace before the next step, or the middleware that will be built next, will miss some important settings.
-4. [Optional] Adjust `RoundExecutor` query. See [Note on adjusting RoundExecutor query](#note-on-adjusting-roundexecutor-query).
+4. [Optional] Adjust `RoundExecutor` query. See [Calling `RoundExecutor` note](#calling-roundexecutor).
 5. `make paima-middleware` (⚠️ if you want to check out `RoundExecutor` example with this demo, make sure you finished step 4 before `make paima-middleware`)
 6. `make init-batcher` - requests `sudo` to make batcher script (`./batcher/start.sh`) executable. ⚠️ `./batcher/.env.localhost` also changed according to `.env.localhost.godot`
 7. `make webserver-dir` (prepares server directory fro Godot web-export and Paima middleware package)
@@ -135,7 +166,7 @@ window.paima_endpoints =  endpoints;
 
 Couple attempts to do the same via `JavaScriptBridge` (like evaluating JS in [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd)) were not successful so far.
 
-### Note on adjusting `RoundExecutor` query
+### Calling `RoundExecutor`
 
 `open-world` template that was used for the demo does not use `RoundExecutor` from the Paima Engine when generated. For reproducibility we opt to work with freshly generated template to setup the demo, so there will be no functional query to the `RoundExecutor` out of the box. However it still would be great to see interactions with `RoundExecutor` as it is important part of th Paima Engine and it is not hard to accomplish in our case.
 
@@ -199,7 +230,7 @@ Currently implemented:
 
 ### Note #1
 
-Currently, CIP-30 API initialization is split between [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd). It should be possible to implement JS code evaluation from `cip_30_js_api.gd` as GDScript code also, but most certainly require a lot of whapping using `JavaScriptBridge` and associated debugging.
+Currently, CIP-30 API initialization is split between [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd). It should be possible to implement JS code evaluation from `cip_30_js_api.gd` as GDScript code also, but most certainly will require a lot of whapping using `JavaScriptBridge` and associated debugging.
 
 ### Note #2
 

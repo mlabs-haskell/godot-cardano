@@ -18,7 +18,7 @@ func _ready():
 	add_child(_name_field)
 	
 	var go_btn = Button.new()
-	go_btn.text = "Go"
+	go_btn.text = "Enable wallet"
 	go_btn.pressed.connect(_pick_wallet)
 	add_child(go_btn)
 
