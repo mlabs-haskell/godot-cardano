@@ -73,7 +73,7 @@ func add_paima_game_buttons(paima_mw: PaimaMiddleware):
 
 func _add_seaprator(label_name: String):
 	var sep = Label.new()
-	sep.text = "label_name"
+	sep.text = label_name
 	sep.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(sep)
 

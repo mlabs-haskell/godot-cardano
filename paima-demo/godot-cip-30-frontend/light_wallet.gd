@@ -9,7 +9,7 @@ signal on_light_wallet_picked(name: String)
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	var sep1 = Label.new()
-	sep1.text = "Use light wallet"
+	sep1.text = "Use light wallet (e.g.: nami, gerowallet, flint, LodeWallet, eternl)"
 	sep1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(sep1)
 	
