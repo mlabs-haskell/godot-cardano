@@ -304,6 +304,7 @@ dependencies = [
  "cbor_event",
  "godot",
  "hex",
+ "num-bigint",
  "pkcs5",
  "rand",
  "scrypt",

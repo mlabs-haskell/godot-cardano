@@ -17,5 +17,10 @@ func _unwrap() -> Variant:
 func _to_json() -> Dictionary:
 	return { "list": _data.map(func (v): return v.to_json()) }
 
+# Get the underlying Array of [class PlutusData]
 func get_data() -> Array[PlutusData]:
 	return _data
+
+# Get an element from the list given [param index] 
+func get_element(index: int) -> PlutusData:
+	return _data[index]

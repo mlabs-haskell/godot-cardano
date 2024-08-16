@@ -127,7 +127,7 @@ impl Cbor {
                 Ok(())
             }
             Len::Indefinite => {
-                while !raw.special_break()? {
+                while raw.cbor_type()? != Type::Special || !raw.special_break()? {
                     next(raw)?;
                 }
                 Ok(())

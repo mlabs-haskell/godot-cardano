@@ -92,7 +92,7 @@ func _get_utxos(query_id: String, query: Callable) -> Array[Utxo]:
 	var utxos: Array[Utxo] = []
 	var cache_entry: UtxoCacheEntry = _utxo_cache.get(query_id, null)
 	var now = Time.get_ticks_msec()
-	if cache_entry != null and (now - cache_entry._time) < cache_timeout:
+	if use_caching and cache_entry != null and (now - cache_entry._time) < cache_timeout:
 		utxos = cache_entry._result
 	else:
 		utxos = await query.call() 

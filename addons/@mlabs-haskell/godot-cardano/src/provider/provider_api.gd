@@ -260,6 +260,12 @@ static func _build_datum_info(
 	datum_resolved_str: String,
 ) -> UtxoDatumInfo:
 	if datum_hash == "":
+		if datum_inline_str != "":
+			datum_hash = _Cbor.hash_plutus_data(datum_inline_str.hex_decode()).hex_encode()
+			return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
+		elif datum_resolved_str != "":
+			datum_hash = _Cbor.hash_plutus_data(datum_resolved_str.hex_decode()).hex_encode()
+			return UtxoDatumInfo.create_with_inline_datum(datum_hash, datum_inline_str)
 		return UtxoDatumInfo.empty()
 	elif datum_inline_str == "":
 		if datum_resolved_str == "":
