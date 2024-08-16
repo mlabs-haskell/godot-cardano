@@ -73,10 +73,11 @@ func add_asset(asset: AssetClass, quantity: BigInt) -> SetAssetResult:
 		quantity._b.add(prev._b)
 	))
 
-func merge(other: MultiAsset):
+func merge(other: MultiAsset) -> MultiAsset:
 	var dict := other.to_dictionary()
 	for key in dict:
 		add_asset(AssetClass.from_unit(key).value, dict[key])
+	return self
 
 ## Convert to a dictionary representation. This can be used by
 ## [method from_dictionary].

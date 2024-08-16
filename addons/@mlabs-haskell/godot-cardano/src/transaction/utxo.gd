@@ -80,8 +80,8 @@ static func create(
 	address: String,
 	coin: String,
 	assets: Dictionary,
-	datum_info: UtxoDatumInfo,
-	script_ref: PlutusScript
+	datum_info: UtxoDatumInfo = UtxoDatumInfo.empty(),
+	script_ref: PlutusScript = null
 ) -> CreateResult:
 	var results := Result.sequence([
 		TransactionHash.from_hex(tx_hash),

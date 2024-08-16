@@ -63,6 +63,10 @@ func add(other: BigInt) -> BigInt:
 ## Return the result of multiplying by [param other].
 func mul(other: BigInt) -> BigInt:
 	return BigInt.new(_b.mul(other._b))
+	
+## Return the result of dividing by [param other].
+func div(other: BigInt) -> BigInt:
+	return BigInt.new(_b._div(other._b).unsafe_value())
 
 ## Check if is equal to [param other].
 func eq(other: BigInt) -> bool:
