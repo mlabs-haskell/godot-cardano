@@ -18,6 +18,7 @@ pub struct BigInt {
 pub enum BigIntError {
     CouldNotParseBigInt(JsError),
     CouldNotDeserializeBigInt(DeserializeError),
+    CouldNotDivideBigInt(),
 }
 
 impl GodotConvert for BigIntError {
@@ -30,7 +31,20 @@ impl ToGodot for BigIntError {
         match self {
             CouldNotParseBigInt(_) => 1,
             CouldNotDeserializeBigInt(_) => 2,
+            CouldNotDivideBigInt() => 3,
         }
+    }
+}
+
+impl From<num_bigint::ParseBigIntError> for BigIntError {
+    fn from(e: num_bigint::ParseBigIntError) -> BigIntError {
+        return BigIntError::CouldNotParseBigInt(JsError::from_str(e.to_string().as_str()));
+    }
+}
+
+impl From<JsError> for BigIntError {
+    fn from(e: JsError) -> BigIntError {
+        return BigIntError::CouldNotParseBigInt(e);
     }
 }
 
@@ -78,6 +92,20 @@ impl BigInt {
     pub fn mul(&self, other: Gd<BigInt>) -> Gd<BigInt> {
         let b = self.b.mul(&other.bind().deref().b);
         Gd::from_object(Self { b })
+    }
+
+    pub fn div(&self, other: Gd<BigInt>) -> Result<BigInt, BigIntError> {
+        use std::str::FromStr;
+        let a = num_bigint::BigInt::from_str(self.b.to_str().as_str())?;
+        let b = num_bigint::BigInt::from_str(other.bind().deref().to_str().as_str())?;
+        Ok(Self {
+            b: CSL::BigInt::from_str((a / b).to_string().as_str())?,
+        })
+    }
+
+    #[func]
+    pub fn _div(&self, other: Gd<BigInt>) -> Gd<GResult> {
+        Self::to_gresult_class(self.div(other))
     }
 
     #[func]
