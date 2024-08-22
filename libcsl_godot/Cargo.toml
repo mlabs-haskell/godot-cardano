@@ -10,11 +10,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 godot = { git = "https://github.com/godot-rust/gdext", rev = "4ce4714b8871bf75e95d03401e44e3f1ccbdd7df" }
-uplc = { git = "https://github.com/aiken-lang/aiken", rev = "b50e4ab63aa35d8fd8b6c683460b312173ace0a2" }
-cardano-serialization-lib = "11.5.0"
+uplc = { git = "https://github.com/aiken-lang/aiken", tag = "v1.0.29-alpha" }
+cardano-serialization-lib = { git = "https://github.com/Emurgo/cardano-serialization-lib", tag = "12.0.0-beta.9" }
 bip32 = "0.5.1"
 hex = "0.4.0"
 rand = "0.8.5"
 pkcs5 = {version = "0.7.1", features = ["pbes2", "alloc"]}
 scrypt = "0.11.0"
 cbor_event = "2.1.3"
+wasm-bindgen = "=0.2.92"
