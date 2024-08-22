@@ -254,6 +254,10 @@ func _on_consume_script_input_pressed():
 		utxos_filtered,
 		BigInt.from_int(0)
 	)
+	tx.pay_to_address(
+		wallet.get_address(),
+		BigInt.from_int(5_000_000)
+	)
 	var result : TxBuilder.CompleteResult = await tx.complete()
 
 	if result.is_err():
@@ -262,8 +266,11 @@ func _on_consume_script_input_pressed():
 
 	if result.is_ok():
 		result.value.sign(password_input.text)
-		var hash := await result.value.submit()
-		print("Transaction hash:", hash.value.to_hex())
+		var submit_result := await result.value.submit()
+		if submit_result.is_ok():
+			print("Transaction hash:", submit_result.value.to_hex())
+		else:
+			push_error("Could not submit transaction: ", submit_result.error)
 
 
 func _on_password_input_text_changed(new_text: String) -> void:

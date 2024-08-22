@@ -3,8 +3,8 @@ use std::num::TryFromIntError;
 
 use cbor_event::{de::Deserializer, se::Serializer, Len, Type};
 
-use cardano_serialization_lib::error::DeserializeError;
-use cardano_serialization_lib::utils as CSL;
+use cardano_serialization_lib as CSL;
+use cardano_serialization_lib::DeserializeError;
 
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;

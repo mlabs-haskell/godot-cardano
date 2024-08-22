@@ -10,11 +10,11 @@ use std::array::TryFromSliceError;
 use std::collections::BTreeMap;
 
 use bip32::{Language, Mnemonic};
-use cardano_serialization_lib::address::Address as CSLAddress;
-use cardano_serialization_lib::address::{BaseAddress, StakeCredential};
-use cardano_serialization_lib::crypto::{Bip32PrivateKey, Bip32PublicKey};
-use cardano_serialization_lib::error::JsError;
-use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
+use cardano_serialization_lib::Address as CSLAddress;
+use cardano_serialization_lib::{
+    hash_transaction, make_vkey_witness, BaseAddress, Bip32PrivateKey, Bip32PublicKey, Credential,
+    JsError,
+};
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 use pkcs5::{pbes2, Error};
@@ -824,8 +824,8 @@ fn duplicate_key(k: &Bip32PublicKey) -> Bip32PublicKey {
 fn address_from_key(network: u8, key: &Bip32PublicKey) -> CSLAddress {
     let spend = key.derive(0).unwrap().derive(0).unwrap(); // safe by construction
     let stake = key.derive(2).unwrap().derive(0).unwrap(); // idem
-    let spend_cred = StakeCredential::from_keyhash(&spend.to_raw_key().hash());
-    let stake_cred = StakeCredential::from_keyhash(&stake.to_raw_key().hash());
+    let spend_cred = Credential::from_keyhash(&spend.to_raw_key().hash());
+    let stake_cred = Credential::from_keyhash(&stake.to_raw_key().hash());
 
     BaseAddress::new(network, &spend_cred, &stake_cred).to_address()
 }
