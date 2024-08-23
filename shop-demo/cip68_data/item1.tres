@@ -10,6 +10,7 @@ data_type = 0
 data_int = 200000000
 data_bytes = PackedByteArray()
 data_as_hex = ""
+data_as_utf8 = ""
 data_cbor_hex = "1a0bebc200"
 data_json = "{
   \"int\": \"200000000\"
