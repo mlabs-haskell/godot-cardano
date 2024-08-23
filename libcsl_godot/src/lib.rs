@@ -216,6 +216,7 @@ impl GTxBuilder {
                 &BigNum::from(params.ref_script_coins_per_byte),
                 &BigNum::from(1u64),
             ))
+            .deduplicate_explicit_ref_inputs_with_regular_inputs(true)
             .build()
             .map_err(|e| TxBuilderError::BadProtocolParameters(e))?;
         let tx_builder = TransactionBuilder::new(&tx_builder_config);

@@ -233,8 +233,8 @@ func mint_cip68_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
 	mint_assets(
 		conf.minting_policy_source, 
 		[
-			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity().negate()),
-			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one().negate())
+			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity()),
+			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one())
 		],
 		redeemer
 	)

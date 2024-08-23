@@ -130,7 +130,10 @@ func _chain_utxos(utxos: Array[Utxo]) -> Array[Utxo]:
 		return utxos
 	
 	var chained: Array[Utxo] = utxos.duplicate()
-	for utxo in utxos:
+	for utxo: Utxo in utxos:
+		if utxo == null:
+			continue
+
 		var out_ref := utxo.to_out_ref_string()
 		for key in _chaining_map:
 			var inner: Dictionary = _chaining_map[key]
