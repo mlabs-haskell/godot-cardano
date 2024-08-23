@@ -6,7 +6,7 @@ use CSL::{
     AssetName, BigNum, CoinSelectionStrategyCIP2, Costmdls, ExUnits, Int, JsError, LinearFee,
     MintBuilder, MintWitness, PlutusData, PlutusWitness, RedeemerTag, TransactionBuilder,
     TransactionBuilderConfigBuilder, TransactionOutputBuilder, TransactionUnspentOutputs,
-    TxBuilderConstants, TxInputsBuilder, Value, Vkeywitnesses,
+    TxBuilderConstants, TxInputsBuilder, UnitInterval, Value, Vkeywitnesses,
 };
 
 use godot::builtin::meta::GodotConvert;
@@ -44,6 +44,7 @@ struct ProtocolParameters {
     collateral_percentage: u64,
     max_cpu_units: u64,
     max_mem_units: u64,
+    ref_script_coins_per_byte: u64,
 }
 
 #[godot_api]
@@ -62,6 +63,7 @@ impl ProtocolParameters {
         collateral_percentage: u64,
         max_cpu_units: u64,
         max_mem_units: u64,
+        ref_script_coins_per_byte: u64,
     ) -> Gd<ProtocolParameters> {
         return Gd::from_object(Self {
             coins_per_utxo_byte,
@@ -76,6 +78,7 @@ impl ProtocolParameters {
             collateral_percentage,
             max_cpu_units,
             max_mem_units,
+            ref_script_coins_per_byte,
         });
     }
 }
@@ -209,6 +212,10 @@ impl GTxBuilder {
                     &BigNum::from(10_000_000u64),
                 ),
             ))
+            .ref_script_coins_per_byte(&UnitInterval::new(
+                &BigNum::from(params.ref_script_coins_per_byte),
+                &BigNum::from(1u64),
+            ))
             .build()
             .map_err(|e| TxBuilderError::BadProtocolParameters(e))?;
         let tx_builder = TransactionBuilder::new(&tx_builder_config);
@@ -267,6 +274,7 @@ impl GTxBuilder {
         let input = utxo.to_transaction_input();
         let datum = utxo.to_datum();
         let value = utxo.to_value();
+        let source = script_source.bind();
 
         // Index and RedeemerTag are not necessary, they are automatically set
         // by get_plutus_inputs_scripts()
@@ -277,27 +285,34 @@ impl GTxBuilder {
             &ExUnits::new(&BigNum::zero(), &BigNum::zero()), //
         );
 
-        // FIXME: script data hash fails to match if we add the datum here?
         let witness = match datum {
             Some(UtxoDatumValue::Resolved(datum_hex)) => {
                 let data = PlutusData::from_hex(datum_hex.to_string().as_str()).unwrap();
                 self.data.insert(data.clone());
                 PlutusWitness::new_with_ref(
-                    &script_source.bind().source,
+                    &source.source,
                     &CSL::DatumSource::new(&data),
                     &redeemer,
                 )
             }
-            _ => PlutusWitness::new_with_ref_without_datum(&script_source.bind().source, &redeemer),
+            _ => PlutusWitness::new_with_ref_without_datum(&source.source, &redeemer),
         };
 
         self.script_inputs_map.insert(
             utxo.to_transaction_input(),
-            (script_source.bind().source.clone(), value.clone()),
+            (source.source.clone(), value.clone()),
         );
         self.uses_plutus_scripts = true;
         self.inputs_builder
             .add_plutus_script_input(&witness, &input, &value);
+
+        match source.utxo.as_ref() {
+            Some(gutxo) => {
+                self.tx_builder
+                    .add_script_reference_input(&gutxo.bind().to_transaction_input(), source.size);
+            }
+            None => (),
+        }
 
         Ok(())
     }

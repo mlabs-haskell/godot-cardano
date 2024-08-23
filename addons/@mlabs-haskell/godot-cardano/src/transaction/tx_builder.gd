@@ -269,7 +269,7 @@ func mint_assets(
 	)
 	
 	if minting_policy_source.is_ref():
-		add_reference_input(Utxo.new(minting_policy_source.utxo()))
+		_script_utxos.push_back(Utxo.new(minting_policy_source.utxo()))
 		
 	var result := Result.VariantResult.new(
 		_builder._mint_assets(
@@ -294,8 +294,8 @@ func mint_cip68_pair(redeemer: PlutusData, conf: Cip68Config) -> TxBuilder:
 	mint_assets(
 		conf.minting_policy_source, 
 		[
-			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity()),
-			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one())
+			TxBuilder.MintToken.new(conf.get_user_token_name(), conf.get_quantity().negate()),
+			TxBuilder.MintToken.new(conf.get_ref_token_name(), BigInt.one().negate())
 		],
 		redeemer
 	)
@@ -390,10 +390,10 @@ func collect_from_script(
 	for utxo: Utxo in utxos:
 		_utxos.push_back(_substitute_utxo(utxo)._utxo)
 	
-	_script_utxos.append_array(utxos)
-
 	if plutus_script_source.is_ref():
-		add_reference_input(Utxo.new(plutus_script_source.utxo()))
+		_script_utxos.push_back(Utxo.new(plutus_script_source.utxo()))
+		
+	_script_utxos.append_array(utxos)
 
 	_builder._collect_from_script(
 		plutus_script_source,
@@ -439,7 +439,7 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 ## but will be available in the script evaluation context.
 func add_reference_input(utxo: Utxo) -> TxBuilder:
 	_builder._add_reference_input(utxo._utxo)
-	_script_utxos.push_back(utxo)
+	_other_utxos.push_back(utxo)
 	return self
 
 ## Substitutes any usage of [param from] in this transaction with [param to]. 
@@ -528,7 +528,9 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 		var sub_script_utxos: Array[Utxo] = []
 		for utxo: Utxo in _script_utxos:
 			sub_script_utxos.push_back(_substitute_utxo(utxo))
-		var eval_result := balance_result.value.evaluate(wallet_utxos + sub_script_utxos)
+		var eval_result := balance_result.value.evaluate(
+			wallet_utxos + sub_script_utxos + _other_utxos
+		)
 		
 		_results.push_back(eval_result)
 		if eval_result.is_ok():
