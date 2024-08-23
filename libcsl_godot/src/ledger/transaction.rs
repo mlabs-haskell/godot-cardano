@@ -789,6 +789,7 @@ impl PlutusScript {
 pub struct PlutusScriptSource {
     pub source: CSL::PlutusScriptSource,
     pub bytes: Option<Vec<u8>>,
+    pub size: usize,
     pub hash: CSL::ScriptHash,
     pub utxo: Option<Gd<Utxo>>,
 }
@@ -800,6 +801,7 @@ impl PlutusScriptSource {
         let script = gscript.bind().script.clone();
         Gd::from_object(Self {
             source: CSL::PlutusScriptSource::new(&script),
+            size: script.to_bytes().len(),
             bytes: Some(script.bytes()),
             hash: script.hash(),
             utxo: None,
@@ -811,14 +813,16 @@ impl PlutusScriptSource {
         let utxo = gutxo.bind();
         utxo.script_ref.as_ref().map(|script_ref| {
             let hash = script_ref.bind().hash().bind().hash.clone();
+            let size = script_ref.bind().script.to_bytes().len();
             Gd::from_object(Self {
                 source: CSL::PlutusScriptSource::new_ref_input(
                     &hash,
                     &utxo.to_transaction_input(),
                     &Language::new_plutus_v2(),
-                    script_ref.bind().script.to_bytes().len(),
+                    size,
                 ),
                 bytes: None,
+                size,
                 hash,
                 utxo: Some(gutxo.clone()),
             })

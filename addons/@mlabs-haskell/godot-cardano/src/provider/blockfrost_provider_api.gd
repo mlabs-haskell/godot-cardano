@@ -295,6 +295,7 @@ func _get_protocol_parameters() -> ProtocolParameters:
 		params_json.collateral_percent as Variant as int,
 		params_json.max_tx_ex_steps as Variant as int,
 		params_json.max_tx_ex_mem as Variant as int,
+		params_json.min_fee_ref_script_cost_per_byte as Variant as int
 	)
 	var cost_models := CostModels.new(params_json.cost_models)
 	self.got_protocol_parameters.emit(params, cost_models)
