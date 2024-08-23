@@ -224,6 +224,16 @@ impl MultiAsset {
             &asset_name.bind().asset_name,
             &BigNum::from_str(&quantity.bind().to_str())?,
         );
+        if quantity.bind().eq(BigInt::zero()) {
+            // FIXME: ugly hack
+            let mut empty = CSL::MultiAsset::new();
+            empty.set_asset(
+                &policy_id.bind().policy_id,
+                &asset_name.bind().asset_name,
+                &BigNum::zero(),
+            );
+            self.assets = self.assets.sub(&empty);
+        }
         Ok(())
     }
 
