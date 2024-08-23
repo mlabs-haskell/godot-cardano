@@ -1,8 +1,8 @@
 use std::ops::Deref;
 
 use crate::gresult::{FailsWith, GResult};
-use cardano_serialization_lib::error::{DeserializeError, JsError};
-use cardano_serialization_lib::utils as CSL;
+use cardano_serialization_lib as CSL;
+use cardano_serialization_lib::{DeserializeError, JsError};
 use godot::builtin::meta::GodotConvert;
 use godot::prelude::*;
 

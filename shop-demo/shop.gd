@@ -16,7 +16,6 @@ var update_timer: Timer = null
 var cip68_data: Array[Cip68Config] = []
 
 var owner_pub_key_hash: PubKeyHash = null
-var tag: BigInt = BigInt.from_int(239058)
 var ref_lock_source: PlutusScriptSource
 var shop_script_source: PlutusScriptSource
 

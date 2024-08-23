@@ -38,6 +38,10 @@ static func from_hex(hash: String) -> FromHexResult:
 static func from_bytes(bytes: PackedByteArray) -> FromBytesResult:
 	return FromBytesResult.new(_AssetName._from_bytes(bytes))
 
+## Try to parse an [AssetName] from a UTF-8 string.
+static func from_utf8(str: String) -> FromBytesResult:
+	return FromBytesResult.new(_AssetName._from_bytes(str.to_utf8_buffer()))
+
 func to_bytes() -> PackedByteArray:
 	return _asset_name.to_bytes()
 

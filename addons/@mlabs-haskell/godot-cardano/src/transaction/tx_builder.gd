@@ -210,7 +210,7 @@ func mint_assets(
 	)
 	
 	if minting_policy_source.is_ref():
-		add_reference_input(Utxo.new(minting_policy_source.utxo()))
+		_script_utxos.push_back(Utxo.new(minting_policy_source.utxo()))
 		
 	var result := Result.VariantResult.new(
 		_builder._mint_assets(
@@ -329,10 +329,10 @@ func collect_from_script(
 		)
 	)
 	
-	_script_utxos.append_array(utxos)
-
 	if plutus_script_source.is_ref():
-		add_reference_input(Utxo.new(plutus_script_source.utxo()))
+		_script_utxos.push_back(Utxo.new(plutus_script_source.utxo()))
+		
+	_script_utxos.append_array(utxos)
 
 	_builder._collect_from_script(
 		plutus_script_source,
@@ -376,7 +376,7 @@ func add_required_signer(pub_key_hash: PubKeyHash) -> TxBuilder:
 ## but will be available in the script evaluation context.
 func add_reference_input(utxo: Utxo) -> TxBuilder:
 	_builder._add_reference_input(utxo._utxo)
-	_script_utxos.push_back(utxo)
+	_other_utxos.push_back(utxo)
 	return self
 
 ## Only balance the transaction and return the result.[br]The resulting transaction
@@ -452,7 +452,9 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 	_results.push_back(balance_result)
 	
 	if not error and balance_result.is_ok():
-		var eval_result := balance_result.value.evaluate(wallet_utxos + _script_utxos)
+		var eval_result := balance_result.value.evaluate(
+				wallet_utxos + _script_utxos + _other_utxos
+		)
 		
 		_results.push_back(eval_result)
 		if eval_result.is_ok():

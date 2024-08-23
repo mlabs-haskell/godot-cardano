@@ -3,12 +3,11 @@ use cardano_serialization_lib as CSL;
 use godot::builtin::meta::ConvertError;
 use uplc::ast::DeBruijn;
 use uplc::ast::Program;
-use CSL::crypto::{DataHash, Vkeywitness, Vkeywitnesses};
-use CSL::error::JsError;
-use CSL::plutus::{ExUnits, Language, RedeemerTag};
-use CSL::tx_builder::tx_inputs_builder::{self};
-use CSL::utils::*;
-use CSL::{TransactionInput, TransactionOutput};
+use CSL::{
+    hash_plutus_data, hash_transaction, BigNum, DataHash, ExUnits, Int, JsError, Language,
+    RedeemerTag, TransactionInput, TransactionOutput, TransactionUnspentOutput, Value, Vkeywitness,
+    Vkeywitnesses,
+};
 
 use uplc::tx::error::Error as UplcError;
 use uplc::tx::eval_phase_two_raw;
@@ -50,7 +49,7 @@ impl FailsWith for PolicyId {
 #[godot_api]
 impl PolicyId {
     fn from_hex(policy_id: GString) -> Result<PolicyId, PolicyIdError> {
-        CSL::crypto::ScriptHash::from_hex(&policy_id.to_string())
+        CSL::ScriptHash::from_hex(&policy_id.to_string())
             .map_err(|_| PolicyIdError::CouldNotDecodeHex(policy_id.to_string()))
             .map(|policy_id| Self { policy_id })
     }
@@ -191,7 +190,7 @@ impl MultiAsset {
         let mut assets: CSL::MultiAsset = CSL::MultiAsset::new();
         for (unit, amount) in dict.iter_shared().typed::<GString, Gd<BigInt>>() {
             assets.set_asset(
-                &CSL::crypto::ScriptHash::from_hex(
+                &CSL::ScriptHash::from_hex(
                     &unit
                         .to_string()
                         .get(0..56)
@@ -208,7 +207,7 @@ impl MultiAsset {
                 )
                 .map_err(|_| MultiAssetError::InvalidAssetName(unit.to_string()))?
                 .into(),
-                BigNum::from_str(&amount.bind().to_str())?,
+                &BigNum::from_str(&amount.bind().to_str())?,
             );
         }
         return Ok(MultiAsset { assets });
@@ -268,8 +267,18 @@ impl MultiAsset {
         self.assets.set_asset(
             &policy_id.bind().policy_id,
             &asset_name.bind().asset_name,
-            BigNum::from_str(&quantity.bind().to_str())?,
+            &BigNum::from_str(&quantity.bind().to_str())?,
         );
+        if quantity.bind().eq(BigInt::zero()) {
+            // FIXME: ugly hack
+            let mut empty = CSL::MultiAsset::new();
+            empty.set_asset(
+                &policy_id.bind().policy_id,
+                &asset_name.bind().asset_name,
+                &BigNum::zero(),
+            );
+            self.assets = self.assets.sub(&empty);
+        }
         Ok(())
     }
 
@@ -303,7 +312,7 @@ impl MultiAsset {
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_TransactionHash)]
 pub struct TransactionHash {
-    pub hash: CSL::crypto::TransactionHash,
+    pub hash: CSL::TransactionHash,
 }
 
 #[derive(Debug)]
@@ -338,7 +347,7 @@ impl From<JsError> for TransactionHashError {
 impl TransactionHash {
     fn from_hex(hash: GString) -> Result<Self, TransactionHashError> {
         Ok(Self {
-            hash: CSL::crypto::TransactionHash::from_hex(&hash.to_string())?,
+            hash: CSL::TransactionHash::from_hex(&hash.to_string())?,
         })
     }
 
@@ -362,7 +371,7 @@ pub struct Signature {
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Credential)]
 pub struct Credential {
-    pub credential: CSL::address::StakeCredential,
+    pub credential: CSL::Credential,
 }
 
 #[derive(Debug)]
@@ -423,14 +432,14 @@ impl Credential {
     #[func]
     fn from_key_hash(hash: Gd<PubKeyHash>) -> Gd<Credential> {
         Gd::from_object(Credential {
-            credential: CSL::address::StakeCredential::from_keyhash(&hash.bind().hash),
+            credential: CSL::Credential::from_keyhash(&hash.bind().hash),
         })
     }
 
     #[func]
     fn from_script_hash(hash: Gd<ScriptHash>) -> Gd<Credential> {
         Gd::from_object(Credential {
-            credential: CSL::address::StakeCredential::from_scripthash(&hash.bind().hash),
+            credential: CSL::Credential::from_scripthash(&hash.bind().hash),
         })
     }
 
@@ -484,7 +493,7 @@ impl Credential {
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_Address)]
 pub struct Address {
-    pub address: CSL::address::Address,
+    pub address: CSL::Address,
 }
 
 #[derive(Debug)]
@@ -513,7 +522,7 @@ impl FailsWith for Address {
 impl Address {
     pub fn from_bech32(address: String) -> Result<Address, AddressError> {
         Ok(Self {
-            address: CSL::address::Address::from_bech32(&address)
+            address: CSL::Address::from_bech32(&address)
                 .map_err(|e| AddressError::Bech32Error(e))?,
         })
     }
@@ -542,7 +551,7 @@ impl Address {
     ) -> Gd<Address> {
         let address = match mb_stake_credential {
             Some(stake_cred) => Self {
-                address: CSL::address::BaseAddress::new(
+                address: CSL::BaseAddress::new(
                     network_id,
                     &payment_credential.bind().credential,
                     &stake_cred.bind().credential,
@@ -550,7 +559,7 @@ impl Address {
                 .to_address(),
             },
             None => Self {
-                address: CSL::address::EnterpriseAddress::new(
+                address: CSL::EnterpriseAddress::new(
                     network_id,
                     &payment_credential.bind().credential,
                 )
@@ -562,38 +571,34 @@ impl Address {
 
     #[func]
     pub fn payment_credential(&self) -> Option<Gd<Credential>> {
-        match CSL::address::EnterpriseAddress::from_address(&self.address) {
+        match CSL::EnterpriseAddress::from_address(&self.address) {
             Some(eaddr) => Some(Gd::from_object(Credential {
                 credential: eaddr.payment_cred(),
             })),
             _ => None,
         }
-        .or_else(
-            || match CSL::address::BaseAddress::from_address(&self.address) {
-                Some(baddr) => Some(Gd::from_object(Credential {
-                    credential: baddr.payment_cred(),
-                })),
-                _ => None,
-            },
-        )
+        .or_else(|| match CSL::BaseAddress::from_address(&self.address) {
+            Some(baddr) => Some(Gd::from_object(Credential {
+                credential: baddr.payment_cred(),
+            })),
+            _ => None,
+        })
     }
 
     #[func]
     pub fn stake_credential(&self) -> Option<Gd<Credential>> {
-        match CSL::address::RewardAddress::from_address(&self.address) {
+        match CSL::RewardAddress::from_address(&self.address) {
             Some(raddr) => Some(Gd::from_object(Credential {
                 credential: raddr.payment_cred(),
             })),
             _ => None,
         }
-        .or_else(
-            || match CSL::address::BaseAddress::from_address(&self.address) {
-                Some(baddr) => Some(Gd::from_object(Credential {
-                    credential: baddr.stake_cred(),
-                })),
-                _ => None,
-            },
-        )
+        .or_else(|| match CSL::BaseAddress::from_address(&self.address) {
+            Some(baddr) => Some(Gd::from_object(Credential {
+                credential: baddr.stake_cred(),
+            })),
+            _ => None,
+        })
     }
 }
 
@@ -628,8 +633,7 @@ impl Datum {
 
     #[func]
     pub fn hashed(bytes: PackedByteArray) -> Gd<Datum> {
-        let b = hash_plutus_data(&CSL::plutus::PlutusData::from_bytes(bytes.to_vec()).unwrap())
-            .to_bytes();
+        let b = hash_plutus_data(&CSL::PlutusData::from_bytes(bytes.to_vec()).unwrap()).to_bytes();
         let hash_bytes: &[u8] = b.as_slice().into();
         Gd::from_object(Datum {
             datum: DatumValue::Hash(PackedByteArray::from(hash_bytes)),
@@ -647,12 +651,12 @@ impl Datum {
 #[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=Redeemer)]
 pub struct Redeemer {
-    pub redeemer: CSL::plutus::Redeemer,
+    pub redeemer: CSL::Redeemer,
 }
 
 #[derive(Debug)]
 pub enum RedeemerError {
-    DecodeRedeemerError(CSL::error::DeserializeError),
+    DecodeRedeemerError(CSL::DeserializeError),
     UnknownRedeemerTag(u64),
 }
 
@@ -674,8 +678,8 @@ impl FailsWith for Redeemer {
     type E = RedeemerError;
 }
 
-impl From<CSL::error::DeserializeError> for RedeemerError {
-    fn from(error: CSL::error::DeserializeError) -> RedeemerError {
+impl From<CSL::DeserializeError> for RedeemerError {
+    fn from(error: CSL::DeserializeError) -> RedeemerError {
         RedeemerError::DecodeRedeemerError(error)
     }
 }
@@ -696,9 +700,9 @@ impl Redeemer {
             3 => Ok(RedeemerTag::new_reward()),
             _ => Err(RedeemerError::UnknownRedeemerTag(tag)),
         }?;
-        let data = &CSL::plutus::PlutusData::from_bytes(data.to_vec())?;
+        let data = &CSL::PlutusData::from_bytes(data.to_vec())?;
         Ok(Redeemer {
-            redeemer: CSL::plutus::Redeemer::new(
+            redeemer: CSL::Redeemer::new(
                 &redeemer_tag,
                 &BigNum::from(index),
                 data,
@@ -735,7 +739,7 @@ impl Redeemer {
 #[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=PlutusScript)]
 pub struct PlutusScript {
-    pub script: CSL::plutus::PlutusScript,
+    pub script: CSL::PlutusScript,
 }
 
 // FIXME: handle errors in here and support Plutus V1
@@ -744,14 +748,14 @@ impl PlutusScript {
     #[func]
     fn create(script: PackedByteArray) -> Gd<PlutusScript> {
         return Gd::from_object(PlutusScript {
-            script: CSL::plutus::PlutusScript::new_v2(script.to_vec()),
+            script: CSL::PlutusScript::new_v2(script.to_vec()),
         });
     }
 
     #[func]
     fn create_v1(script: PackedByteArray) -> Gd<PlutusScript> {
         return Gd::from_object(PlutusScript {
-            script: CSL::plutus::PlutusScript::new(script.to_vec()),
+            script: CSL::PlutusScript::new(script.to_vec()),
         });
     }
 
@@ -780,7 +784,7 @@ impl PlutusScript {
         for arg in args.iter_shared() {
             applied_prog = applied_prog.apply_data(to_aiken(arg));
         }
-        let script = CSL::plutus::PlutusScript::new_v2(applied_prog.to_cbor().unwrap());
+        let script = CSL::PlutusScript::new_v2(applied_prog.to_cbor().unwrap());
         Self { script }
     }
 
@@ -793,9 +797,10 @@ impl PlutusScript {
 #[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=PlutusScriptSource)]
 pub struct PlutusScriptSource {
-    pub source: CSL::tx_builder::tx_inputs_builder::PlutusScriptSource,
+    pub source: CSL::PlutusScriptSource,
     pub bytes: Option<Vec<u8>>,
-    pub hash: CSL::crypto::ScriptHash,
+    pub size: usize,
+    pub hash: CSL::ScriptHash,
     pub utxo: Option<Gd<Utxo>>,
 }
 
@@ -805,7 +810,8 @@ impl PlutusScriptSource {
     fn from_script(gscript: Gd<PlutusScript>) -> Gd<PlutusScriptSource> {
         let script = gscript.bind().script.clone();
         Gd::from_object(Self {
-            source: tx_inputs_builder::PlutusScriptSource::new(&script),
+            source: CSL::PlutusScriptSource::new(&script),
+            size: script.to_bytes().len(),
             bytes: Some(script.bytes()),
             hash: script.hash(),
             utxo: None,
@@ -817,13 +823,16 @@ impl PlutusScriptSource {
         let utxo = gutxo.bind();
         utxo.script_ref.as_ref().map(|script_ref| {
             let hash = script_ref.bind().hash().bind().hash.clone();
+            let size = script_ref.bind().script.to_bytes().len();
             Gd::from_object(Self {
-                source: tx_inputs_builder::PlutusScriptSource::new_ref_input_with_lang_ver(
+                source: CSL::PlutusScriptSource::new_ref_input(
                     &hash,
                     &utxo.to_transaction_input(),
                     &Language::new_plutus_v2(),
+                    size,
                 ),
                 bytes: None,
+                size,
                 hash,
                 utxo: Some(gutxo.clone()),
             })
@@ -841,7 +850,7 @@ impl PlutusScriptSource {
     fn script(&self) -> Option<Gd<PlutusScript>> {
         self.bytes.as_ref().map(|bytes| {
             Gd::from_object(PlutusScript {
-                script: CSL::plutus::PlutusScript::new_v2(bytes.clone()),
+                script: CSL::PlutusScript::new_v2(bytes.clone()),
             })
         })
     }
@@ -860,7 +869,7 @@ impl PlutusScriptSource {
 #[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=_PubKeyHash)]
 pub struct PubKeyHash {
-    pub hash: CSL::crypto::Ed25519KeyHash,
+    pub hash: CSL::Ed25519KeyHash,
 }
 
 #[derive(Debug)]
@@ -888,8 +897,8 @@ impl FailsWith for PubKeyHash {
 #[godot_api]
 impl PubKeyHash {
     pub fn from_hex(hex: String) -> Result<PubKeyHash, PubKeyHashError> {
-        let hash = CSL::crypto::Ed25519KeyHash::from_hex(hex.as_str())
-            .map_err(PubKeyHashError::FromHexError)?;
+        let hash =
+            CSL::Ed25519KeyHash::from_hex(hex.as_str()).map_err(PubKeyHashError::FromHexError)?;
         Ok(PubKeyHash { hash })
     }
 
@@ -912,7 +921,7 @@ impl PubKeyHash {
 #[derive(GodotClass, Debug)]
 #[class(base=RefCounted, rename=_ScriptHash)]
 pub struct ScriptHash {
-    pub hash: CSL::crypto::ScriptHash,
+    pub hash: CSL::ScriptHash,
 }
 
 #[derive(Debug)]
@@ -940,8 +949,8 @@ impl FailsWith for ScriptHash {
 #[godot_api]
 impl ScriptHash {
     pub fn from_hex(hex: String) -> Result<ScriptHash, ScriptHashError> {
-        let hash = CSL::crypto::ScriptHash::from_hex(hex.as_str())
-            .map_err(ScriptHashError::FromHexError)?;
+        let hash =
+            CSL::ScriptHash::from_hex(hex.as_str()).map_err(ScriptHashError::FromHexError)?;
         Ok(ScriptHash { hash })
     }
 
@@ -1007,15 +1016,14 @@ impl Utxo {
         let mut output = TransactionOutput::new(
             &self.address.bind().address,
             &Value::new_with_assets(
-                &to_bignum(
-                    self.coin
-                        .bind()
-                        .b
-                        .as_u64()
-                        .or(Some(BigNum::from(std::u64::MAX)))
-                        .unwrap()
-                        .into(),
-                ),
+                &self
+                    .coin
+                    .bind()
+                    .b
+                    .as_u64()
+                    .or(Some(BigNum::from(std::u64::MAX)))
+                    .unwrap()
+                    .into(),
                 &self.assets.bind().assets,
             ),
         );
@@ -1025,7 +1033,7 @@ impl Utxo {
         match (datum_info.data_hash.clone(), datum_info.datum_value.clone()) {
             (_, Some(UtxoDatumValue::Inline(inline_datum))) => {
                 output.set_plutus_data(
-                    &CSL::plutus::PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
+                    &CSL::PlutusData::from_hex(inline_datum.to_string().as_str()).unwrap(),
                 );
             }
             (Some(datum_hash), _) => {
@@ -1191,7 +1199,7 @@ impl UtxoDatumInfo {
 #[derive(GodotClass)]
 #[class(base=RefCounted, rename=_CostModels)]
 pub struct CostModels {
-    pub cost_models: CSL::plutus::Costmdls,
+    pub cost_models: CSL::Costmdls,
 }
 
 #[godot_api]
@@ -1199,12 +1207,12 @@ impl CostModels {
     #[func]
     pub fn create() -> Gd<CostModels> {
         Gd::from_object(CostModels {
-            cost_models: CSL::plutus::Costmdls::new(),
+            cost_models: CSL::Costmdls::new(),
         })
     }
 
-    fn build_model(ops: Array<u64>) -> CSL::plutus::CostModel {
-        let mut model = CSL::plutus::CostModel::new();
+    fn build_model(ops: Array<u64>) -> CSL::CostModel {
+        let mut model = CSL::CostModel::new();
         for (i, op) in ops.iter_shared().enumerate() {
             // NOTE: `model.set` never seems to actually fail?
             model.set(i, &Int::new(&BigNum::from(op))).unwrap();
@@ -1214,18 +1222,14 @@ impl CostModels {
 
     #[func]
     pub fn set_plutus_v1_model(&mut self, ops: Array<u64>) {
-        self.cost_models.insert(
-            &CSL::plutus::Language::new_plutus_v1(),
-            &Self::build_model(ops),
-        );
+        self.cost_models
+            .insert(&CSL::Language::new_plutus_v1(), &Self::build_model(ops));
     }
 
     #[func]
     pub fn set_plutus_v2_model(&mut self, ops: Array<u64>) {
-        self.cost_models.insert(
-            &CSL::plutus::Language::new_plutus_v2(),
-            &Self::build_model(ops),
-        );
+        self.cost_models
+            .insert(&CSL::Language::new_plutus_v2(), &Self::build_model(ops));
     }
 }
 
@@ -1246,13 +1250,13 @@ pub struct Transaction {
 
     pub max_ex_units: (u64, u64),
     pub slot_config: (u64, u64, u32),
-    pub cost_models: CSL::plutus::Costmdls,
+    pub cost_models: CSL::Costmdls,
 }
 
 #[derive(Debug)]
 pub enum TransactionError {
     EvaluationError(UplcError),
-    DeserializeError(CSL::error::DeserializeError),
+    DeserializeError(CSL::DeserializeError),
 }
 
 impl GodotConvert for TransactionError {
@@ -1279,8 +1283,8 @@ impl From<UplcError> for TransactionError {
     }
 }
 
-impl From<CSL::error::DeserializeError> for TransactionError {
-    fn from(error: CSL::error::DeserializeError) -> TransactionError {
+impl From<CSL::DeserializeError> for TransactionError {
+    fn from(error: CSL::DeserializeError) -> TransactionError {
         TransactionError::DeserializeError(error)
     }
 }
@@ -1336,7 +1340,7 @@ impl Transaction {
         let mut actual_redeemers: Array<Gd<Redeemer>> = Array::new();
         for redeemer in redeemers.iter() {
             actual_redeemers.push(Gd::from_object(Redeemer {
-                redeemer: CSL::plutus::Redeemer::from_bytes(redeemer.to_vec())?,
+                redeemer: CSL::Redeemer::from_bytes(redeemer.to_vec())?,
             }))
         }
         Ok(EvaluationResult {
@@ -1381,7 +1385,7 @@ impl Transaction {
                                     assets.set_asset(
                                         &policy_id,
                                         &asset_name,
-                                        tokens.get(&asset_name).unwrap(),
+                                        &tokens.get(&asset_name).unwrap(),
                                     );
                                 }
                             }
