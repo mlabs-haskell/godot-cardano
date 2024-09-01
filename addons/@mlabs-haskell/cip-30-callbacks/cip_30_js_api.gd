@@ -1,7 +1,16 @@
 extends RefCounted
-
 class_name JsCip30Api
 
+## Class responsible for initilizing the global Cardano object in a web environment
+##
+## This class is used internally by [Cip30Callbacks]. If you want to use the wallet
+## provided by godot-cardano in a web environment, check the documentation for that
+## class instead.[br][br]
+##
+## You should only use this class if you know what you are doing.
+
+## Initialize `window.cardano` (if it does not exist yet) and register the
+## godot-cardano wallet.
 func init_cip_30_api():
 	JavaScriptBridge.eval("""
 	function initCip30Godot() {

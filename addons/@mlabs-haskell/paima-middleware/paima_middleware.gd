@@ -1,10 +1,11 @@
 extends RefCounted
+class_name PaimaMiddleware
 
 ## Wrapper for core of Paima middleware.
+## 
 ## Provides API for logging-in and querying `RoundExecutor`.
-## All calls wraps JS object with Paima middleware. Handling of JS Promises is done
+## All calls wrap JS object with Paima middleware. Handling of JS Promises is done
 ## via signals and `await`s.
-class_name PaimaMiddleware
 
 enum WalletMode  { 
 	EVM_INJECTED = 0, 

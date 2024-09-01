@@ -75,6 +75,7 @@ func init_buttons(login_info: PaimaMiddleware.LoginInfo, cip_30_wallet: Cip30Wal
 
 func _hide_wallet_picker():
 	ui_grid.remove_child(walet_picker)
+	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
+func _process(_delta):
 	pass

@@ -1,10 +1,13 @@
 extends RefCounted
+class_name RoundExecutor
 
 ## Wrapper for Paima Round Executor.
-## Results of calling [RoundExecutor.tick], [RoundExecutor.end_state], [RoundExecutor.get_current_state]
-## and [RoundExecutor.processAllTicks] will depend on concrete game
-## so this wrapper uses the most general type [JavaScriptObject] or Array[JavaScriptObject]
-class_name RoundExecutor
+## 
+## The results of calling [method RoundExecutor.tick],
+## [method RoundExecutor.end_state], [method RoundExecutor.get_current_state]
+## and [method RoundExecutor.processAllTicks] will change for each game,
+## so this wrapper uses the most general type [JavaScriptObject] or
+## [code]Array[JavaScriptObject][/code].
 
 var _round_executor: JavaScriptObject
 

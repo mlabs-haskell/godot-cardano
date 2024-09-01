@@ -1,16 +1,22 @@
 extends Node
-# If `RefCounted` is used, then GDScript callbacks stop working - they are not called at all.
+class_name Cip30Callbacks
+## Provides a CIP-30 wrapper for a wallet in a web environment.
+## 
+## Used to register a CIP-30 wallet in a browser environment by adding
+## GDScript callbacks to the global [code]window.cardano.godot[/code] Object. These callbacks
+## defer their implementation to a [Cip30WalletApi] object, which is required for
+## initializing the class ([method Cip30Callbacks._init]).
+
+# NOTE
+# [JsCip30Api] contains a JS script that creates the `window.cardano.godot` Object
+# and also wraps these callbacks one more time to return a Promise in the JS side.
+# Promises are returned because it is not clear how to get `return` value back from [JavaScriptBridge] callbacks
+# (see https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)
+
+# NOTE
+# If [RefCounted] is used, then GDScript callbacks stop working - they are not called at all.
 # Probably coz references to callbacks are lost (see below).
 # (?) Alternative is to keep reference to `RefCounted` on root node (main.gd)
-
-## Provides CIP-30 compliant functions for Godot wallet.
-## Used to add GDScript callbacks wrapped with JavaScriptBridge into `window.cardano.godot` Object.
-## Class `JsCip30Api` (`cip_30_js_api.gd`) contains JS script that creates `window.cardano.godot` Object
-## and also wraps this callbacks one more time to return Promise result on the JS side
-## as it is not clear how to get `return` value back from JavaScriptBridge callbacks
-## (see https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)
-
-class_name Cip30Callbacks
 
 var _cip_30_wallet: Cip30WalletApi
 
@@ -20,12 +26,12 @@ var _js_cb_get_unused_addresses = JavaScriptBridge.create_callback(_cb_get_unuse
 var _js_cb_get_used_addresses = JavaScriptBridge.create_callback(_cb_get_used_addresses)
 var _js_cb_sign_data = JavaScriptBridge.create_callback(_cb_sign_data)
 
+## Configure the CIP-30 API to use the provided [param cip_30_wallet]
 func _init(cip_30_wallet: Cip30WalletApi):
 	_cip_30_wallet = cip_30_wallet
 
 # TODO: CIP-30 compliant errors
-# CIP-30 callbacks
-## Adding to `window`
+## Initialize the CIP-30 API by adding it to the global window object.
 func add_to(window):
 	if !window:
 		print("GD: Browser 'window' not found - skip adding CIP-30 callbacks")
@@ -83,10 +89,8 @@ func _cb_sign_data(args):
 	var sign_result = _cip_30_wallet.sign_data("", data_hex)
 	promise_resolve.call("call", promise_resolve.this, sign_result)
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
-	pass # Replace with function body.
+	pass
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	pass
