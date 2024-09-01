@@ -24,42 +24,42 @@
 
 ## Demo overview
 
-This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by either `cardano-godot` library or light wallet in the browser.
+This is combination of Paima's "open-world" template and Godot project that serves for testing interactions between web-exported Godot project and Paima middleware with the wallet functionality provided by either `godot-cardano` or a light wallet in the browser.
 
-The demo provides very simple UI: unlike original frontend for "open-world" game, it does not show the "world map" made from tiles, where player can click desired tile to move there. Instead, it shows current player position as `{x,y}` and 4 buttons to move left, right, up or down. All blockchain interactions are exactly the same as they would be in the original "open-world" demo.
+The demo provides a very simple UI: unlike the original frontend for "open-world" game, it does not show the "world map" made from tiles, where a player can click the desired tile to move there. Instead, it shows the current player position as a `{x,y}` tuple and 4 buttons to move left, right, up or down. However, all blockchain interactions are exactly the same as they would be in the original "open-world" demo.
 
-❗Note: It is highly recommended to have developer's console opened in the browser, as most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
+❗Note: It is highly recommended to have the developer's console open in the browser, as the most interesting data will be printed there during interactions. Recommended browser: Google Chrome.
 
 To start "playing" (moving on the map) you will need either:
 
-- Enable light wallet installed in your browser
+- An enabled light wallet installed in your browser
   - Enter wallet name into the text field above `Enable wallet` button (most common names are listed in the hint above the input field)
   - Press `Enable wallet`
-- Load the `godot-cardano` wallet from seed-phrase
+- A loaded `godot-cardano` wallet, imported from a seed-phrase
   - Put the seed phrase into the text field above `Init cardano-godot` button
   - Press `Init cardano-godot`
 
-After wallet is enabled you should see interface like this
+After the wallet is enabled you should see an interface like this
 
 ![paima demo interface](./doc/paima-demo-interface.png)
 
-From here you can start the "game" by logging in to Paima with selected wallet and then joining the world. . All blockchain interactions (joining the world and moving on map) take some time to be propagated on chain and processed by the game node. From player's point of view this actions will change UI in some short time period after button is pressed. To be aware of what is going on under the hood, diagnostic messages will be printed to the console:
+From here you can start the "game" by logging in to Paima with the selected wallet and then joining the world. All blockchain interactions (joining the world and moving on the map) take some time to be propagated on chain and processed by the game node. From the player's point of view, these actions will change the UI in a short time period after the button is pressed. To be aware of what is going on under the hood, diagnostic messages will be printed to the console:
 
 - For joining the world
-  - First message `GD:Paima: Joining game world...` will be printed ot the browser console
-  - Then, when join action is processed, you should see `GD:Paima: join world result: ...` containing either error or success result. If result is success, then movement buttons will be enabled
-- For pressing movement buttons
-  - First message `GD:Paima: Submitting move...` will be printed ot the browser console
-  - Then, when action is processed, you should see `GD:Paima: Moves submit result: ...` containing either error or success result. If action succeeded, current position will be update on the `Player position` UI element
+  - First, the message `GD:Paima: Joining game world...` will be printed ot the browser console
+  - Then, when the join action is processed, you should see `GD:Paima: join world result: ...` containing either an error or success result. If the result is a success, then movement buttons will be enabled
+- For pressing the movement buttons
+  - First message `GD:Paima: Submitting move...` will be printed on the browser console
+  - Then, when the action is processed, you should see `GD:Paima: Moves submit result: ...` containing either an error or success result. If the action succeeded, the current position will be updated on the `Player position` UI element
 
 The other two buttons in the UI:
 
-- `Show Paima Status` - shows current player stats as they are represented in the game middleware, mostly for debugging
+- `Show Paima Status` - shows current the player stats as they are represented in the game middleware, mostly for debugging
 - `Query and test Round Executor` - calls endpoint to get round executor and exercise its public API, see  [Calling `RoundExecutor` note](#calling-roundexecutor) for details
 
 ### Paima addon
 
-At its current state this particular demo is tightly coupled with `godot-cardano` wallet framework, so even if you plan to run it with light wallet, Rust libraries still have to be compiled and linked (see [Setting up the demo](#setting-up-the-demo)) - without them Godot project for the demo won't compile. But Paima addon itself is completely independent and can be used with any other Godot project and any wallet supported by Paima. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). An example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core. It can be used to run Godot open-world demo with any wallet supported by Pima with proper `PaimaMiddleware.LoginInfo` provided during login-in.
+At its current state this particular demo is tightly coupled with `godot-cardano` wallet framework, so even if you plan to run it with a light wallet, Rust libraries still have to be compiled and linked (see [Setting up the demo](#setting-up-the-demo)) - without them the Godot project for the demo will not compile. But the Paima addon itself is completely independent and can be used with any other Godot project and any wallet supported by Paima. Core `Paima` wrappers are introduced as the [standalone addon](../addons/@mlabs-haskell/paima-middleware/). An example of more game specific (but still wallet agnostic) middleware for the "open-world" can be found in the [demo's `game_middleware.gd`](./godot-cip-30-frontend/game_middleware.gd). Game specific middleware uses Godot Paima middleware addon as it's core. It can be used to run Godot open-world demo with any wallet supported by Pima with proper `PaimaMiddleware.LoginInfo` provided during login-in.
 
 ## Setting up the demo
 
@@ -92,26 +92,26 @@ paima-demo/godot-cip-30-frontend/addons
 
 ### Compile WASM
 
-📝 Working directory should be: `libcsl_godot`.
+📝 The working directory should be: `libcsl_godot`.
 
 1. `cd libcsl_godot`
 2. Make sure emscripten is in PATH: `emcc --version`
 3. `cargo +nightly build -Zbuild-std --target wasm32-unknown-emscripten`
 4. Copy or link `libcsl_godot/target/wasm32-unknown-emscripten/debug/csl_godot.wasm` to `addons/@mlabs-haskell/godot-cardano/bin`
 
-Optional: to prevent Godot editor from signaling bunch of errors, `.so` library can be compiled and added to `addons/@mlabs-haskell/godot-cardano/bin`:
+Optional: to prevent Godot editor from throwing a bunch of errors, the `.so` library can be compiled and added to `addons/@mlabs-haskell/godot-cardano/bin`:
 
    1. `cd libcsl_godot`
    2. `cargo build`
    3. (in case of Linux) Copy or link `libcsl_godot/target/debug/libcsl_godot.so` to `addons/@mlabs-haskell/godot-cardano/bin` as `libcsl_godot.linux.template_debug.x86_64.so`
 
-If `.so` is added, project can be run from Godot editor, but only one button to test signing will be shown in UI.
+If the `.so` is added, project can be run from Godot editor, but only one button to test signing will be shown in UI.
 
 ### Generate and setup Paima template and Batcher
 
-📝 Following commands require `node + npm`.
+📝 The following commands require `node + npm`.
 
-📝 Working directory should be: `paima-demo`.
+📝 The working directory should be: `paima-demo`.
 
 1. Copy or link to root Paima engine as `paima-engine`
 2. `make init` (goes through initialization process according to the [open-world-readme](./open-world/README.md); tested in Linux,some extra flags are required for macOS, see the readme; if there is some "red" messages about vulnerabilities it should be ok
@@ -170,16 +170,16 @@ Couple attempts to do the same via `JavaScriptBridge` (like evaluating JS in [ci
 
 `open-world` template that was used for the demo does not use `RoundExecutor` from the Paima Engine when generated. For reproducibility we opt to work with freshly generated template to setup the demo, so there will be no functional query to the `RoundExecutor` out of the box. However it still would be great to see interactions with `RoundExecutor` as it is important part of th Paima Engine and it is not hard to accomplish in our case.
 
-The only issue is that despite having proper query in the middleware to get the `RoundExecutor`, real executor is not created during `open-world` demo run and not persisted in the database. So if we attempt to query it via middleware endpoint, the query will fail. Luckily, this query can be mocked pretty easily. We will need to adjust just couple lines in `queries.ts` file. If you followed setup steps it should be located under [{repo_root}/open-world/middleware/src/endpoints/queries.ts](./open-world/middleware/src/endpoints/queries.ts)
+The only issue is that despite having a proper query in the middleware to get the `RoundExecutor`, the real executor is not created during the `open-world` demo run and it is not persisted in the database. So if we attempt to query it via middleware endpoint, the query will fail. Luckily, this query can be mocked pretty easily. We will need to adjust just couple lines in `queries.ts` file. If you followed setup steps it should be located under [{repo_root}/open-world/middleware/src/endpoints/queries.ts](./open-world/middleware/src/endpoints/queries.ts)
 
-Search for `async function getRoundExecutor`. There you should see query to the backend:
+Search for `async function getRoundExecutor`. There you should see a query to the backend:
 
 ```js
     const query = backendQueryRoundExecutor(lobbyId, roundNumber);
     res = await fetch(query);
 ```
 
-We need to replace that with mock. Here is an example with the real query commented out:
+We need to replace that with a mock. Here is an example with the real query commented out:
 
 ```js
     // const query = backendQueryRoundExecutor(lobbyId, roundNumber);
@@ -190,30 +190,30 @@ We need to replace that with mock. Here is an example with the real query commen
     } as Response;
 ```
 
-With this, when setup is finished and you run the demo, after wallet is loaded you can click `Query and test Round Executor` button. You should see message like this
+With this, when setup is finished and you run the demo, after wallet is loaded you can click `Query and test Round Executor` button. You should see a message like this
 
 ```text
 43 'seed used for the round executor at the middleware'
 ```
 
-and then log with results of calls to `RoundExecutor` JS API provided by [GDScript addon/wrapper](../addons/@mlabs-haskell/paima-middleware/paima_round_executor.gd).
+and then the log with results of calls to the `RoundExecutor` JS API provided by [GDScript addon/wrapper](../addons/@mlabs-haskell/paima-middleware/paima_round_executor.gd).
   
 ### Note on CIP-30 callbacks
 
-It is not quite clear at the moment how to "properly" get returned value from GDScript callbacks wrapped with `JavaScriptBridge` (see [godotengine forum](https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)). The one way, is to set returned value to some object either available globally or passed as an argument to GDScript callback (see also [here](https://godotengine.org/article/godot-web-progress-report-9/)). After some experiments current solution is implemented as follows:
+It is not quite clear at the moment how to "properly" get the returned value from GDScript callbacks wrapped with `JavaScriptBridge` (see [godotengine forum](https://forum.godotengine.org/t/getting-return-value-from-js-callback/54190/3)). The one way, is to set returned value to some object either available globally or passed as an argument to GDScript callback (see also [here](https://godotengine.org/article/godot-web-progress-report-9/)). After some experiments current solution is implemented as follows:
 
 1. Callbacks are created by [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and added to the `window.cardano.godot.callbacks` object
-2. As first argument - `args[0]`, all this callbacks receive `resolve` callback of JS `Promise` (more on this below). For data signing callback, additionally `reject` is passed to `args[1]`
+2. As first argument - `args[0]`, all these callbacks receive `resolve` callback of JS `Promise` (more on this below). For data signing callback, additionally `reject` is passed to `args[1]`
 3. When GDScript callback finishes work an need to return result, it calls `resolve` callback passed as `args[0]` using the following code: `promise_callback.call("call", promise_callback.this, value_to_return)`
-4. [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd) has single function that executes raw JS which does the following:
-   1. Adds CIP-30 compliant `window.cardano.godot` with Promise based API
-   2. Adds `window.cardano.godot.callbacks` object
+4. [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd) has a single function that evaluates raw Javascript snippet,  which performs the following:
+   1. Adds a CIP-30 compliant `window.cardano.godot` object with a Promise based API
+   2. Adds a (non-standard) `window.cardano.godot.callbacks` object. This is an implementation detail.
    3. Adds CIP-30 API functions to `window.cardano.godot`. To enable communication with wallet, callbacks from `window.cardano.godot.callbacks` are wrapped here in such a way that:
       1. `Promise` is created via `Promise.withResolvers()`
       2. `resolve` is passed to GDScript callback (from `window.cardano.godot.callbacks`) as first argument (will become `args[0]`). For data signing `reject` passed as well as `args[1]`
       3. `Promise` instance is returned to the caller  
 
-As a result of all this manipulations, when GDScript callback will execute `promise_callback.call("call", promise_callback.this, value_to_return)`, `Promise` will be resolved and returned value can be obtained on JS side. JS code execution function from [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd) is invoked by [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) right before setting callbacks to the `window.cardano.godot.callbacks`. After executing JS code and adding callbacks, user can get CIP-30 compliant API when calling `enable()` on `window.cardano.godot` object in the browser.
+As a result of all these manipulations, when a GDScript callback executes `promise_callback.call("call", promise_callback.this, value_to_return)`, the `Promise` will be resolved and the returned value can be obtained on JS side. The JS code execution function from [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd) is invoked by [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) right before setting callbacks to the `window.cardano.godot.callbacks`. After executing JS code and adding callbacks, the user can get a CIP-30 compliant API when calling `enable()` on the `window.cardano.godot` object in the browser.
 
 ## CIP-30 API
 
@@ -230,11 +230,11 @@ Currently implemented:
 
 ### Note #1
 
-Currently, CIP-30 API initialization is split between [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd). It should be possible to implement JS code evaluation from `cip_30_js_api.gd` as GDScript code also, but most certainly will require a lot of whapping using `JavaScriptBridge` and associated debugging.
+Currently, CIP-30 API initialization is split between [cip_30_callbacks.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_callbacks.gd) and [cip_30_js_api.gd](../addons/@mlabs-haskell/cip-30-callbacks/cip_30_js_api.gd). It should be possible to implement JS code evaluation from `cip_30_js_api.gd` as GDScript code also, but that most certainly will require a lot of wrapping using `JavaScriptBridge` and associated debugging.
 
 ### Note #2
 
-Definition of  `JavaScriptBridge` callbacks should be done with care and exactly match examples from tutorial, as things tend to break silently here.
+Definition of  `JavaScriptBridge` callbacks should be done with care and exactly matching the examples from the tutorial, as things tend to break silently here.
 
 ### Note #3: Sign data test output
 
