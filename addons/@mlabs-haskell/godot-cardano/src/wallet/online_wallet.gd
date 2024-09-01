@@ -1,10 +1,11 @@
 extends Node
+class_name OnlineWallet
+
 ## A wallet class with online functionality, enabled by a Provider
 ##
 ## This class is used for providing wallet-related online functionality, such
 ## as querying for the assets or UTxOs locked at the wallet. These features are
 ## possible due to the required [Provider] in its constructor.
-class_name OnlineWallet
 
 signal got_updated_utxos(utxos: Array[Utxo])
 

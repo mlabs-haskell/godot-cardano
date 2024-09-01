@@ -1,10 +1,10 @@
 extends RefCounted
+class_name MultiAsset
+
 ## A bag of assets.
 ##
 ## A value held at a [Utxo] may contain multiple [AssetClass]es. A [MultiAsset]
 ## is used for representing these assets and their respective quantities.
-
-class_name MultiAsset
 
 var _multi_asset: _MultiAsset
 

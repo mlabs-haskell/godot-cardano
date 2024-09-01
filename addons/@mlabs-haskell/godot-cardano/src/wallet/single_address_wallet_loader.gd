@@ -1,11 +1,11 @@
 extends RefCounted
+class_name SingleAddressWalletLoader
+
 ## A utility class used for loading/creating wallets
 ##
 ## This class is provided for the safe construction, import and export of
 ## [SingleAddressWallet]s. Because of this, it should only be used once and then
 ## discarded.
-
-class_name SingleAddressWalletLoader
 
 enum Status {
 	SUCCESS = 0,
@@ -128,7 +128,21 @@ func import_from_seedphrase(
 		var res: WalletImportResult = await import_completed
 		thread.wait_to_finish()
 		return res
-		
+
+# TODO: docs if we won't figure out hpw to do it with threads	
+func import_from_seedphrase_wo_new_thread(
+	phrase: String,
+	phrase_password: String, 
+	wallet_password: String,
+	account_index: int,
+	name: String,
+	account_description: String) -> WalletImportResult:
+		_wrap_import_from_seedphrase(
+				phrase, phrase_password, wallet_password, account_index, name, account_description
+			)
+		var res: WalletImportResult = await import_completed
+		return res
+
 ## Import from a [class SingleAddressWalletResource]. If the resource is
 ## malformed, an error will be thrown. To export a wallet, read
 ## [method SingleAddressWalletLoader.export].

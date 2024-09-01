@@ -1,10 +1,10 @@
 extends RefCounted
+class_name Address
+
 ## A Cardano address
 ##
 ## This class represents a Cardano address consisting of a payment [Credential]
 ## and a (optional) staking [Credential].
-
-class_name Address
 
 var _address: _Address
 
@@ -47,6 +47,9 @@ func to_bech32() -> String:
 		_:
 			push_error("An error was found while encoding an address as bech32", result.error)
 			return ""
+			
+func to_hex() -> String:
+	return _address._to_hex()
 
 func _to_string() -> String:
 	return to_bech32()

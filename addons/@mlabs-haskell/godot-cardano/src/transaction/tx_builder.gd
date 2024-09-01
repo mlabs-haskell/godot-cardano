@@ -1,4 +1,6 @@
 extends RefCounted
+class_name TxBuilder
+
 ## Main interface for transaction building
 ##
 ## The [TxBuilder] offers a stateful interface for the building of transactions,
@@ -11,7 +13,6 @@ extends RefCounted
 ##
 ## This last step returns a [TxComplete], which is a balanced and evaluated
 ## transaction that can be subsequently signed and submitted.
-class_name TxBuilder
 
 enum TxBuilderStatus {
 	SUCCESS = 0,

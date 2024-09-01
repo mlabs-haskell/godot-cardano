@@ -1,5 +1,6 @@
 extends ProviderApi
 class_name BlockfrostProviderApi
+
 ## An implementation of [class ProviderApi] using the Blockfrost API.
 
 enum ResultsOrder { ASCENDING, DESCENDING }

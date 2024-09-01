@@ -1,6 +1,7 @@
 @tool
 extends PlutusData
 class_name BigInt
+
 ## Integers of arbitrary size
 ##
 ## This class is used for representing both positive and negative integers of

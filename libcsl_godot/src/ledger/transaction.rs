@@ -523,6 +523,15 @@ impl Address {
         Self::to_gresult_class(Self::from_bech32(address))
     }
 
+    pub fn to_hex(&self) -> String {
+        self.address.to_hex()
+    }
+
+    #[func]
+    pub fn _to_hex(&self) -> String {
+        self.to_hex()
+    }
+
     pub fn to_bech32(&self) -> Result<String, AddressError> {
         self.address
             .to_bech32(None)

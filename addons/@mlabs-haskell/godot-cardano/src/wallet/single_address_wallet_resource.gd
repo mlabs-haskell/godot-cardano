@@ -1,9 +1,9 @@
 extends Resource
+class_name SingleAddressWalletResource
+
 ## Storage class for wallets
 ##
 ## This is a storage class used by [method SingleAddressWalletLoader.export].
-
-class_name SingleAddressWalletResource
 
 @export
 var encrypted_master_private_key: PackedByteArray

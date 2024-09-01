@@ -1,5 +1,7 @@
 @tool
 extends Resource
+class_name Cip68Config
+
 ## Helper for minting valid CIP68 tokens
 ## 
 ## This resource is used for creating valid pairs of CIP68 _reference_
@@ -11,8 +13,6 @@ extends Resource
 ## metadata is valid for a CIP68 token. Whenever possible, it is recommended
 ## to create a resource in the inspector and edit the fields manually instead
 ## of programmatically to take advantage of this.
-
-class_name Cip68Config
 
 @export
 ## The minting policy associated with this CIP68 config. This minting policy

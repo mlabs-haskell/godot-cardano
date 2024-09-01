@@ -1,9 +1,9 @@
 extends Resource
+class_name AccountResource
+
 ## Storage class for accounts
 ##
 ## This is a storage class used in [method SingleAddressWalletLoader.export].
-
-class_name AccountResource
 
 @export
 var index: int

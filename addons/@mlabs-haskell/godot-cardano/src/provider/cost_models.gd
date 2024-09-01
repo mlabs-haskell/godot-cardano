@@ -1,10 +1,10 @@
 extends RefCounted
+class_name CostModels
+
 ## The Plutus cost models
 ##
 ## This class is used to represent the cost models of the different Plutus
 ## versions supported by the SDK.
-
-class_name CostModels
 
 var _cost_models: _CostModels
 

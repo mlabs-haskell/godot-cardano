@@ -1,4 +1,6 @@
 extends RefCounted
+class_name SingleAddressWallet
+
 ## A class for offline wallet operations
 ##
 ## This class holds the [b]encrypted[/b] master private key of a user's wallet.
@@ -11,8 +13,6 @@ extends RefCounted
 ## Refer to [OnlineWallet] for a class that has network connectivity and can
 ## do blockchain queries. In general, this class is the one you are interested
 ## in for dApp development.
-
-class_name SingleAddressWallet
 
 enum Status {
 	SUCCESS = 0,
@@ -37,11 +37,28 @@ func get_address() -> Address:
 ## Get the account's address as a BECH32-encoded [String].
 func get_address_bech32() -> String:
 	return _wallet.get_address_bech32()
+	
+func get_address_hex() -> String:
+	return get_address().to_hex()
 
 ## Sign the given [Transaction] and obtain a [Signature]
 func sign_transaction(password: String, tx: Transaction) -> OnlineWallet.SignTxResult:
 	return OnlineWallet.SignTxResult.new(
 		_wallet._sign_transaction(password.to_utf8_buffer(), tx._tx)
+	)
+
+class SignDataResult extends Result:
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result_.is_ok].
+	var value: DataSignature:
+		get: return _res.unsafe_value() as DataSignature
+	## WARNING: This function may fail! First match on [Result_.tag] or call [Result._is_err].
+	var error: String:
+		get: return _res.unsafe_error()
+
+## Sign the given [String] representing hex encoded payload and obtain a [DataSignature]
+func sign_data(password: String, data: String) -> SignDataResult:
+	return SignDataResult.new(
+		_wallet._sign_data(password.to_utf8_buffer(), data.hex_decode())
 	)
 
 ## Adds an account to this wallet with the given index

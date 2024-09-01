@@ -1,9 +1,10 @@
 extends RefCounted
+class_name TransactionHash
+
 ## Hash of a transaction
 ##
-## The transaction hash is used in practice for uniquely identifying, which
+## The transaction hash is used to uniquely identify a transaction, which
 ## can be useful for many operations.
-class_name TransactionHash
 
 var _transaction_hash: _TransactionHash
 
