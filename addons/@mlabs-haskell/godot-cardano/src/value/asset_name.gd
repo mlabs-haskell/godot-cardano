@@ -1,5 +1,6 @@
 extends RefCounted
 class_name AssetName
+
 ## The name of an asset. Also known as token name.
 ##
 ## An [AssetName] (or token name) identifies a particular asset from any other

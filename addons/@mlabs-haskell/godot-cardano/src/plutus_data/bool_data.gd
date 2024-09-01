@@ -1,6 +1,7 @@
 extends RefCounted
-## The PlutusData equivalent of `bool`.
 class_name BoolData
+
+## The PlutusData equivalent of `bool`.
 
 @export
 var _b: bool

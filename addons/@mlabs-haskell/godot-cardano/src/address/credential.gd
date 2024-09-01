@@ -1,7 +1,7 @@
 extends RefCounted
-## A Cardano credential
-
 class_name Credential
+
+## A Cardano credential
 
 var _credential: _Credential = null
 

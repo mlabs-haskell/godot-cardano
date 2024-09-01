@@ -1,8 +1,10 @@
 @tool
 extends PlutusData
+class_name Constr
+
 ## Sum and Product type constructor for Plutus data
 ##
-## --- Introduction to algebraic types ---
+## --- Introduction to algebraic types ---[br][br]
 ##
 ## Plutus supports the use of so called "sum types" and "product types". These
 ## are part of a more general concept called "Algebraic Data Types" (or ADTs
@@ -27,15 +29,15 @@ extends PlutusData
 ## out of a "StringAndInt" class.[br][br]
 ##
 ## Sum types can also be described as a "combination" of other types. However, in contrast to
-## products, [b]one can only extract a single component of out of them[/b]. So the sum type
+## products, [b]one can only extract a single component out of them[/b]. So the sum type
 ## that combines [String] and [int] would be called "String[b]Or[/b]Int". This SDK already uses
-## sum types, like [Result], to encode different [b]exclusive[\b] possibilities [b]or choices[/b]. But sum types are
+## sum types, like [Result], to encode different [b]exclusive[/b] possibilities [b]or choices[/b]. But sum types are
 ## not well supported by GDScript, so one must be careful not to try to extract the wrong
 ## component from a sum (since only one component can be extracted at any given time).
 ## In other languages, the language itself disallows access to the component
 ## without checking for its presence first (resulting in a static error).[br][br]
 ##
-## --- How [Constr] works ---
+## --- How [Constr] works ---[br][br]
 ##
 ## Plutus supports both sums and products with a single type: [Constr]. A
 ## [Constr] (from constructor) is a "sum of products" (or SOP). As the name
@@ -43,10 +45,10 @@ extends PlutusData
 ##
 ## The reason this works for representing pure sums and pure products is that:[br][br]
 ##
-## * A pure product can be thought of as a sum with _one choice_, where that choice
+## * A pure product can be thought of as a sum with [i]one choice[/i], where that choice
 ##   is a product composed of possibly many types.[br]
-## * A pure sum can be thought of as a sum with _possibly many choices_, where
-##   all the choices are basic, non-product types.[br][br].
+## * A pure sum can be thought of as a sum with [i]possibly many choices[/i], where
+##   all the choices are basic, non-product types.[br][br]
 ##
 ## And of course, any combination of sums and products that can be imagined
 ## is possible by nesting [Constr]s appropriately.[br][br]
@@ -56,7 +58,7 @@ extends PlutusData
 ## itself). The index used for constructing a specific product is appropriately called
 ## "constructor".[br][br]
 ##
-## --- Notes on ordering ---
+## --- Notes on ordering ---[br][br]
 ## 
 ## It may be obvious that the constructor index represents an ordered choice,
 ## and hence using a different index will create a different value:[br][br]
@@ -74,7 +76,6 @@ extends PlutusData
 ## very important to keep in mind when trying to encode/decode values from the
 ## blockchain.
 # TODO: Move the explanations above to a separate tutorial.
-class_name Constr
 
 @export
 var _constructor: BigInt

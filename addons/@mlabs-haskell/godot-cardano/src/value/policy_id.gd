@@ -1,5 +1,6 @@
 extends RefCounted
 class_name PolicyId
+
 ## An asset policy ID
 
 var _policy_id: _PolicyId

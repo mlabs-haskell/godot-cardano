@@ -1,10 +1,10 @@
 extends RefCounted
+class_name Address
+
 ## A Cardano address
 ##
 ## This class represents a Cardano address consisting of a payment [Credential]
 ## and a (optional) staking [Credential].
-
-class_name Address
 
 var _address: _Address
 

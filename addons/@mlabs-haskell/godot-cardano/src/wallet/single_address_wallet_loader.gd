@@ -1,11 +1,11 @@
 extends RefCounted
+class_name SingleAddressWalletLoader
+
 ## A utility class used for loading/creating wallets
 ##
 ## This class is provided for the safe construction, import and export of
 ## [SingleAddressWallet]s. Because of this, it should only be used once and then
 ## discarded.
-
-class_name SingleAddressWalletLoader
 
 enum Status {
 	SUCCESS = 0,

@@ -1,5 +1,6 @@
 extends Node
 class_name Provider
+
 ## Provides basic network functionality to interact with the blockchain
 ##
 ## A [Provider] implements basic functions that query transactions

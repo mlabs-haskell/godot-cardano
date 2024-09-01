@@ -1,4 +1,6 @@
 extends RefCounted
+class_name SingleAddressWallet
+
 ## A class for offline wallet operations
 ##
 ## This class holds the [b]encrypted[/b] master private key of a user's wallet.
@@ -11,8 +13,6 @@ extends RefCounted
 ## Refer to [OnlineWallet] for a class that has network connectivity and can
 ## do blockchain queries. In general, this class is the one you are interested
 ## in for dApp development.
-
-class_name SingleAddressWallet
 
 enum Status {
 	SUCCESS = 0,
