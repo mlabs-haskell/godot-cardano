@@ -5,7 +5,22 @@ class_name Cip30Callbacks
 ## Used to register a CIP-30 wallet in a browser environment by adding
 ## GDScript callbacks to the global [code]window.cardano.godot[/code] Object. These callbacks
 ## defer their implementation to a [Cip30WalletApi] object, which is required for
-## initializing the class ([method Cip30Callbacks._init]).
+## initializing the class ([method Cip30Callbacks._init]).[br][br]
+##
+## A standard use of this class involves creating a [Cip30WalletApi] object and
+## then wrapping it in a [Cip30Callbacks]. With the latter, the method
+## [method Cip30Callbacks.add_to] can be used for registering the wallet in the
+## browser window:[br][br]
+##
+## The window object is retrieved using the JavaScriptBridge interface[br]
+## [code]var window = JavaScriptBridge.get_interface("window")[/code][br][br]
+## Then a class extending [Cip30WalletApi] is instantiated...[br]
+## [code]var cip_30_wallet = ...[/code][br][br]
+## ... and registered in the window[br]
+## [code]Cip30Callbacks.new(cip_30_wallet).add_to(window)[/code][br][br]
+##
+## The result of this is that any web application can now use the wallet
+## via the CIP-30 interface available in the browser window.
 
 # NOTE
 # [JsCip30Api] contains a JS script that creates the `window.cardano.godot` Object
@@ -74,8 +89,8 @@ func _cb_sign_data(args):
 	var signing_address: String = args[2]
 	var data_hex: String = args[3]
 	
-	# TODO: If we want proper CIP-30 support, we should parse the address (could be hex or bech32)
-	# to pub key and differentiate between ProofGeneration and AddressNotPK errors
+	# TODO: We should parse the address (could be hex or bech32) to pub key and
+	# differentiate between ProofGeneration and AddressNotPK errors
 	
 	# Paima framework will pass bech32 encoded Address into the sing request if the wallet is not Nami
 	if !_cip_30_wallet.owns_address(signing_address):

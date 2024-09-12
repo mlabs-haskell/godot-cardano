@@ -9,8 +9,6 @@ var buttons_grid
 var ui_grid
 var walet_picker: HBoxContainer 
 
-
-
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("GD: starting cardano-godot Paima demo")
