@@ -3,17 +3,48 @@ class_name PaimaMiddleware
 
 ## Wrapper for the core of Paima middleware.
 ## 
-## Provides API for logging-in and querying the `RoundExecutor`.[br][br]
+## Provides an API for logging-in and querying the `RoundExecutor`.[br][br]
 ##
 ## This API deals mostly with objects from the Paima middleware, and hence uses
 ## [JavaScriptObject]s for many different things. Most importantly, the API is
-## initialized with the [code]paima_endpoints[/code] object, injected by Paima in the
-## browser window. This object can be retrieved with the [method get_endpoints],
-## allowing the user to manually interact with the Paima endpoints using the
-## Javascript interface (check [method get_endpoints] documentation for more details).[br][br]
+## initialized with the [code]paima_endpoints[/code] object.[br][br]
 ##
 ## Most methods exposed in this API are asynchronous. As such, they can be [code]await[/code]ed
-## or a callback can be bound to their respective signals.
+## or a callback can be bound to their respective signals.[br][br]
+## 
+## [b]How to obtain [code]paima_endpoints[/code][/b][br][br]
+##
+## This object is provided by the Paima middleware ([code]paimaMiddleware.js[/code]), and in Javascript
+## it can be easily brought into scope with an import statement:[br][br]
+##
+## [code]import endpoints from './paima/paimaMiddleware.js'[/code][br][br]
+##
+## Unfortunately, in GDScript it is not as easy. Import statements are not available,
+## so only global objects may be accessed, such as [code]window[/code].[br][br]
+##
+## Hence, the main way of obtaining [code]paima_endpoints[/code] is by attaching it
+## to the global [code]window[/code] object when the web page is loaded. In order
+## to do this, the web export template for the project must be modified accordingly:[br][br]
+##
+## [code][preset.0.options][/code][br]
+## [code]...[/code][br]
+## [code]html/head_include="<script type=\"module\">[/code][br]
+## [code]import endpoints from './paima/paimaMiddleware.js';[/code][br]
+## [code]window.paima_endpoints = endpoints;[/code][br][br]
+##
+## In GDScript, the [code]window[/code] (and thus [code]paima_endpoints[/code])
+## can be easily retrieved (check [method _init] docs).[br][br]
+##
+## [b]How to use the class[/b][br][br]
+##
+## The core methods available in [code]paima_endpoints[/code] are game-independent
+## and may be used directly from [PaimaMiddleware] without calling directly into
+## Javascript code (e.g: [method login], [method queryRoundExecutor]).[br][br]
+##
+## However, for method that are specific to a given game, the [code]paima_endpoints[/code]
+## object must be used directly and calls into Javascript are necessary. To retrieve
+## the endpoints object, use [method get_endpoints]. Consult this method's documentation
+## to learn how to call into Javascript from GDScript.
 
 ## Wallet mode
 ##
@@ -55,7 +86,7 @@ var _paima_wallet: JavaScriptObject
 var console := JavaScriptBridge.get_interface("console")
 
 ## A [PaimaMiddleware] is initialized by providing an [param endpoints]
-## object, which is normally available under the `window` object[br][br]
+## object, which is normally made available under the [code]window[/code] object[br][br]
 ## [code]var endpoints = JavaScriptBridge.get_interface("window").paima_endpoints[/code][br]
 ## [code]var middleware = PaimaMiddleware(endpoints)
 func _init(endpoints: JavaScriptObject) -> void:
