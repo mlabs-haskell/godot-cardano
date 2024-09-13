@@ -4,8 +4,9 @@ class_name Cip30WalletApi
 ## Virtual class for implementing a CIP-30 compatible wallet
 ##
 ## This class represents a CIP-30 compatible wallet. Inherit it and override
-## all of its methods to obtain a CIP-30 wallet that may be used to initialize
-## a [Cip30Callbacks] object (check [method Cip30Callbacks._init]).
+## all of its methods to obtain a CIP-30 wallet that may be registered in the browser
+## window with [Cip30Callbacks]. Check that class to see an example
+## of use.
 
 ## [b]WARNING: Virtual function.[/b][br]
 ## Return the address of the wallet as a [String].

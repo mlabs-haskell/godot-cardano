@@ -6,7 +6,7 @@ extends RefCounted
 ## Internal state is then used in the `_process(...)` of the parent node to adjust UI.
 class_name GameMiddleware
 
-var console = JavaScriptBridge.get_interface("console")
+var console: JavaScriptObject = JavaScriptBridge.get_interface("console")
 var _player_stats: JavaScriptObject
 var _middleware: PaimaMiddleware
 var _endpoints: JavaScriptObject
@@ -47,7 +47,7 @@ func update_player_stats():
 	else:
 		print("GD:Paima: wallet login was not successful, check wallet by `show wallet` button")
 
-### Callback
+# Callback
 var _on_stats_received_js = JavaScriptBridge.create_callback(_on_stats_received)
 func _on_stats_received(args):
 	_player_stats = args[0]
