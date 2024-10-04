@@ -1,7 +1,7 @@
 extends RefCounted
-## Transaction class
-
 class_name Transaction
+
+## Transaction class
 
 var _tx: _Transaction
 var _input_utxos: Array[Utxo]

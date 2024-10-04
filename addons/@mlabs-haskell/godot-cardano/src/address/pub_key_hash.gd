@@ -1,7 +1,7 @@
 extends RefCounted
-## A public key hash
-
 class_name PubKeyHash
+
+## A public key hash
 
 var _pub_key_hash: _PubKeyHash
 

@@ -1,5 +1,4 @@
 extends RefCounted
-
 class_name ScriptHash
 
 var _script_hash: _ScriptHash

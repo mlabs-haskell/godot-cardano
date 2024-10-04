@@ -1,11 +1,12 @@
 class_name TxComplete
+extends RefCounted
+
 ## A balanced and evaluated transaction
 ##
 ## This class represents a transaction that has been properly balanced and
 ## evaluated. At this stage, the transaction is generally ready to be submitted
 ## ([method submit]), with the notable exception of possibly missing signatures.
 ## These can be added with [method sign].
-extends RefCounted
 
 var _transaction: Transaction = null
 var _provider: Provider

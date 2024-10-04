@@ -1,6 +1,7 @@
 extends RefCounted
 class_name AssetClass
-## A pair of policy ID and asset name that uniquely identify a particular asset
+
+## A pair of policy ID and asset name that uniquely identifies a particular asset
 
 var _policy_id: PolicyId
 var _asset_name: AssetName

@@ -228,7 +228,7 @@ impl MultiAsset {
             // FIXME: ugly hack
             let mut empty = CSL::MultiAsset::new();
             empty.set_asset(
-                &policy_id.bind().policy_id,
+                &policy_id.bind().hash,
                 &asset_name.bind().asset_name,
                 &BigNum::zero(),
             );
@@ -510,6 +510,15 @@ impl Address {
     #[func]
     pub fn _from_bech32(address: String) -> Gd<GResult> {
         Self::to_gresult_class(Self::from_bech32(address))
+    }
+
+    pub fn to_hex(&self) -> String {
+        self.address.to_hex()
+    }
+
+    #[func]
+    pub fn _to_hex(&self) -> String {
+        self.to_hex()
     }
 
     pub fn to_bech32(&self) -> Result<String, AddressError> {

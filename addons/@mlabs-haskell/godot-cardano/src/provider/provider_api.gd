@@ -1,5 +1,6 @@
 extends Node
 class_name ProviderApi
+
 ## An interface for implementing different [Provider]s.
 ##
 ## This class factors out the necessary blockchain requests to implement a

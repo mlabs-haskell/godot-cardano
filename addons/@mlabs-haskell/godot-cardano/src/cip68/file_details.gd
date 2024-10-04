@@ -1,9 +1,10 @@
 extends Resource
+class_name FileDetails
+
 ## CIP25 file details
 ##
 ## The CIP25 standard (and hence the CIP68 standard as well) defines an optional
 ## "file details" field that can be used to attach additional files to a token.
-class_name FileDetails
 
 @export
 var name: String = ""

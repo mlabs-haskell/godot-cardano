@@ -1,4 +1,6 @@
 extends RefCounted
+class_name Result
+
 ## A result type which may hold either a value or an error
 ##
 ## A virtual class that represents an arbitrary result from executing an
@@ -17,8 +19,6 @@ extends RefCounted
 ## [method tag]. All classes that expose operations which may fail, will also
 ## expose a "Status" enum that can be used to distinguish the different failure
 ## modes.
-
-class_name Result
 
 var _res : _Result
 

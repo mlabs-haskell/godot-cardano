@@ -1,11 +1,12 @@
 extends RefCounted
+class_name Utxo
+
 ## An unspent transaction output (UTxO)
 ##
 ## This class is used for representing Cardano's UTxOs, specifically their
 ## identifying attributes (TX hash and output index) but also other useful
 ## information such as the [Address], [MultiAsset] value and datum information
 ## ([UtxoDatumInfo]) which can be very useful in TX tracking and building
-class_name Utxo
 
 ## WARNING: This is for internal use. Use the [method create] method to safely
 ## construct a [Utxo].
