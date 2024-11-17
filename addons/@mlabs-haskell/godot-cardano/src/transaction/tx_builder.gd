@@ -132,7 +132,7 @@ static func create(provider: Provider) -> CreateResult:
 ## Set the slot configuration. This is automatically done on initialization, do
 ## not use unless you know what you are doing.
 func set_slot_config(start_time: int, start_slot: int, slot_length: int) -> TxBuilder:
-	_builder.set_slot_config(start_time, start_slot, slot_length)
+	_builder.set_slot_config(start_time * 1000, start_slot, slot_length * 1000)
 	return self
 	
 ## Set the cost models. This is automatically done on initialization, do
