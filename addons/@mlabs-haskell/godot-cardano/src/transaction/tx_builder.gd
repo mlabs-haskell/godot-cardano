@@ -448,7 +448,7 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 		)
 	_builder._add_dummy_redeemers()
 	
-	var balance_result := await balance()
+	var balance_result := await balance(wallet_utxos)
 	var error = _results.any(func (result: Result) -> bool: return result.is_err())
 	_results.push_back(balance_result)
 	
