@@ -31,6 +31,9 @@ class FromBytesResult extends Result:
 	var error: String:
 		get: return _res.unsafe_error()
 
+static func empty() -> AssetName:
+	return new(_AssetName._from_bytes(PackedByteArray()).unsafe_value())
+	
 ## Try to parse an [class AssetName] from [param hash] containing its hex encoding.
 static func from_hex(hash: String) -> FromHexResult:
 	return FromHexResult.new(_AssetName._from_hex(hash))

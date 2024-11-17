@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 godot = { git = "https://github.com/godot-rust/gdext", rev = "4ce4714b8871bf75e95d03401e44e3f1ccbdd7df", features = ["experimental-wasm", "lazy-function-tables"] }
 uplc = { git = "https://github.com/aiken-lang/aiken", rev = "b50e4ab63aa35d8fd8b6c683460b312173ace0a2" }
 cardano-serialization-lib = "11.5.0"
+num-bigint = "0.4.0"
 bip32 = "0.5.1"
 hex = "0.4.0"
 rand = "0.8.5"
