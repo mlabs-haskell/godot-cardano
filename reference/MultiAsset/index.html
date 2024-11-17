@@ -703,6 +703,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get_tokens" class="md-nav__link">
+    get_tokens
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#set_asset_quantity" class="md-nav__link">
     set_asset_quantity
   </a>
@@ -1369,6 +1376,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get_tokens" class="md-nav__link">
+    get_tokens
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#set_asset_quantity" class="md-nav__link">
     set_asset_quantity
   </a>
@@ -1553,43 +1567,47 @@
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_asset_quantity</span><span class="p">(</span><span class="n">asset</span><span class="p">:</span><span class="w"> </span><span class="n">AssetClass</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BigInt</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Return the quantity of the given [param asset] held.</p>
+<h3 id="get_tokens">get_tokens</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_tokens</span><span class="p">(</span><span class="n">policy_id</span><span class="p">:</span><span class="w"> </span><span class="n">PolicyId</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Get a Dictionary mapping [class AssetName]s to [class BigInt]s under the given [param policy_id].</p>
 <h3 id="set_asset_quantity">set_asset_quantity</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_asset_quantity</span><span class="p">(</span><span class="n">asset</span><span class="p">:</span><span class="w"> </span><span class="n">AssetClass</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SetAssetResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">set_asset_quantity</span><span class="p">(</span><span class="n">asset</span><span class="p">:</span><span class="w"> </span><span class="n">AssetClass</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SetAssetResult</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Set the [param quantity] of the given [param asset].</p>
 <h3 id="add_asset">add_asset</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_asset</span><span class="p">(</span><span class="n">asset</span><span class="p">:</span><span class="w"> </span><span class="n">AssetClass</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SetAssetResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_asset</span><span class="p">(</span><span class="n">asset</span><span class="p">:</span><span class="w"> </span><span class="n">AssetClass</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="n">BigInt</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SetAssetResult</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="merge">merge</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">other</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">)</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">other</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="to_dictionary">to_dictionary</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_dictionary</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">to_dictionary</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Convert to a dictionary representation. This can be used by [method from_dictionary].</p>
 <h3 id="duplicate">duplicate</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">duplicate</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">MultiAsset</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="n">duplicate</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">MultiAsset</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="from_dictionary-static">from_dictionary <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_dictionary</span><span class="p">(</span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromDictionaryResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">func</span><span class="w"> </span><span class="n">from_dictionary</span><span class="p">(</span><span class="n">assets</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">Dictionary</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">FromDictionaryResult</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Try to parse a dictionary into a <a href="MultiAsset">MultiAsset</a>s as values.</p>
 <h3 id="empty-static">empty <small>(static)</small></h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">func</span><span class="w"> </span><span class="n">empty</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">MultiAsset</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">func</span><span class="w"> </span><span class="n">empty</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">MultiAsset</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Return a value with no assets</p>
 <h2 id="sub-classes">Sub-classes</h2>
 <h3 id="fromdictionaryresult">FromDictionaryResult</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>
 <h3 id="value">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">MultiAsset</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
 <h3 id="error">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
@@ -1598,14 +1616,14 @@
 <h3 id="setassetresult">SetAssetResult</h3>
 <h4 id="property-descriptions_1">Property Descriptions</h4>
 <h3 id="value_1">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Variant</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
 <h3 id="error_1">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
