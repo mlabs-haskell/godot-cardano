@@ -1030,8 +1030,22 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get_address_hex" class="md-nav__link">
+    get_address_hex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sign_transaction" class="md-nav__link">
     sign_transaction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sign_data" class="md-nav__link">
+    sign_data
   </a>
   
 </li>
@@ -1078,11 +1092,11 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#addaccountresult" class="md-nav__link">
-    AddAccountResult
+  <a href="#signdataresult" class="md-nav__link">
+    SignDataResult
   </a>
   
-    <nav class="md-nav" aria-label="AddAccountResult">
+    <nav class="md-nav" aria-label="SignDataResult">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1106,6 +1120,40 @@
         
           <li class="md-nav__item">
   <a href="#error" class="md-nav__link">
+    error
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#addaccountresult" class="md-nav__link">
+    AddAccountResult
+  </a>
+  
+    <nav class="md-nav" aria-label="AddAccountResult">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#property-descriptions_1" class="md-nav__link">
+    Property Descriptions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#value_1" class="md-nav__link">
+    value
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error_1" class="md-nav__link">
     error
   </a>
   
@@ -1335,8 +1383,22 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get_address_hex" class="md-nav__link">
+    get_address_hex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sign_transaction" class="md-nav__link">
     sign_transaction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sign_data" class="md-nav__link">
+    sign_data
   </a>
   
 </li>
@@ -1383,11 +1445,11 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#addaccountresult" class="md-nav__link">
-    AddAccountResult
+  <a href="#signdataresult" class="md-nav__link">
+    SignDataResult
   </a>
   
-    <nav class="md-nav" aria-label="AddAccountResult">
+    <nav class="md-nav" aria-label="SignDataResult">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1411,6 +1473,40 @@
         
           <li class="md-nav__item">
   <a href="#error" class="md-nav__link">
+    error
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#addaccountresult" class="md-nav__link">
+    AddAccountResult
+  </a>
+  
+    <nav class="md-nav" aria-label="AddAccountResult">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#property-descriptions_1" class="md-nav__link">
+    Property Descriptions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#value_1" class="md-nav__link">
+    value
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error_1" class="md-nav__link">
     error
   </a>
   
@@ -1476,38 +1572,61 @@
 <div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_address_bech32</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Get the account's address as a BECH32-encoded [String].</p>
+<h3 id="get_address_hex">get_address_hex</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">get_address_hex</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">String</span>
+</span></code></pre></div></td></tr></table></div>
 <h3 id="sign_transaction">sign_transaction</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">func</span><span class="w"> </span><span class="n">sign_transaction</span><span class="p">(</span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">,</span><span class="w"> </span><span class="n">tx</span><span class="p">:</span><span class="w"> </span><span class="n">Transaction</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SignTxResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">sign_transaction</span><span class="p">(</span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">,</span><span class="w"> </span><span class="n">tx</span><span class="p">:</span><span class="w"> </span><span class="n">Transaction</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SignTxResult</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Sign the given <a href="Transaction">Transaction</a></p>
+<h3 id="sign_data">sign_data</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">sign_data</span><span class="p">(</span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SignDataResult</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Sign the given [String] representing hex encoded payload and obtain a [DataSignature]</p>
 <h3 id="add_account">add_account</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_account</span><span class="p">(</span><span class="n">account_index</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">AddAccountResult</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">add_account</span><span class="p">(</span><span class="n">account_index</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">AddAccountResult</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Adds an account to this wallet with the given index</p>
 <h3 id="switch_account">switch_account</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">func</span><span class="w"> </span><span class="n">switch_account</span><span class="p">(</span><span class="n">account</span><span class="p">:</span><span class="w"> </span><span class="n">Account</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">int</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="n">switch_account</span><span class="p">(</span><span class="n">account</span><span class="p">:</span><span class="w"> </span><span class="n">Account</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">int</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Switch to the account with the given <code>account_index</code>. It may fail if no such account exists. It returns the account index when it succeeds.</p>
 <h3 id="accounts">accounts</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">func</span><span class="w"> </span><span class="n">accounts</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Account</span><span class="p">]</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">func</span><span class="w"> </span><span class="n">accounts</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb nb-Type">Array</span><span class="p">[</span><span class="n">Account</span><span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Return a list of accounts currently available in the wallet</p>
 <h3 id="export">export</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">func</span><span class="w"> </span><span class="k">export</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SingleAddressWalletResource</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">func</span><span class="w"> </span><span class="k">export</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">SingleAddressWalletResource</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Export wallet to a resource.</p>
 <h2 id="sub-classes">Sub-classes</h2>
-<h3 id="addaccountresult">AddAccountResult</h3>
+<h3 id="signdataresult">SignDataResult</h3>
 <h4 id="property-descriptions">Property Descriptions</h4>
 <h3 id="value">value</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Account</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">DataSignature</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@value_getter</code></li>
 </ul>
 <p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
 <h3 id="error">error</h3>
-<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Getter</strong>: <code>@error_getter</code></li>
+</ul>
+<p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#_is_err">Result._is_err</a>.</p>
+<h3 id="addaccountresult">AddAccountResult</h3>
+<h4 id="property-descriptions_1">Property Descriptions</h4>
+<h3 id="value_1">value</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">var</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">Account</span>
+</span></code></pre></div></td></tr></table></div>
+<ul>
+<li><strong>Getter</strong>: <code>@value_getter</code></li>
+</ul>
+<p>WARNING: This function may fail! First match on <a href="../Result/#tag">Result.tag</a> or call <a href="../Result/#is_ok">Result.is_ok</a>.</p>
+<h3 id="error_1">error</h3>
+<div class="language-gdscript highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="k">var</span><span class="w"> </span><span class="n">error</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span>
 </span></code></pre></div></td></tr></table></div>
 <ul>
 <li><strong>Getter</strong>: <code>@error_getter</code></li>
