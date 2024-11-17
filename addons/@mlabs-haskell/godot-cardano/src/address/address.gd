@@ -69,7 +69,8 @@ static func build(
 
 func payment_credential() -> Credential:
 	return Credential.new(_address.payment_credential())
-	
+## If the address contains staking credentials, return them.
+## Otherwise, return [code]null[/code].
 func stake_credential() -> Credential:
 	var _cred = _address.stake_credential()
 	if _cred != null:
