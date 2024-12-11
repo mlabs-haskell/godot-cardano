@@ -34,7 +34,11 @@ enum TxBuilderStatus {
 var _builder: _TxBuilder
 var _wallet: OnlineWallet
 var _provider: Provider
+
 var _results: Array[Result]
+
+var _scripts_added: bool = false
+var _script_substitutions: Dictionary = {}
 var _script_utxos: Array[Utxo]
 var _other_utxos: Array[Utxo]
 
@@ -113,6 +117,56 @@ class MintToken:
 	func _to_string() -> String:
 		return "%s" % { [_asset_name.to_hex()]: _quantity.to_str() }
 
+func _substitute_script_credential(cred: Credential) -> Credential:
+	if _script_substitutions.keys().is_empty() || cred == null:
+		return cred
+	
+	if cred.get_type() == Credential.CredentialType.KEY_HASH:
+		return cred
+	var sub = _script_substitutions.get(cred.to_script_hash().value.to_hex())
+	if sub != null:
+		return Credential.from_script_source(sub)
+	return cred
+
+func _substitute_address(address: Address) -> Address:
+	if _script_substitutions.keys().is_empty():
+		return address
+	
+	return _provider.make_address(
+		_substitute_script_credential(address.payment_credential()),
+		_substitute_script_credential(address.stake_credential()),
+	)
+
+func _substitute_assets(assets: MultiAsset) -> MultiAsset:
+	if _script_substitutions.keys().is_empty():
+		return assets
+		
+	var assets_dict := assets.to_dictionary()
+	for script_hash_hex: String in _script_substitutions:
+		var to_script_hash_hex: String = _script_substitutions[script_hash_hex].hash().to_hex()
+		var tokens := assets.get_tokens(PolicyId.from_hex(script_hash_hex).value)
+		for token: String in tokens:
+			if assets_dict.has(script_hash_hex + token):
+				assets_dict[to_script_hash_hex + token] = assets_dict.get(script_hash_hex + token)
+				assets_dict.erase(script_hash_hex + token)
+	return MultiAsset.from_dictionary(assets_dict).value
+
+func _substitute_utxo(utxo: Utxo) -> Utxo:
+	if _script_substitutions.keys().is_empty():
+		return utxo
+		
+	return Utxo.new(
+		_Utxo.create(
+			utxo._utxo.tx_hash,
+			utxo._utxo.output_index,
+			_substitute_address(utxo.address())._address,
+			utxo._utxo.coin,
+			_substitute_assets(utxo.assets())._multi_asset,
+			utxo._utxo.datum_info,
+			utxo._utxo.script_ref
+		)
+	)
+
 ## TODO: This probably shouldn't be exposed.
 ## Create a TxBuilder object from a Provider. You should use [method Provider.new_tx]
 ## instead of this method, since that one will make sure to initialize other
@@ -168,9 +222,9 @@ func pay_to_address(
 			datum_serialized = Datum.inline(serialize_result.value)
 	
 	_builder._pay_to_address(
-		address._address,
+		_substitute_address(address)._address,
 		coin._b,
-		assets._multi_asset,
+		_substitute_assets(assets)._multi_asset,
 		datum_serialized,
 		script_ref
 	)
@@ -201,7 +255,12 @@ func mint_assets(
 	_results.push_back(serialize_result)
 	if serialize_result.is_err():
 		return self
-		
+
+	minting_policy_source = _script_substitutions.get(
+		minting_policy_source.hash().to_hex(),
+		minting_policy_source
+	)
+
 	var tokens_dict: Dictionary = {}
 	tokens.map(
 		func (token: MintToken) -> void:
@@ -222,6 +281,8 @@ func mint_assets(
 	)
 
 	_results.push_back(result)
+	
+	_scripts_added = true
 	
 	return self
 
@@ -305,11 +366,9 @@ func pay_cip68_user_tokens_with_datum(
 ## Consume all the [param utxos] specified.
 func collect_from(utxos: Array[Utxo]) -> TxBuilder:
 	var _utxos: Array[_Utxo] = []
-	_utxos.assign(
-		utxos.map(
-			func (utxo: Utxo) -> _Utxo: return utxo._utxo
-		)
-	)
+	for utxo: Utxo in utxos:
+		_utxos.push_back(_substitute_utxo(utxo)._utxo)
+		
 	_builder._collect_from(_utxos)
 	_other_utxos.append_array(utxos)
 	return self
@@ -323,12 +382,14 @@ func collect_from_script(
 ) -> TxBuilder:
 	var serialize_result: Cbor.SerializeResult = redeemer.serialize()
 	
-	var _utxos: Array[_Utxo] = []
-	_utxos.assign(
-		utxos.map(
-			func (utxo: Utxo) -> _Utxo: return utxo._utxo
-		)
+	plutus_script_source = _script_substitutions.get(
+		plutus_script_source.hash().to_hex(),
+		plutus_script_source
 	)
+
+	var _utxos: Array[_Utxo] = []
+	for utxo: Utxo in utxos:
+		_utxos.push_back(_substitute_utxo(utxo)._utxo)
 	
 	_script_utxos.append_array(utxos)
 
@@ -340,6 +401,8 @@ func collect_from_script(
 		_utxos,
 		serialize_result.value
 	)
+	
+	_scripts_added = true
 	
 	return self
 
@@ -380,6 +443,18 @@ func add_reference_input(utxo: Utxo) -> TxBuilder:
 	_script_utxos.push_back(utxo)
 	return self
 
+## Substitutes any usage of [param from] in this transaction with [param to]. 
+## This is mainly useful for replacing scripts with alternative versions,
+## e.g. with extra traces enabled.
+func substitute_script(from: PlutusScriptSource, to: PlutusScriptSource) -> TxBuilder:
+	if _scripts_added:
+		push_error("`substitute_script` must be called before any scripts are added to the `TxBuilder`")
+		return self
+
+	_script_substitutions[from.hash().to_hex()] = to
+	
+	return self
+
 ## Only balance the transaction and return the result.[br]The resulting transaction
 ## will not have been evaluated and will have inaccurate script execution units,
 ## which may cause the transaction to fail at submission and potentially consume
@@ -393,9 +468,8 @@ func balance(utxos: Array[Utxo] = []) -> BalanceResult:
 		wallet_utxos = await _wallet._get_updated_utxos()
 		
 	var _wallet_utxos: Array[_Utxo] = []
-	_wallet_utxos.assign(
-		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
-	)
+	for utxo: Utxo in wallet_utxos:
+		_wallet_utxos.push_back(_substitute_utxo(utxo)._utxo)
 	
 	var result: BalanceResult = null
 	if wallet_utxos.size() == 0:
@@ -432,9 +506,8 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 		wallet_utxos = await _wallet._get_updated_utxos()
 
 	var _wallet_utxos: Array[_Utxo] = []
-	_wallet_utxos.assign(
-		wallet_utxos.map(func (utxo: Utxo) -> _Utxo: return utxo._utxo)
-	)
+	for utxo: Utxo in wallet_utxos:
+		_wallet_utxos.push_back(_substitute_utxo(utxo)._utxo)
 	
 	if wallet_utxos.size() == 0:
 		_results.push_back(
@@ -453,7 +526,10 @@ func complete(utxos: Array[Utxo] = []) -> CompleteResult:
 	_results.push_back(balance_result)
 	
 	if not error and balance_result.is_ok():
-		var eval_result := balance_result.value.evaluate(wallet_utxos + _script_utxos)
+		var sub_script_utxos: Array[Utxo] = []
+		for utxo: Utxo in _script_utxos:
+			sub_script_utxos.push_back(_substitute_utxo(utxo))
+		var eval_result := balance_result.value.evaluate(wallet_utxos + sub_script_utxos)
 		
 		_results.push_back(eval_result)
 		if eval_result.is_ok():

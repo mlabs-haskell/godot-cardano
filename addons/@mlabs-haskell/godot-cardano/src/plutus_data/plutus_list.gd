@@ -15,7 +15,7 @@ func _unwrap() -> Variant:
 	return unwrapped
 
 func _to_json() -> Dictionary:
-	return { "list": _data.map(to_json) }
+	return { "list": _data.map(func (v): return v.to_json()) }
 
 func get_data() -> Array[PlutusData]:
 	return _data
