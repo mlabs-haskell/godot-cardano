@@ -481,7 +481,7 @@ func _utxos_from_json(utxos_json: Array) -> Array[Utxo]:
 				
 				if inline_datum_str == "" and data_hash != "" and data_map.has(data_hash):
 					resolved_datum_str = data_map.get(data_hash)
-					
+
 				var datum_info := self._build_datum_info(data_hash, inline_datum_str, resolved_datum_str)
 				
 				var result := Utxo.create(
