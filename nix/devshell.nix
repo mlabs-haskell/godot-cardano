@@ -10,6 +10,7 @@
       ];
       packages = [
         pkgs.stdenv.cc
+        pkgs.gh # for IntersectMBO's self-attestation scripts
       ];
       commands = [
         {

@@ -1,26 +1,37 @@
-# Cardano Game Engine Wallet - Godot Integration
+# godot-cardano
 
-Cardano Game Engine Wallet is an integrated light wallet *and* off-chain SDK for
-the Godot engine and Cardano blockchain. The project is currently a *work-in-progress*.
+godot-cardano is an integrated light wallet *and* off-chain SDK for the Godot
+engine and Cardano blockchain.
 
 This project was publicly funded by the Cardano community in round 10 of [Project Catalyst](https://projectcatalyst.io/funds/10/f10-developer-ecosystem-the-evolution/mlabs-cardano-game-engine-wallet-godot-integration). Thank you for your support!
 
 ## Status
 
-The project currently consists of a small demo that showcases two features:
+The project currently consists of
 
-* Generating / importing a wallet by entering a seed-phrase
-* Transferring ADA to an arbitrary Cardano address.
+* A godot add-on (see `addons/@mlabs-haskell/godot-cardano`), providing an API
+  for transaction building and submission, as well as a Cardano wallet implementation.
+* Another godot add-on providnng a Paima middleware, which you can use to implement part
+  of your game logic in Godot when using [the Paima engine](https://github.com/PaimaStudios/paima-engine). 
+* Two demos showcasing the integrated wallet and the transaction building/submission API
 
-At the momment, the demo runs on the *preview* testnet and was tested on
-*Linux and Windows x86-64 PCs*.
+At the momment, our demos run on the *preview* testnet and are tested on
+*Linux and Windows x86-64 PCs*, with Godot version 4.2
 
-## How to build and run the demo with Godot
+## Quickstart
+
+This section explains how to set up godot-cardano for development and run the first demo,
+which implements a very simple UI for loading a wallet from a seed-phrase and transferring
+ADA to a destination address.
+
+For a more interesting (and realistic) use case see [the shop tutorial](docs/Shop Tutorial.md).
 
 ### Pre-requisites
 
 * Godot Engine 4.2: The demo runs on version 4.2 of the Godot engine, which you
   can download at the [official website](https://godotengine.org/).
+
+  _We aim to provide support for newer versions of Godot in the future_
 
 * A wallet with funds in the Cardano preview testnet: You can use any wallet you like, as
   long as it supports the preview testnet. *Take note of the seed-phrase of your wallet*. To get test ADA (tADA), use the [Cardano testnet faucet](https://docs.cardano.org/cardano-testnet/tools/faucet/).
@@ -88,12 +99,6 @@ At this point the demo is over. The demo will not inform you of the success of t
 For instance, here we use [Cardanoscan (Preview)](https://preview.cardanoscan.io) to monitor the wallet address and confirm that a transaction occurred:
 
 ![Cardanoscan check](./screenshots/cardanoscan-check.png)
-
-## What's next?
-
-Check our milestones [here](https://milestones.projectcatalyst.io/projects/1000114)!
-
-You may also read our [Proof Of Achievement / Research report](./docs/M1_PoA-Research-Report.pdf) written for the milestone as well. This document discusses our work and rationale for the technical decisions we have made.
 
 ## Development
 
